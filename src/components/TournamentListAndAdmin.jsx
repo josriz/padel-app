@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthProvider";
 import { supabase } from "../supabaseClient";
 import { Plus, RefreshCw } from "lucide-react";
 import TournamentBracket from "./TournamentBracket";
+import AdminTournamentForm from "./AdminTournamentForm";
 
 export default function TournamentListAndAdmin() {
   const { isAdmin } = useAuth();
@@ -64,6 +65,17 @@ export default function TournamentListAndAdmin() {
         🏆 Tornei
       </h1>
 
+      {/* FORM CREAZIONE TORNEI AVANZATI */}
+      {isAdmin && (
+        <div className="mb-6">
+          <AdminTournamentForm
+            onTournamentCreated={(newTournament) =>
+              setTournaments((prev) => [...prev, newTournament])
+            }
+          />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {tournaments.map((t) => (
           <div
@@ -72,6 +84,9 @@ export default function TournamentListAndAdmin() {
             onClick={() => setSelectedTournament(t.id)}
           >
             <h2 className="text-xl font-semibold text-gray-900 mb-2">{t.name}</h2>
+            <p className="text-sm text-gray-500 mb-2">
+              Tipo: {t.tournament_type || "Diretta"} • Partecipanti: {t.number_of_players || 0}
+            </p>
 
             {isAdmin && (
               <button
