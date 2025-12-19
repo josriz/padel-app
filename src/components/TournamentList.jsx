@@ -1,69 +1,122 @@
-﻿import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthProvider';
+﻿// src/components/TournamentList.jsx - COMPLETO CON BACK SMART + NOMI
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { Trophy, Users, Loader2 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Trophy, Users, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthProvider';
 
 export default function TournamentList() {
-  const { isAdmin } = useAuth();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [tournaments, setTournaments] = useState([]);
   const [participantsCounts, setParticipantsCounts] = useState({});
+  const [userRegistrations, setUserRegistrations] = useState({});
+  const [playerNames, setPlayerNames] = useState({});
   const [loading, setLoading] = useState(true);
+  const [registering, setRegistering] = useState({});
+
+  // ✅ BACK BUTTON INTELLIGENTE
+  const goBackSmart = () => {
+    const currentPath = window.location.pathname;
+    if (currentPath === '/tournaments') {
+      navigate('/dashboard'); // Da lista tornei → dashboard
+    } else {
+      navigate(-1); // Altrimenti pagina precedente
+    }
+  };
 
   useEffect(() => {
-    const fetchTournaments = async () => {
-      try {
-        setLoading(true);
-
-        const { data, error } = await supabase
-          .from('tournaments')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        const tournamentsData = data || [];
-
-        const validTournaments = tournamentsData.filter(t => t && t.id);
-
-        const counts = {};
-        for (const tournament of validTournaments) {
-          const { count: regCount } = await supabase
-            .from('tournament_registrations')
-            .select('*', { count: 'exact', head: true })
-            .eq('tournament_id', tournament.id);
-
-          counts[tournament.id] = regCount || 0;
-        }
-
-        setTournaments(validTournaments);
-        setParticipantsCounts(counts);
-      } catch (error) {
-        console.error('Errore tornei:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTournaments();
+    fetchData();
   }, []);
 
-  const handleDeleteTournament = async (t) => {
-    if (!window.confirm("Sei sicuro di voler eliminare questo torneo?")) return;
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      
+      const { data: tournamentsData } = await supabase
+        .from('tournaments')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    const { error } = await supabase.rpc('delete_tournament_safe', {
-      p_tournament_id: t.id
-    });
+      const counts = {};
+      const playerNamesData = {};
+      
+      for (const t of tournamentsData || []) {
+        const { count } = await supabase
+          .from('tournament_registrations')
+          .select('*', { count: 'exact', head: true })
+          .eq('tournament_id', t.id);
+        counts[t.id] = count || 0;
 
-    if (error) {
-      alert("Errore durante l'eliminazione del torneo: " + error.message);
-      console.error(error);
+        if (count > 0) {
+          const { data: registrations } = await supabase
+            .from('tournament_registrations')
+            .select(`
+              *,
+              profiles!inner(full_name, display_name, player_name)
+            `)
+            .eq('tournament_id', t.id);
+          
+          playerNamesData[t.id] = registrations?.map(r => 
+            r.profiles?.full_name || 
+            r.profiles?.display_name || 
+            r.profiles?.player_name || 
+            r.display_name || 
+            'Anonimo'
+          ) || [];
+        }
+      }
+
+      if (user) {
+        const { data: registrations } = await supabase
+          .from('tournament_registrations')
+          .select('tournament_id')
+          .eq('user_id', user.id);
+        const userRegs = {};
+        registrations?.forEach(r => userRegs[r.tournament_id] = true);
+        setUserRegistrations(userRegs);
+      }
+
+      setTournaments(tournamentsData || []);
+      setParticipantsCounts(counts);
+      setPlayerNames(playerNamesData);
+    } catch (err) {
+      console.error('Errore:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (tournamentId) => {
+    if (!user) {
+      alert('❌ Effettua login per iscriverti!');
       return;
     }
 
-    alert("Torneo eliminato!");
-    setTournaments(tournaments.filter(tr => tr.id !== t.id));
+    setRegistering(prev => ({ ...prev, [tournamentId]: true }));
+
+    const { error } = await supabase
+      .from('tournament_registrations')
+      .insert({
+        tournament_id: tournamentId,
+        user_id: user.id,
+        status: 'pending',
+        display_name: user.user_metadata?.display_name || user.email.split('@')[0],
+        player_name: user.user_metadata?.player_name || user.email.split('@')[0]
+      });
+
+    if (error) {
+      if (error.message.includes('already exists')) {
+        alert('✅ Già iscritto a questo torneo!');
+      } else {
+        alert('❌ Errore: ' + error.message);
+      }
+    } else {
+      alert('🎾 ISCRIZIONE EFFETTUATA! Adesione in attesa approvazione admin');
+      fetchData();
+    }
+
+    setRegistering(prev => ({ ...prev, [tournamentId]: false }));
   };
 
   if (loading) {
@@ -77,11 +130,9 @@ export default function TournamentList() {
   return (
     <div className="min-h-[90vh] bg-gray-50 pt-4 pb-12">
       <div className="max-w-7xl mx-auto space-y-8">
-
-        {/* ← Bottone indietro alla pagina precedente */}
+        {/* ✅ BACK BUTTON INTELLIGENTE */}
         <button
-          type="button"
-          onClick={() => navigate(-1)}
+          onClick={goBackSmart}
           className="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-300 text-sm bg-white hover:bg-gray-50"
         >
           ← Indietro
@@ -104,72 +155,102 @@ export default function TournamentList() {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tournaments.map((t) => {
+            {tournaments.map(t => {
               const iscritti = participantsCounts[t.id] || 0;
-              const progress = t.max_players ? Math.min((iscritti / t.max_players) * 100, 100) : 0;
+              const isFull = iscritti >= (t.max_players || 16);
+              const isRegistered = userRegistrations[t.id];
+              const isRegistering = registering[t.id];
+              const namesList = playerNames[t.id] || [];
 
               return (
-                <div
-                  key={t.id}
-                  className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all hover:-translate-y-2 border border-gray-200 flex flex-col h-full"
-                >
-                  <Link
-                    to={`/tabellone/${t.id}`}
-                    className="block flex-1 p-6 border-b border-gray-100"
-                  >
+                <div key={t.id} className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all hover:-translate-y-2 border border-gray-200 flex flex-col h-full">
+                  
+                  <Link to={`/tabellone/${t.id}`} className="block flex-1 p-6 border-b border-gray-100">
                     <h2 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 leading-tight">
                       {t.name || '—'}
                     </h2>
 
                     <div className="mb-4">
-                      <div className="flex items-center justify-between text-sm mb-2">
+                      <div className="flex items-center justify-between text-sm mb-3">
                         <div className="flex items-center gap-2 text-gray-600">
                           <Users className="w-4 h-4" />
                           <span>{iscritti}/{t.max_players || '—'} iscritti</span>
                         </div>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            t.status === 'completato'
-                              ? 'bg-green-100 text-green-800'
-                              : t.status === 'in_corso'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}
-                        >
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          t.status === 'completato' ? 'bg-green-100 text-green-800'
+                          : t.status === 'in_corso' ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-blue-100 text-blue-800'
+                        }`}>
                           {t.status || 'aperto'}
                         </span>
                       </div>
+
+                      {/* ✅ NOMI GIOCATORI AVANZATI */}
+                      {namesList.length > 0 && (
+                        <div className="mb-3 p-3 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-100">
+                          <p className="text-xs font-semibold text-emerald-800 mb-2 flex items-center gap-1">
+                            👥 Iscritti:
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {namesList.slice(0, 5).map((name, i) => (
+                              <span 
+                                key={i} 
+                                className="text-xs bg-white px-2 py-1 rounded-full text-gray-800 border border-gray-200 shadow-sm"
+                                title={name}
+                              >
+                                {name.length > 8 ? name.slice(0, 8) + '...' : name}
+                              </span>
+                            ))}
+                            {namesList.length > 5 && (
+                              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                                +{namesList.length - 5}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-gradient-to-r from-emerald-500 to-green-600 h-2 rounded-full transition-all"
-                          style={{ width: `${progress}%` }}
+                        <div 
+                          className="bg-gradient-to-r from-emerald-500 to-green-600 h-2 rounded-full transition-all" 
+                          style={{ width: `${Math.min((iscritti / (t.max_players || 16)) * 100, 100)}%` }} 
                         />
                       </div>
                     </div>
 
-                    <div className="text-sm text-gray-600 mb-4">
+                    <div className="text-sm text-gray-600">
                       💰 {t.price ? `€${t.price}` : 'Gratis'} • 📅{' '}
-                      {new Date(t.created_at).toLocaleDateString('it-IT')}
+                      {t.data_inizio ? new Date(t.data_inizio).toLocaleDateString('it-IT') : '—'}
                     </div>
                   </Link>
 
-                  {isAdmin && (
-                    <button
-                      onClick={() => handleDeleteTournament(t)}
-                      className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-b-xl transition-all"
-                    >
-                      Elimina torneo
-                    </button>
-                  )}
-
                   <div className="p-6 pt-3">
-                    <div className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-3 px-4 rounded-xl shadow-sm group-hover:shadow-md transition-all text-sm hover:from-emerald-600 hover:to-green-700">
-                      {isAdmin
-                        ? <>ADMIN: Tabellone Completo</>
-                        : iscritti >= (t.max_players || 16)
-                        ? '🏆 Completo'
-                        : 'Iscriviti Ora'}
-                    </div>
+                    {isFull ? (
+                      <div className="w-full text-center bg-orange-100 text-orange-800 py-3 px-4 rounded-xl font-bold text-sm border-2 border-orange-200 flex items-center justify-center gap-2">
+                        <AlertCircle className="w-4 h-4" />
+                        TORNEIO COMPLETO
+                      </div>
+                    ) : isRegistered ? (
+                      <div className="w-full bg-emerald-100 text-emerald-800 py-3 px-4 rounded-xl font-bold text-sm border-2 border-emerald-200 flex items-center justify-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        ISCRITTO ✅
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleRegister(t.id)}
+                        disabled={isRegistering}
+                        className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-3 px-4 rounded-xl shadow-sm hover:shadow-md hover:from-emerald-600 hover:to-green-700 transition-all text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {isRegistering ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            ISCRIZIONE...
+                          </>
+                        ) : (
+                          '🎾 ISCRIVITI ORA'
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
               );

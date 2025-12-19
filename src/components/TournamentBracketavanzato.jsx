@@ -1,307 +1,122 @@
-import React, { useState, useEffect } from "react";
-import { ArrowLeft, Printer } from "lucide-react";
-import { supabase } from "../supabaseClient";
+// src/components/TournamentBracketAvanzato.jsx
+import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
+import { RefreshCw, Users, AlertCircle, Trophy } from 'lucide-react';
 
-export default function TournamentBracket({ tournamentId }) {
+export default function TournamentBracketAvanzato() {
+  const { tournamentId } = useParams();
   const [participants, setParticipants] = useState([]);
-  const [bracket, setBracket] = useState([]);
-  const [currentPhase, setCurrentPhase] = useState("Primo Turno");
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [tournamentWinner, setTournamentWinner] = useState(null);
-  const [status, setStatus] = useState("Caricando...");
-  const [history, setHistory] = useState([]);
-  const [tournamentType, setTournamentType] = useState("direct"); // direct o advanced
-
-  // --- FUNZIONI ORIGINALI ---
-  const ensureTournamentExists = async () => {
-    if (!tournamentId) return;
-    const { data } = await supabase
-      .from("tournaments")
-      .select("id")
-      .eq("id", tournamentId)
-      .single();
-    if (!data) {
-      await supabase.from("tournaments").insert({
-        id: tournamentId,
-        created_at: new Date().toISOString(),
-      });
-    }
-  };
-
-  const saveToSupabase = async (message = "Salvato") => {
-    setStatus("💾 Salvando...");
-    try {
-      const { error } = await supabase
-        .from("tournament_brackets")
-        .upsert(
-          {
-            tournament_id: tournamentId,
-            bracket,
-            phase: currentPhase,
-            history,
-            winner_team: tournamentWinner,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "tournament_id" }
-        );
-      if (!error) setStatus(`✅ ${message}`);
-    } catch {
-      setStatus("❌ Errore Supabase");
-    }
-  };
-
-  const fetchRealParticipants = async () => {
-    const { data } = await supabase
-      .from("tournament_registrations")
-      .select("id, user_id, full_name, display_name")
-      .eq("tournament_id", tournamentId);
-    if (data?.length) {
-      setParticipants(
-        data.slice(0, 20).map((r, i) => ({
-          id: r.user_id,
-          fullName: r.full_name || r.display_name || `Giocatore ${i + 1}`,
-        }))
-      );
-    }
-  };
-
-  const goBackPhase = () => {
-    if (!history.length) return;
-    const last = history[history.length - 1];
-    setBracket([...last.bracket]);
-    setCurrentPhase(last.phase);
-    setTournamentWinner(last.winner || null);
-    setHistory((prev) => prev.slice(0, -1));
-    setTimeout(() => saveToSupabase("Indietro fase"), 500);
-  };
-
-  const handleDragOver = (e) => e.preventDefault();
-
-  const handleDrop = (e, matchIdx, teamIdx) => {
-    e.preventDefault();
-    const player = JSON.parse(e.dataTransfer.getData("text/plain"));
-    const updated = bracket.map(m => ({ ...m, teams: m.teams ? m.teams.map(t => [...t]) : [[], []] }));
-    if (!updated[matchIdx].teams[teamIdx]) updated[matchIdx].teams[teamIdx] = [];
-    if (updated[matchIdx].teams[teamIdx].length < 2) {
-      updated[matchIdx].teams[teamIdx].push(player);
-      setBracket(updated);
-      setTimeout(() => saveToSupabase("Giocatore OK"), 500);
-    }
-  };
-
-  const removePlayerFromTeam = (matchIdx, teamIdx, playerIdx) => {
-    const updated = bracket.map(m => ({ ...m, teams: m.teams ? m.teams.map(t => [...t]) : [[], []] }));
-    if (updated[matchIdx]?.teams[teamIdx]) {
-      updated[matchIdx].teams[teamIdx].splice(playerIdx, 1);
-      setBracket(updated);
-      setTimeout(() => saveToSupabase("Rimosso OK"), 500);
-    }
-  };
-
-  const handleScoreChange = (matchIdx, teamIdx, value) => {
-    const updated = bracket.map(m => ({ ...m }));
-    if (!updated[matchIdx].scores) updated[matchIdx].scores = ["", ""];
-    updated[matchIdx].scores[teamIdx] = value;
-    updated[matchIdx].score = updated[matchIdx].scores.join("-");
-    setBracket(updated);
-    setTimeout(() => saveToSupabase("Punteggio OK"), 500);
-  };
-
-  const getWinnersFromMatch = (match) => {
-    if (!match?.scores || match.scores.some(s => !s)) return [];
-    const [a, b] = match.scores.map(s => parseInt(s) || 0);
-    if (a > b) return match.teams?.[0] || [];
-    if (b > a) return match.teams?.[1] || [];
-    return [];
-  };
-
-  const getScoreDiff = (match, teamIdx) => {
-    if (!match?.scores || match.scores.some(s => !s)) return 0;
-    const [a, b] = match.scores.map(s => parseInt(s) || 0);
-    return teamIdx === 0 ? a - b : b - a;
-  };
-
-  // --- LOGICA AVANZAMENTO FASI (DIRETTO O RIPESCAGGIO) ---
-  const advancePhase = () => {
-    setHistory(prev => [...prev, { phase: currentPhase, bracket: bracket.map(m => ({ ...m, teams: m.teams?.map(t => [...t]) || [[],[]] })), winner: tournamentWinner }]);
-
-    if (tournamentType === "direct") {
-      advancePhaseDirect();
-    } else {
-      advancePhaseAdvanced();
-    }
-  };
-
-  const advancePhaseDirect = () => {
-    // logica classica eliminazione diretta
-    if (currentPhase === "Primo Turno") {
-      setBracket([
-        { id:0, field:1, teams:[getWinnersFromMatch(bracket[0]), getWinnersFromMatch(bracket[1])], scores:["",""], score:"", phase:"Quarti" },
-        { id:1, field:2, teams:[getWinnersFromMatch(bracket[2]), getWinnersFromMatch(bracket[3])], scores:["",""], score:"", phase:"Quarti" },
-      ]);
-      setCurrentPhase("Quarti");
-    } else if (currentPhase === "Quarti") {
-      setBracket([{ id:0, field:1, teams:[getWinnersFromMatch(bracket[0]), getWinnersFromMatch(bracket[1])], scores:["",""], score:"", phase:"Finale" }]);
-      setCurrentPhase("Finale");
-    } else if (currentPhase === "Finale") {
-      const champs = getWinnersFromMatch(bracket[0]);
-      if (champs.length === 2) setTournamentWinner(champs);
-    }
-    saveToSupabase("Avanzata OK");
-  };
-
-  const advancePhaseAdvanced = () => {
-    if (currentPhase === "Primo Turno") {
-      // vincitori e perdenti
-      const winners = [];
-      const losers = [];
-      bracket.forEach(match => {
-        const [teamA, teamB] = match.teams;
-        const [scoreA, scoreB] = match.scores.map(s => parseInt(s)||0);
-        if (!teamA.length || !teamB.length) return;
-        if (scoreA > scoreB) {
-          winners.push(teamA.map(p=>({...p,status:"avanzato"})));
-          losers.push({ team: teamB.map(p=>({...p,status:"eliminato"})), diff: scoreB - scoreA });
-        } else {
-          winners.push(teamB.map(p=>({...p,status:"avanzato"})));
-          losers.push({ team: teamA.map(p=>({...p,status:"eliminato"})), diff: scoreA - scoreB });
-        }
-      });
-      // ripescaggio ordinato
-      losers.sort((a,b)=>b.diff-a.diff);
-      const ripescaggioMatches = [];
-      const half = Math.floor(losers.length/2);
-      for(let i=0;i<half;i++){
-        ripescaggioMatches.push({
-          id:i,
-          field:i+1,
-          teams:[
-            losers[i].team.map(p=>({...p,status:"ripescato"})),
-            losers[losers.length-1-i].team.map(p=>({...p,status:"ripescato"}))
-          ],
-          scores:["",""],
-          score:"",
-          phase:"Ripescaggio"
-        });
-      }
-      setBracket(ripescaggioMatches);
-      setCurrentPhase("Ripescaggio");
-      saveToSupabase("Ripescaggio generato");
-    }
-    else if(currentPhase==="Ripescaggio"){
-      const winners = bracket.flatMap(getWinnersFromMatch).map(p=>({...p,status:"ripescato"}));
-      const remaining = participants.filter(p=>!winners.some(w=>w.id===p.id));
-      const allTeams = [...winners,...remaining];
-      const ottavi = [];
-      for(let i=0;i<8;i++){
-        ottavi.push({
-          id:i,
-          field:i+1,
-          teams:[allTeams.slice(i*2,i*2+1), allTeams.slice(i*2+1,i*2+2)],
-          scores:["",""],
-          score:"",
-          phase:"Ottavi"
-        });
-      }
-      setBracket(ottavi);
-      setCurrentPhase("Ottavi");
-      saveToSupabase("Ottavi generati");
-    }
-    else if(currentPhase==="Ottavi"){
-      setBracket([
-        { id:0, field:1, teams:[getWinnersFromMatch(bracket[0]), getWinnersFromMatch(bracket[1])], scores:["",""], score:"", phase:"Quarti" },
-        { id:1, field:2, teams:[getWinnersFromMatch(bracket[2]), getWinnersFromMatch(bracket[3])], scores:["",""], score:"", phase:"Quarti" },
-      ]);
-      setCurrentPhase("Quarti");
-      saveToSupabase("Quarti generati");
-    }
-    else if(currentPhase==="Quarti"){
-      setBracket([{ id:0, field:1, teams:[getWinnersFromMatch(bracket[0]), getWinnersFromMatch(bracket[1])], scores:["",""], score:"", phase:"Finale" }]);
-      setCurrentPhase("Finale");
-      saveToSupabase("Finale generato");
-    }
-    else if(currentPhase==="Finale"){
-      const champs = getWinnersFromMatch(bracket[0]);
-      if(champs.length===2) setTournamentWinner(champs);
-      saveToSupabase("Torneo completato");
-    }
-  };
-
-  const resetTournament = () => {
-    if (confirm("⚠️ ELIMINA TUTTO DAL WEB?")) {
-      supabase.from("tournament_brackets").delete().eq("tournament_id", tournamentId);
-      setBracket(Array.from({ length: 10 }, (_, i) => ({
-        id:i,
-        field:i+1,
-        teams:[[],[]],
-        scores:["",""],
-        score:"",
-        phase:"Primo Turno"
-      })));
-      setCurrentPhase("Primo Turno");
-      setTournamentWinner(null);
-      setHistory([]);
-      setStatus("Reset OK");
-    }
-  };
-
-  const fetchSavedBracket = async () => {
-    try {
-      setStatus("📂 Caricando...");
-      const { data } = await supabase
-        .from("tournament_brackets")
-        .select("bracket, phase, winner_team, history")
-        .eq("tournament_id", tournamentId)
-        .maybeSingle();
-      if (data) {
-        setBracket((data.bracket || []).map(m => ({ ...m, scores: m.score ? m.score.split("-") : ["",""] })));
-        setCurrentPhase(data.phase || "Primo Turno");
-        setTournamentWinner(data.winner_team || null);
-        setHistory(data.history || []);
-        setStatus("✅ Caricato dal WEB!");
-      } else {
-        setStatus("Nuovo torneo");
-      }
-    } catch (err) {
-      console.error(err);
-      setStatus("❌ Errore caricamento");
-    } finally {
-      setIsLoaded(true);
-    }
-  };
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const init = async () => {
-      await ensureTournamentExists();
-      await Promise.all([fetchRealParticipants(), fetchSavedBracket()]);
-      const { data } = await supabase.from("tournaments").select("tournament_type").eq("id", tournamentId).single();
-      if (data) setTournamentType(data.tournament_type || "direct");
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        // Carica iscritti
+        const { data: regs } = await supabase
+          .from('tournament_registrations')
+          .select('id, profile_id, full_name')
+          .eq('tournament_id', tournamentId);
 
-      if (!Array.isArray(bracket) || bracket.length === 0) {
-        setBracket(Array.from({ length: 10 }, (_, i) => ({
-          id:i,
-          field:i+1,
-          teams:[[],[]],
-          scores:["",""],
-          score:"",
-          phase:"Primo Turno"
-        })));
+        setParticipants(regs || []);
+
+        // Carica partite/gironi se esistono
+        const { data: matchesData } = await supabase
+          .from('tournament_matches')
+          .select('*')
+          .eq('tournament_id', tournamentId)
+          .order('round');
+
+        setMatches(matchesData || []);
+      } catch (err) {
+        console.error('Errore caricamento tabellone avanzato:', err);
+      } finally {
+        setLoading(false);
       }
-      setIsLoaded(true);
     };
-    init();
+
+    loadData();
   }, [tournamentId]);
 
-  if (!isLoaded) return <div className="flex items-center justify-center min-h-screen p-8 text-lg font-medium text-gray-600">Caricando tabellone...</div>;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center p-12 min-h-screen">
+        <RefreshCw className="animate-spin mr-2 w-8 h-8 text-blue-600" />
+        Caricamento tabellone avanzato...
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50 p-4 sm:p-6">
-      {/* QUI PUOI INSERIRE IL RENDER COMPLETO DEL TABELLONE COME NEL TUO FILE ORIGINALE */}
-      {/* Ricorda di mostrare le etichette stato dei giocatori */}
-      {/* Esempio: */}
-      {/* {player.status==="avanzato" && <span className="ml-1 text-green-600 font-bold">✅</span>} */}
-      {/* {player.status==="ripescato" && <span className="ml-1 text-yellow-600 font-bold">🔄</span>} */}
-      {/* {player.status==="eliminato" && <span className="ml-1 text-red-600 font-bold">❌</span>} */}
+    <div className="space-y-6 p-8">
+      {/* HEADER */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold text-gray-900">⚽️ Tabellone Avanzato</h2>
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <Users className="w-4 h-4" />
+          {participants.length} iscritti
+        </div>
+      </div>
+
+      {/* ISCRITTI */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+        <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+          <Users className="w-5 h-5 text-blue-500" /> Partecipanti
+        </h3>
+        {participants.length === 0 ? (
+          <div className="text-center py-6 text-gray-500">
+            <AlertCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
+            Nessun iscritto
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {participants.map(p => (
+              <div key={p.id} className="p-2 bg-gray-50 rounded-lg border border-gray-100">
+                {p.full_name}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* TABELLONE */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+        <h3 className="text-lg font-bold mb-4">Partite / Gironi</h3>
+        {matches.length === 0 ? (
+          <p className="text-gray-500 text-sm">Il tabellone avanzato non è ancora stato generato.</p>
+        ) : (
+          <div className="space-y-3">
+            {matches.map(match => (
+              <div key={match.id} className="p-2 border rounded flex justify-between items-center">
+                <span>{match.player1_name || "??"} vs {match.player2_name || "??"}</span>
+                {match.winner_name && (
+                  <div className="flex items-center gap-1 text-green-600 font-bold">
+                    <Trophy className="w-4 h-4" /> {match.winner_name}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* BOTTONI */}
+      <div className="flex gap-4 pt-4 border-t border-gray-200">
+        <Link
+          to={`/tournaments/${tournamentId}`}
+          className="px-4 py-2 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex-1 text-center"
+        >
+          ← Torneo
+        </Link>
+        <Link
+          to="/tournaments"
+          className="px-4 py-2 bg-gray-600 text-white font-bold rounded-xl hover:bg-gray-700 flex-1 text-center"
+        >
+          ← Tutti i Tornei
+        </Link>
+      </div>
     </div>
   );
 }

@@ -1,4 +1,3 @@
-// src/App.jsx - COMPLETO CORRETTO (NO REDIRECT PROBLEMATICO!)
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import AuthProvider, { useAuth } from "./context/AuthProvider";
@@ -22,8 +21,9 @@ import TournamentBracket from "./components/TournamentBracket";
 import MarketplaceGestion from "./components/MarketplaceGestion";
 import TournamentAdminPanel from "./components/TournamentAdminPanel";
 
-// 📱 DEMO + 404
+// 📱 TABELLONE + AVANZATO + 404
 import TabellonePage from "./pages/TabellonePage";
+import TournamentBracketAvanzato from "./components/TournamentBracketAvanzato";
 import NotFound from "./components/NotFound";
 
 function LoadingSpinner() {
@@ -41,8 +41,6 @@ function ProtectedRoute({ children, adminOnly = false }) {
 
   if (!user) return <Navigate to="/" replace />;
 
-  // ✅ RIMUOSSO REDIRECT PROBLEMATICO!
-  
   const isAdmin = role === "admin";
   if (adminOnly && !isAdmin) return <Navigate to="/dashboard" replace />;
 
@@ -62,7 +60,7 @@ function AppContent() {
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
 
-        {/* 🏆 TORNEI - TUTTE LE ROTTE! */}
+        {/* 🏆 TORNEI */}
         <Route path="/tournaments" element={<ProtectedRoute><TournamentList /></ProtectedRoute>} />
         <Route path="/tournaments/:tournamentId" element={<ProtectedRoute><SingleTournament /></ProtectedRoute>} />
         <Route path="/tournaments/:tournamentId/players" element={<ProtectedRoute><SingleTournament /></ProtectedRoute>} />
@@ -73,10 +71,11 @@ function AppContent() {
         <Route path="/admin/marketplace" element={<ProtectedRoute adminOnly><MarketplaceGestion /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute adminOnly><TournamentAdminPanel /></ProtectedRoute>} />
 
-        {/* 📱 TABELLONE */}
+        {/* 📱 TABELLONI */}
         <Route path="/tabellone/:tournamentId" element={<ProtectedRoute><TabellonePage /></ProtectedRoute>} />
-        <Route path="/tabellone-demo" element={<ProtectedRoute><TabellonePage /></ProtectedRoute>} />
+        <Route path="/tabellone-avanzato/:tournamentId" element={<ProtectedRoute><TournamentBracketAvanzato /></ProtectedRoute>} />
 
+        {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>

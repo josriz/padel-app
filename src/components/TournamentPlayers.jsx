@@ -1,58 +1,31 @@
-// src/components/TournamentPlayers.jsx
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
-import { Users, Loader2 } from "lucide-react";
 
-export default function TournamentPlayers({ tournamentId, bracketSlots, setBracketSlots }) {
+export default function TournamentPlayers({ tournamentId }) {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [draggedPlayer, setDraggedPlayer] = useState(null);
 
   useEffect(() => {
-    if (!tournamentId) {
-      setLoading(false);
-      return;
-    }
+    if (!tournamentId) return;
 
     const fetchPlayers = async () => {
       setLoading(true);
       setError(null);
       try {
-        // ✅ MULTI-TABELLA: Prova tutte le tabelle possibili
-        const tables = ['tournament_registrations', 'tournament_participants', 'tournament_players'];
-        let allPlayers = [];
+        const { data, error } = await supabase
+          .from("tournament_players")
+          .select("id, player_name, rating, created_at")
+          .eq("tournament_id", tournamentId)
+          .order("rating", { ascending: false });
         
-        for (const table of tables) {
-          try {
-            const { data, error: tableError } = await supabase
-              .from(table)
-              .select('id, nome, cognome, email, user_id, name, surname')
-              .eq('tournament_id', tournamentId)
-              .order('id');
-            
-            if (tableError) {
-              console.log(`❌ ${table}:`, tableError.message);
-            } else {
-              console.log(`✅ ${table}: ${data?.length || 0} giocatori`);
-              allPlayers = [...allPlayers, ...(data || [])];
-            }
-          } catch (e) {
-            console.log(`❌ Tabella ${table} non esiste`);
-          }
-        }
+        console.log("✅ Giocatori:", data);
         
-        // Rimuovi duplicati per ID
-        const uniquePlayers = allPlayers.filter((player, index, self) => 
-          index === self.findIndex(p => p.id === player.id)
-        );
-        
-        setPlayers(uniquePlayers);
-        console.log('✅ TOTALE GIOCATORI CARICATI:', uniquePlayers.length);
-        
+        if (error) throw error;
+        setPlayers(data || []);
       } catch (err) {
-        setError(err.message);
-        console.error('❌ fetchPlayers:', err);
+        console.error("❌ Error:", err);
+        setError("Errore caricamento giocatori");
       } finally {
         setLoading(false);
       }
@@ -61,86 +34,85 @@ export default function TournamentPlayers({ tournamentId, bracketSlots, setBrack
     fetchPlayers();
   }, [tournamentId]);
 
-  const handleDragStart = (e, player) => {
-    setDraggedPlayer(player);
-    e.dataTransfer.setData('text/plain', JSON.stringify(player));
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center gap-2 p-8 text-gray-600">
-        <Loader2 className="w-5 h-5 animate-spin" />
-        Caricamento giocatori...
+      <div className="p-6 border rounded-xl shadow bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div className="flex items-center justify-center gap-3 text-blue-600">
+          <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <span>Caricamento giocatori...</span>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6 bg-red-50 border border-red-200 rounded-xl text-red-800 text-center">
-        <Users className="w-8 h-8 mx-auto mb-2 opacity-75" />
-        <div>Errore: {error}</div>
+      <div className="p-6 border rounded-xl shadow bg-gradient-to-r from-red-50 to-rose-50 border-red-200">
+        <div className="flex items-center gap-2 text-red-600">
+          <div className="w-5 h-5">⚠️</div>
+          <span>{error}</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-3 p-6 bg-gradient-to-br from-emerald-50 to-blue-50 rounded-2xl shadow-sm border border-emerald-100">
-        <div className="flex items-center justify-between mb-6 pb-4 border-b border-emerald-100">
-          <div className="flex items-center gap-3">
-            <Users className="w-7 h-7 text-emerald-600" />
-            <div>
-              <h3 className="text-xl font-bold text-gray-900">👥 Iscritti Disponibili ({players.length})</h3>
-              <p className="text-sm text-emerald-700 font-medium">Trascina nei slot del tabellone</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-80 overflow-y-auto p-2">
-          {players.map((p) => {
-            const nome = p.nome || p.name || 'N/D';
-            const cognome = p.cognome || p.surname || '';
-            const fullName = `${nome} ${cognome}`.trim();
-            const email = p.email || 'N/D';
-            
-            return (
-              <div 
-                key={p.id}
-                className="group p-6 bg-white border-2 border-emerald-300 rounded-2xl hover:shadow-2xl hover:border-emerald-500 hover:bg-emerald-50 transition-all cursor-grab active:cursor-grabbing hover:scale-[1.02] min-w-[260px]"
-                style={{ minHeight: '120px' }}
-                draggable="true"
-                onDragStart={(e) => handleDragStart(e, p)}
-              >
-                <div className="flex items-start gap-4 h-full">
-                  <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-xl flex-shrink-0 mt-1">
-                    <span className="text-white font-bold text-2xl">{nome[0]?.toUpperCase()}</span>
-                  </div>
-                  <div className="flex-1 py-2 min-w-0">
-                    <div className="font-bold text-lg text-gray-900 mb-2 whitespace-normal break-words leading-tight" title={fullName}>
-                      {fullName}
-                    </div>
-                    <div className="text-sm text-gray-600 whitespace-normal break-words bg-gray-50 px-2 py-1 rounded">
-                      {email}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+    <div className="p-6 border rounded-xl shadow bg-white hover:shadow-md transition-all">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+          👥 Giocatori Iscritti
+          <span className="bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-1 rounded-full">
+            {players.length}
+          </span>
+        </h3>
       </div>
 
-      {!players.length && (
-        <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-          <Users className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-          <div className="text-lg font-medium">Nessun giocatore iscritto</div>
-          <div className="text-sm mt-1">Invita i giocatori a iscriversi!</div>
+      {players.length === 0 ? (
+        <div className="text-center py-12 text-gray-500">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-2xl flex items-center justify-center">
+            <span className="text-2xl">👤</span>
+          </div>
+          <p className="text-lg font-medium">Nessun giocatore iscritto</p>
+          <p className="text-sm">Sii il primo!</p>
+        </div>
+      ) : (
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+          {players.map((p) => (
+            <div
+              key={p.id}
+              className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-gray-100 rounded-xl hover:from-emerald-50 hover:shadow-sm transition-all group hover:-translate-y-0.5"
+            >
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
+                  <span className="text-white font-bold text-sm">
+                    {p.player_name?.charAt(0)?.toUpperCase() || '?'}
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-gray-900 truncate group-hover:text-emerald-700">
+                    {p.player_name || 'Giocatore Anonimo'}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    Iscritto {p.created_at ? new Date(p.created_at).toLocaleDateString('it-IT') : 'appena'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="text-right ml-4 flex-shrink-0">
+                <div className="text-sm font-bold text-emerald-600">
+                  {p.rating || 1500}
+                </div>
+                <div className="w-12 bg-gray-200 rounded-full h-1.5 overflow-hidden mt-1">
+                  <div
+                    className="bg-gradient-to-r from-emerald-400 to-emerald-600 h-1.5 rounded-full transition-all"
+                    style={{
+                      width: `${Math.min((p.rating || 1500) / 25, 100)}%`
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

@@ -1,12 +1,13 @@
-// src/components/TournamentViewOnly.jsx - Versione con aggiornamento iscritti automatico
+// src/components/TournamentViewOnly.jsx - ✅ FIXATO: NO LOOP 400 ERROR + MODALITÀ ADMIN
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { Users, Plus, CheckCircle, Loader2, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom'; 
 
-export default function TournamentViewOnly({ triggerParticipantsRefresh = () => {} }) {
+export default function TournamentViewOnly({ triggerParticipantsRefresh = () => {}, admin = false }) {
   const navigate = useNavigate();
   const [tournaments, setTournaments] = useState([]);
+  const [participantsCounts, setParticipantsCounts] = useState({});
   const [myRegistrations, setMyRegistrations] = useState({});
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
@@ -14,29 +15,45 @@ export default function TournamentViewOnly({ triggerParticipantsRefresh = () => 
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [admin]); // 🔹 aggiorna se cambia modalità admin
 
   const fetchData = async () => {
     setLoading(true);
     setFetchError(null);
     try {
-      const { data: tournamentsData, error: tournamentsError } = await supabase
-        .from('tournaments')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (tournamentsError) throw tournamentsError;
-      setTournaments(tournamentsData || []);
+      // ✅ Se admin, possiamo mostrare anche tornei non pubblici o gestione
+      let query = supabase.from('tournaments').select('*').order('created_at', { ascending: false });
+      if (!admin) query = query.eq('status', 'aperto'); // solo tornei aperti per utenti normali
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user && user.id) {
-        const { data: myRegs } = await supabase
-          .from('tournament_registrations')
-          .select('tournament_id')
-          .eq('user_id', user.id);
-        const regsMap = {};
-        myRegs?.forEach(reg => regsMap[reg.tournament_id] = true);
-        setMyRegistrations(regsMap);
+      const { data: tournamentsData, error: tournamentsError } = await query;
+      if (tournamentsError) throw tournamentsError;
+
+      const tournamentsWithCounts = await Promise.all(
+        (tournamentsData || []).map(async (t) => {
+          const { count } = await supabase
+            .from('tournament_registrations')
+            .select('*', { count: 'exact', head: true })
+            .eq('tournament_id', t.id);
+          
+          return { ...t, totalIscritti: count || 0 };
+        })
+      );
+
+      setTournaments(tournamentsWithCounts);
+
+      // ✅ Mie iscrizioni solo per utenti normali
+      if (!admin) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && user.id) {
+          const { data: myRegs } = await supabase
+            .from('tournament_registrations')
+            .select('tournament_id')
+            .eq('user_id', user.id);
+          
+          const regsMap = {};
+          myRegs?.forEach(reg => regsMap[reg.tournament_id] = true);
+          setMyRegistrations(regsMap);
+        }
       }
     } catch (error) {
       setFetchError(error.message);
@@ -46,6 +63,7 @@ export default function TournamentViewOnly({ triggerParticipantsRefresh = () => 
   };
 
   const handleRegister = async (tournamentId) => {
+    if (admin) return; // 🔹 gli admin non si registrano ai tornei
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -64,9 +82,7 @@ export default function TournamentViewOnly({ triggerParticipantsRefresh = () => 
       if (error) throw error;
 
       setMessage({ type: 'success', text: '✅ Iscritto con successo!' });
-      fetchData();
-
-      // 🔹 Aggiorna il tabellone
+      fetchData(); 
       triggerParticipantsRefresh();
     } catch (error) {
       setMessage({ type: 'error', text: `❌ Errore: ${error.message}` });
@@ -92,8 +108,6 @@ export default function TournamentViewOnly({ triggerParticipantsRefresh = () => 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 pt-4 pb-12">
       <div className="p-6 max-w-6xl mx-auto space-y-8">
-
-        {/* BOTTONE INDietro */}
         <div className="flex gap-4 mb-4">
           <button
             onClick={() => window.history.back()}
@@ -103,18 +117,18 @@ export default function TournamentViewOnly({ triggerParticipantsRefresh = () => 
           </button>
         </div>
 
-        {/* HEADER */}
         <div className="text-center">
           <div className="w-20 h-20 bg-gray-100 rounded-xl mx-auto mb-4 flex items-center justify-center shadow-sm border border-gray-200">
             <Calendar className="w-9 h-9 text-gray-700" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Tornei Disponibili</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            {admin ? 'Gestione Tornei' : 'Tornei Disponibili'}
+          </h1>
           <p className="text-lg text-gray-600 max-w-md mx-auto">
-            ({tournaments.length}) Tornei attivi
+            ({tournaments.length}) Tornei {admin ? 'totali' : 'attivi'}
           </p>
         </div>
 
-        {/* MESSAGE */}
         {message && (
           <div
             className={`p-4 rounded-xl mb-4 flex items-start gap-3 shadow-sm border ${
@@ -128,51 +142,53 @@ export default function TournamentViewOnly({ triggerParticipantsRefresh = () => 
           </div>
         )}
 
-        {/* LISTA TORNEI */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tournaments.map(t => (
-            <div
-              key={t.id}
-              className="bg-white p-6 rounded-xl shadow border border-gray-200 flex flex-col gap-3"
-            >
-              <h3 className="text-lg font-bold text-gray-900 mb-4">{t.name}</h3>
+          {tournaments.map(t => {
+            const iscritti = t.totalIscritti || 0;
+            return (
+              <div
+                key={t.id}
+                className="bg-white p-6 rounded-xl shadow border border-gray-200 flex flex-col gap-3"
+              >
+                <h3 className="text-lg font-bold text-gray-900 mb-4">{t.name}</h3>
 
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-xl border border-gray-200">
-                  <Users className="w-4 h-4 text-gray-700" />
-                  <span className="text-sm font-semibold text-gray-700">
-                    {t.max_players || 16} posti • €{t.price || 0}
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-xl border border-gray-200">
+                    <Users className="w-4 h-4 text-gray-700" />
+                    <span className="text-sm font-semibold text-gray-700">
+                      {iscritti}/{t.max_players || 16} • €{t.price || 0}
+                    </span>
+                  </div>
+
+                  <span className="block w-full px-4 py-2 rounded-xl text-sm font-bold text-center text-white bg-gray-700">
+                    {t.status || 'aperto'}
                   </span>
                 </div>
 
-                <span className="block w-full px-4 py-2 rounded-xl text-sm font-bold text-center text-white bg-gray-700">
-                  {t.status}
-                </span>
+                {!admin && (
+                  <button
+                    disabled={myRegistrations[t.id]}
+                    onClick={() => handleRegister(t.id)}
+                    className={`w-full py-3 px-6 font-bold rounded-xl text-white flex items-center justify-center gap-2 text-sm transition-all ${
+                      myRegistrations[t.id]
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-emerald-500 to-green-600 hover:shadow-md hover:-translate-y-0.5'
+                    }`}
+                  >
+                    <Plus className="w-4 h-4" />
+                    {myRegistrations[t.id] ? 'Già iscritto' : 'Iscriviti'}
+                  </button>
+                )}
+
+                <button
+                  onClick={() => navigate(`/tabellone-demo`)}
+                  className="w-full mt-2 py-3 px-6 font-bold rounded-xl text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  🏆 Vai al Tabellone
+                </button>
               </div>
-
-              {/* BOTTONE ISCRIZIONE */}
-              <button
-                disabled={myRegistrations[t.id]}
-                onClick={() => handleRegister(t.id)}
-                className={`w-full py-3 px-6 font-bold rounded-xl text-white flex items-center justify-center gap-2 text-sm transition-all ${
-                  myRegistrations[t.id]
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-gray-800 hover:bg-gray-900'
-                }`}
-              >
-                <Plus className="w-4 h-4" />
-                {myRegistrations[t.id] ? 'Già iscritto' : 'Iscriviti'}
-              </button>
-
-              {/* BOTTONE VAI AL TABELLONE */}
-              <button
-                onClick={() => navigate(`/tabellone-demo`)}
-                className="w-full mt-2 py-3 px-6 font-bold rounded-xl text-white bg-blue-600 hover:bg-blue-700"
-              >
-                🏆 Vai al Tabellone
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

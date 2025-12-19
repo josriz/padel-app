@@ -1,116 +1,210 @@
-// src/components/TournamentListAndAdmin.jsx
-import React, { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthProvider";
-import { supabase } from "../supabaseClient";
-import { Plus, RefreshCw } from "lucide-react";
-import TournamentBracket from "./TournamentBracket";
-import AdminTournamentForm from "./AdminTournamentForm";
+// src/components/TournamentListAndAdmin.jsx - COMPLETO STILE LOGIN
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
+import { useAuth } from '../context/AuthProvider';
+import TournamentLayout from './TournamentLayout';
+import { Trophy, Users, Loader2, UserPlus, CheckCircle, LinkIcon, Trash2, Crown } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function TournamentListAndAdmin() {
-  const { isAdmin } = useAuth();
+  const { user, role } = useAuth();
+  const isAdmin = role === 'admin';
   const [tournaments, setTournaments] = useState([]);
-  const [selectedTournament, setSelectedTournament] = useState(null);
+  const [participantsCounts, setParticipantsCounts] = useState({});
   const [loading, setLoading] = useState(true);
+  const [registering, setRegistering] = useState({});
+  const [deleting, setDeleting] = useState({});
+  const [registeredTournaments, setRegisteredTournaments] = useState(new Set());
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
-    async function fetchTournaments() {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("tournaments")
-        .select("*")
-        .order("name", { ascending: true });
-
-      if (error) {
-        console.error("Errore tornei:", error);
-        setLoading(false);
-        return;
-      }
-
-      setTournaments(data || []);
-      setLoading(false);
-    }
-
     fetchTournaments();
+    if (!isAdmin) checkRegistrations();
   }, []);
 
-  const handleDeleteTournament = async (id) => {
-    const { error } = await supabase
-      .from("tournaments")
-      .delete()
-      .eq("id", id);
+  const fetchTournaments = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from('tournaments')
+      .select('id, name, max_players, status, data_inizio');
+    
+    setTournaments(data || []);
 
-    if (error) {
-      console.error("Errore eliminazione torneo:", error);
-      return;
+    const counts = {};
+    for (const t of data || []) {
+      const { count } = await supabase
+        .from('tournament_registrations')
+        .select('*', { count: 'exact', head: true })
+        .eq('tournament_id', t.id);
+      counts[t.id] = count || 0;
     }
+    setParticipantsCounts(counts);
+    setLoading(false);
+  };
 
-    setTournaments((prev) => prev.filter((t) => t.id !== id));
-    if (selectedTournament === id) {
-      setSelectedTournament(null);
+  const checkRegistrations = async () => {
+    if (!user?.id) return;
+    const { data } = await supabase
+      .from('tournament_registrations')
+      .select('tournament_id')
+      .eq('user_id', user.id);
+    
+    const registered = new Set(data?.map(r => r.tournament_id) || []);
+    setRegisteredTournaments(registered);
+  };
+
+  const handleDeleteTournament = async (tournamentId) => {
+    if (!confirm('Eliminare torneo? Gli iscritti saranno rimossi.')) return;
+    
+    setDeleting(prev => ({ ...prev, [tournamentId]: true }));
+    
+    const { error: regError } = await supabase
+      .from('tournament_registrations')
+      .delete()
+      .eq('tournament_id', tournamentId);
+    
+    const { error: tourError } = await supabase
+      .from('tournaments')
+      .delete()
+      .eq('id', tournamentId);
+    
+    setDeleting(prev => ({ ...prev, [tournamentId]: false }));
+    
+    if (!regError && !tourError) {
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      fetchTournaments();
+    }
+  };
+
+  const handleRegister = async (tournamentId) => {
+    if (registeredTournaments.has(tournamentId)) return;
+
+    setRegistering(prev => ({ ...prev, [tournamentId]: true }));
+    
+    const { error } = await supabase
+      .from('tournament_registrations')
+      .insert({
+        tournament_id: tournamentId,
+        user_id: user?.id || 'anonymous-user',
+        player_name: user?.email?.split('@')[0] || 'Giocatore'
+      });
+    
+    setRegistering(prev => ({ ...prev, [tournamentId]: false }));
+    
+    if (!error) {
+      setRegisteredTournaments(prev => new Set([...prev, tournamentId]));
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      fetchTournaments();
     }
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center p-12 min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100">
-        <RefreshCw className="animate-spin mr-2 w-8 h-8 text-blue-600" />
-        <span className="text-lg font-semibold text-gray-700">Caricamento tornei...</span>
-      </div>
+      <TournamentLayout title="Caricamento..." subtitle="Tornei in caricamento">
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="w-16 h-16 text-blue-600 animate-spin" />
+        </div>
+      </TournamentLayout>
     );
   }
 
   return (
-    <div className="p-6 min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-        🏆 Tornei
-      </h1>
-
-      {/* FORM CREAZIONE TORNEI AVANZATI */}
-      {isAdmin && (
-        <div className="mb-6">
-          <AdminTournamentForm
-            onTournamentCreated={(newTournament) =>
-              setTournaments((prev) => [...prev, newTournament])
-            }
-          />
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {tournaments.map((t) => (
-          <div
-            key={t.id}
-            className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg cursor-pointer transition-all"
-            onClick={() => setSelectedTournament(t.id)}
-          >
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">{t.name}</h2>
-            <p className="text-sm text-gray-500 mb-2">
-              Tipo: {t.tournament_type || "Diretta"} • Partecipanti: {t.number_of_players || 0}
-            </p>
-
-            {isAdmin && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteTournament(t.id);
-                }}
-                className="mt-4 inline-flex items-center gap-1 px-4 py-2 bg-red-100 text-red-700 font-bold text-sm rounded-xl hover:bg-red-200 transition-all"
-              >
-                Elimina
-              </button>
-            )}
+    <>
+      {showToast && (
+        <div className="fixed top-4 right-4 z-[1000] bg-blue-600 text-white px-6 py-4 rounded-xl shadow-lg">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="w-6 h-6" />
+            <span className="font-semibold">{isAdmin ? 'Torneo eliminato!' : 'Iscritto! 🎾'}</span>
           </div>
-        ))}
-      </div>
-
-      {selectedTournament && (
-        <div className="mt-8">
-          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            🏆 Tabellone
-          </h2>
-          <TournamentBracket tournamentId={selectedTournament} />
         </div>
       )}
-    </div>
+
+      <TournamentLayout 
+        title={isAdmin ? "Gestione Tornei" : "Tornei Disponibili"} 
+        subtitle={isAdmin ? "👑 Modalità Admin" : `(${tournaments.length}) tornei attivi`}
+      >
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {tournaments.map(t => {
+            const iscritti = participantsCounts[t.id] || 0;
+            const max = t.max_players || 16;
+            const pieno = iscritti >= max;
+            const giaIscritto = registeredTournaments.has(t.id);
+
+            return (
+              <div key={t.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-md hover:bg-gray-50 transition-all group">
+                
+                {isAdmin && (
+                  <div className="flex justify-end mb-4">
+                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold">
+                      ADMIN
+                    </span>
+                  </div>
+                )}
+
+                <h3 className="text-xl font-bold text-gray-900 mb-4 line-clamp-2">{t.name}</h3>
+                
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-2 text-lg font-semibold text-emerald-700">
+                    {iscritti}/{max} iscritti
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-emerald-500 h-2 rounded-full transition-all"
+                      style={{ width: `${Math.min((iscritti/max)*100, 100)}%` }}
+                    />
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    📅 {t.data_inizio ? new Date(t.data_inizio).toLocaleDateString('it-IT') : '—'}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Link
+                    to={`/tournaments/${t.id}`}
+                    className="block w-full text-center border border-gray-200 bg-white text-blue-600 font-semibold p-3 rounded-xl hover:bg-gray-50 transition"
+                  >
+                    VEDI DETTAGLI
+                  </Link>
+
+                  {!isAdmin && (
+                    <button
+                      onClick={() => handleRegister(t.id)}
+                      disabled={pieno || giaIscritto || registering[t.id]}
+                      className={`w-full text-center p-3 rounded-xl font-semibold transition-all ${
+                        pieno || giaIscritto || registering[t.id]
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                          : 'bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600'
+                      }`}
+                    >
+                      {registering[t.id] ? '...' : giaIscritto ? 'ISCRITTO ✓' : pieno ? 'TORNEO PIENO' : 'ISCRIVITI'}
+                    </button>
+                  )}
+
+                  {isAdmin && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => handleDeleteTournament(t.id)}
+                        disabled={deleting[t.id]}
+                        className="bg-red-600 text-white p-3 rounded-xl font-semibold hover:bg-red-700 transition disabled:opacity-50"
+                      >
+                        {deleting[t.id] ? '...' : 'ELIMINA'}
+                      </button>
+                      <Link 
+                        to="/admin-tournaments" 
+                        className="bg-blue-600 text-white p-3 rounded-xl font-semibold text-center hover:bg-blue-700 transition flex items-center justify-center"
+                      >
+                        GESTIONE
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </TournamentLayout>
+    </>
   );
 }

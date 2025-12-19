@@ -1,8 +1,8 @@
-// src/components/MarketplaceAdmin.jsx - ✅ FORCE ADMIN cfalba + DEBUG COMPLETO
+// src/components/MarketplaceAdmin.jsx - ✅ UTENTI STANDARD POSSONO INSERIRE!
 import React, { useState, useEffect } from "react";
 import { supabase } from '../supabaseClient';
 import { useAuth } from "../context/AuthProvider";
-import { ShoppingBag, Plus, Edit3, Trash2, X, Loader2 } from 'lucide-react';
+import { ShoppingBag, Plus, Edit3, Trash2, X, Loader2, UserCheck, Camera } from 'lucide-react';
 
 export default function MarketplaceAdmin() {
   const { user } = useAuth();
@@ -13,6 +13,9 @@ export default function MarketplaceAdmin() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newProduct, setNewProduct] = useState({ nome: '', descrizione: '', prezzo: '', immagine_url: '' });
   const [editingProduct, setEditingProduct] = useState(null);
+
+  // ✅ UTENTE STANDARD - FORM SEMPLICE
+  const [showUserForm, setShowUserForm] = useState(false);
 
   useEffect(() => {
     if (user?.id) fetchProducts();
@@ -32,6 +35,40 @@ export default function MarketplaceAdmin() {
       console.error('Errore marketplace:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ✅ FORM UTENTE STANDARD - SEMPLICE E VELOCE
+  const handleUserAddProduct = async (e) => {
+    e.preventDefault();
+    if (!newProduct.nome || !newProduct.prezzo) {
+      alert('❌ Nome e prezzo obbligatori!');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('marketplace_items')
+        .insert({
+          nome: newProduct.nome.trim(),
+          descrizione: newProduct.descrizione.trim() || '',
+          prezzo: parseFloat(newProduct.prezzo),
+          user_id: user.id,
+          venduto: false
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setProducts([data, ...products]);
+      setNewProduct({ nome: '', descrizione: '', prezzo: '', immagine_url: '' });
+      setShowUserForm(false);
+      alert('✅ Articolo pubblicato!');
+      fetchProducts();
+    } catch (err) {
+      console.error('Errore:', err);
+      alert('❌ Errore: ' + err.message);
     }
   };
 
@@ -71,7 +108,6 @@ export default function MarketplaceAdmin() {
     }
   };
 
-  // 🔥 DEBUG COMPLETO DELETE
   const deleteProduct = async (product) => {
     console.log('🔥 CLICK ELIMINA:', product.id, 'Nome:', product.nome, 'User:', user?.email);
     
@@ -80,7 +116,6 @@ export default function MarketplaceAdmin() {
       return;
     }
     
-    // ✅ OTTIMISTICO: Rimuovi UI immediatamente
     const oldProducts = products;
     setProducts(products.filter(p => p.id !== product.id));
     setDeletingId(product.id);
@@ -105,7 +140,6 @@ export default function MarketplaceAdmin() {
       console.log('✅ ELIMINATO DAL DB:', product.nome);
       
     } catch (err) {
-      // ❌ ROLLBACK
       console.error('💥 DELETE FALLITO COMPLETO:', err);
       setProducts(oldProducts);
       alert(`❌ Errore eliminazione: ${err.message}`);
@@ -145,122 +179,184 @@ export default function MarketplaceAdmin() {
   );
 
   return (
-    <div className="min-h-screen bg-white pt-4 pb-12">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-blue-50 pt-4 pb-12">
       <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 md:space-y-8">
+        
+        {/* ✅ HEADER CON RUOLO */}
         <div className="text-center">
-          <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-100 rounded-xl mx-auto mb-4 flex items-center justify-center shadow-sm border border-gray-200">
-            <ShoppingBag className="w-8 h-8 md:w-9 md:h-9 text-gray-600" />
+          <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg border-4 border-white">
+            <ShoppingBag className="w-8 h-8 md:w-9 md:h-9 text-white" />
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Marketplace Admin</h1>
-          <p className="text-sm text-gray-500">
-            User: <span className="font-mono bg-gray-100 px-2 py-1 rounded">{user?.email || 'Nessuno'}</span> | 
-            Prodotti: {products.length} | Visibili: {filteredProducts.length}
+          <h1 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">Marketplace</h1>
+          <p className="text-lg font-semibold text-gray-700">
+            👤 <span className="font-mono bg-white px-4 py-2 rounded-xl shadow-sm">{user?.email || 'Nessuno'}</span> | 
+            📦 {products.length} articoli | 🔍 {filteredProducts.length} visibili
+          </p>
+          <p className="text-sm text-emerald-700 font-semibold mt-1">
+            {user?.user_metadata?.role === 'admin' ? '👑 ADMIN' : '👤 UTENTE STANDARD'}
           </p>
         </div>
 
+        {/* ✅ FORM VELOCE PER UTENTI STANDARD */}
+        {user && (
+          <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50">
+            <button 
+              onClick={() => setShowUserForm(!showUserForm)}
+              className="w-full p-6 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-xl font-black rounded-3xl shadow-2xl hover:shadow-3xl transition-all flex items-center justify-center gap-4 mb-6"
+            >
+              <Plus className="w-8 h-8" />
+              {showUserForm ? '❌ Chiudi Form' : '➕ INSERISCI NUOVO ARTICOLO'}
+            </button>
+
+            {showUserForm && (
+              <form onSubmit={handleUserAddProduct} className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xl font-bold text-gray-800 mb-3">📝 Nome *</label>
+                  <input 
+                    required 
+                    value={newProduct.nome} 
+                    onChange={e => setNewProduct({...newProduct, nome: e.target.value})}
+                    placeholder="Racchetta Head Speed Pro" 
+                    className="w-full p-5 border-2 border-gray-200 rounded-3xl focus:ring-4 ring-emerald-500 focus:border-emerald-500 text-xl font-semibold"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xl font-bold text-gray-800 mb-3">💰 Prezzo (€) *</label>
+                  <input 
+                    required 
+                    type="number" 
+                    step="0.01" 
+                    min="0.01"
+                    value={newProduct.prezzo} 
+                    onChange={e => setNewProduct({...newProduct, prezzo: e.target.value})}
+                    placeholder="150.00" 
+                    className="w-full p-5 border-2 border-gray-200 rounded-3xl focus:ring-4 ring-emerald-500 focus:border-emerald-500 text-xl font-semibold"
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-xl font-bold text-gray-800 mb-3">📄 Descrizione</label>
+                  <textarea 
+                    rows="3" 
+                    value={newProduct.descrizione} 
+                    onChange={e => setNewProduct({...newProduct, descrizione: e.target.value})}
+                    placeholder="Condizioni ottime, usato 2 mesi..." 
+                    className="w-full p-5 border-2 border-gray-200 rounded-3xl focus:ring-4 ring-emerald-500 focus:border-emerald-500 text-xl resize-vertical"
+                  />
+                </div>
+                
+                <div className="md:col-span-2 text-center">
+                  <button 
+                    type="submit"
+                    disabled={!newProduct.nome.trim() || !newProduct.prezzo}
+                    className="w-full lg:w-auto px-16 py-6 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white text-2xl font-black rounded-3xl shadow-3xl hover:shadow-4xl transition-all disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed"
+                  >
+                    <Camera className="w-8 h-8 inline mr-3" />
+                    🚀 PUBBLICA ARTICOLO
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+
+        {/* BUTTONS ADMIN/SEARCH (come prima) */}
         <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto">
-          <button onClick={() => setShowAddModal(true)} className="flex-1 md:flex-none px-6 py-3 bg-gray-800 hover:bg-gray-900 text-white font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm md:text-base">
-            <Plus className="w-4 h-4" /> {editingProduct ? 'Modifica Articolo' : 'Aggiungi Articolo'}
+          <button onClick={() => setShowAddModal(true)} className="flex-1 md:flex-none px-8 py-4 bg-gray-800 hover:bg-gray-900 text-white font-bold rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 text-lg">
+            <Plus className="w-5 h-5" /> {editingProduct ? 'Modifica Articolo' : 'Gestione Admin'}
           </button>
           <div className="flex-1 relative">
-            <input type="text" placeholder="Cerca articoli..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all" />
+            <input type="text" placeholder="🔍 Cerca articoli..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 ring-emerald-500 focus:border-emerald-500 transition-all text-lg" />
           </div>
         </div>
 
+        {/* LISTA PRODOTTI (come prima) */}
         {filteredProducts.length === 0 ? (
-          <div className="text-center py-16 md:py-20 bg-white rounded-2xl md:rounded-xl shadow-sm border border-gray-200">
-            <ShoppingBag className="w-16 h-16 md:w-20 md:h-20 text-gray-400 mx-auto mb-6" />
-            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Nessun prodotto trovato</h3>
-            <p className="text-gray-600 mb-8">{search ? 'Prova con un termine diverso' : 'Sii il primo a mettere in vendita!'}</p>
+          <div className="text-center py-20 bg-white/50 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50">
+            <ShoppingBag className="w-24 h-24 text-gray-300 mx-auto mb-8" />
+            <h3 className="text-3xl font-bold text-gray-600 mb-4">Nessun prodotto trovato</h3>
+            <p className="text-xl text-gray-500">{search ? 'Prova con un termine diverso' : 'Pubblica il tuo primo articolo!'}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map(product => (
-              <div key={product.id} className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all hover:-translate-y-1 group">
-                <div className="w-full h-24 md:h-32 rounded-xl mb-3 md:mb-4 overflow-hidden group-hover:scale-105 transition-transform">
-                  {product.immagine_url ? <img src={product.immagine_url} alt={product.nome} className="w-full h-full object-cover" /> : <div className="w-full h-24 md:h-32 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center"><ShoppingBag className="w-8 h-8 md:w-12 md:h-12 text-gray-400" /></div>}
+              <div key={product.id} className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-xl border border-white/50 hover:shadow-2xl hover:-translate-y-2 transition-all group">
+                <div className="w-full h-40 rounded-2xl mb-6 overflow-hidden group-hover:scale-105 transition-transform shadow-lg">
+                  {product.immagine_url ? <img src={product.immagine_url} alt={product.nome} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center"><Camera className="w-16 h-16 text-gray-400" /></div>}
                 </div>
-                <h3 className="text-base md:text-lg font-bold text-gray-900 mb-2 md:mb-3 line-clamp-2 leading-tight">{product.nome}</h3>
-                <div className="flex items-center justify-between mb-3 md:mb-4">
-                  <span className="text-lg md:text-xl font-black text-gray-900">€{product.prezzo?.toFixed(2)}</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-bold border ${product.venduto ? 'bg-gray-100 text-gray-700 border-gray-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200'}`}>{product.venduto ? 'VENDUTO' : 'DISPONIBILE'}</span>
+                <h3 className="text-xl font-bold text-gray-900 mb-4 line-clamp-2 leading-tight">{product.nome}</h3>
+                <div className="flex items-center justify-between mb-6">
+                  <span className="text-2xl font-black text-emerald-600 drop-shadow-lg">€{product.prezzo?.toFixed(2)}</span>
+                  <span className={`px-3 py-2 rounded-2xl text-xs font-bold border-2 ${product.venduto ? 'bg-red-100 text-red-800 border-red-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200'}`}>
+                    {product.venduto ? 'VENDUTO' : '🟢 DISPONIBILE'}
+                  </span>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  {/* 🔥 FORCE ADMIN cfalba - SEMPRE BOTTONI */}
-                  {user?.email === 'cfalba@libero.it' && (
-                    <div className="flex gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-xl mb-2">
-                      <span className="text-xs text-yellow-800 px-2 py-1 bg-yellow-200 rounded-full">🔥 ADMIN cfalba</span>
-                    </div>
-                  )}
-                  
-                  {(user?.email === 'cfalba@libero.it' || 
-                    product.user_id === user?.id || 
-                    user?.profile?.role === 'admin' ||
-                    user?.user_metadata?.role === 'admin') && (
-                    <div className="flex gap-2">
-                      <button onClick={() => startEdit(product)} className="flex-1 py-2 px-3 md:py-3 md:px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm transition-all text-xs md:text-sm flex items-center justify-center gap-1">
-                        <Edit3 className="w-4 h-4" />
-                        Modifica
-                      </button>
-                      <button 
-                        onClick={() => deleteProduct(product)} 
-                        disabled={deletingId === product.id}
-                        className="flex-1 py-2 px-3 md:py-3 md:px-4 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white font-semibold rounded-xl shadow-sm transition-all text-xs md:text-sm flex items-center justify-center gap-1"
-                      >
-                        {deletingId === product.id ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Eliminando...
-                          </>
-                        ) : (
-                          <>
-                            <Trash2 className="w-4 h-4" />
-                            Elimina
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
+                {/* ✅ ADMIN/OWNER BUTTONS */}
+                {(user?.user_metadata?.role === 'admin' || product.user_id === user?.id) && (
+                  <div className="flex gap-3">
+                    <button onClick={() => startEdit(product)} className="flex-1 py-4 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2 text-sm">
+                      <Edit3 className="w-5 h-5" />
+                      Modifica
+                    </button>
+                    <button 
+                      onClick={() => deleteProduct(product)} 
+                      disabled={deletingId === product.id}
+                      className="flex-1 py-4 px-6 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-red-400 disabled:to-red-500 disabled:cursor-not-allowed text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2 text-sm"
+                    >
+                      {deletingId === product.id ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Elimina...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="w-5 h-5" />
+                          Elimina
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         )}
 
+        {/* MODAL ADMIN (come prima) */}
         {showAddModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl md:text-2xl font-bold text-gray-900">{editingProduct ? 'Modifica Articolo' : 'Aggiungi Articolo'}</h2>
-                <button onClick={cancelEdit} className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-gray-500" /></button>
+            <div className="bg-white rounded-3xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-2xl font-bold text-gray-900">{editingProduct ? 'Modifica Articolo' : 'Aggiungi Articolo'}</h2>
+                <button onClick={cancelEdit} className="p-3 hover:bg-gray-100 rounded-2xl transition-all shadow-sm"><X className="w-6 h-6 text-gray-500" /></button>
               </div>
-              <form onSubmit={addOrUpdateProduct} className="space-y-4">
+              <form onSubmit={addOrUpdateProduct} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Nome*</label>
-                  <input type="text" required value={newProduct.nome} onChange={e => setNewProduct({...newProduct, nome: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-300 focus:border-transparent" placeholder="Es: Palmera Carbono"/>
+                  <label className="block text-lg font-bold text-gray-700 mb-3">Nome*</label>
+                  <input type="text" required value={newProduct.nome} onChange={e => setNewProduct({...newProduct, nome: e.target.value})} className="w-full p-4 border-2 border-gray-200 rounded-2xl focus:ring-4 ring-blue-500 focus:border-blue-500 text-lg" placeholder="Es: Palmera Carbono"/>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Prezzo (€)*</label>
-                  <input type="number" step="0.01" required value={newProduct.prezzo} onChange={e => setNewProduct({...newProduct, prezzo: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-300 focus:border-transparent" placeholder="50.00"/>
+                  <label className="block text-lg font-bold text-gray-700 mb-3">Prezzo (€)*</label>
+                  <input type="number" step="0.01" required value={newProduct.prezzo} onChange={e => setNewProduct({...newProduct, prezzo: e.target.value})} className="w-full p-4 border-2 border-gray-200 rounded-2xl focus:ring-4 ring-blue-500 focus:border-blue-500 text-lg" placeholder="50.00"/>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Descrizione</label>
-                  <textarea rows="3" value={newProduct.descrizione} onChange={e => setNewProduct({...newProduct, descrizione: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-300 focus:border-transparent resize-vertical" placeholder="Condizioni, taglia, etc..."/>
+                  <label className="block text-lg font-bold text-gray-700 mb-3">Descrizione</label>
+                  <textarea rows="4" value={newProduct.descrizione} onChange={e => setNewProduct({...newProduct, descrizione: e.target.value})} className="w-full p-4 border-2 border-gray-200 rounded-2xl focus:ring-4 ring-blue-500 focus:border-blue-500 text-lg resize-vertical" placeholder="Condizioni, taglia, etc..."/>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">URL Immagine (opzionale)</label>
-                  <input type="url" value={newProduct.immagine_url} onChange={e => setNewProduct({...newProduct, immagine_url: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-300 focus:border-transparent" placeholder="https://example.com/immagine.jpg"/>
+                  <label className="block text-lg font-bold text-gray-700 mb-3">URL Immagine</label>
+                  <input type="url" value={newProduct.immagine_url} onChange={e => setNewProduct({...newProduct, immagine_url: e.target.value})} className="w-full p-4 border-2 border-gray-200 rounded-2xl focus:ring-4 ring-blue-500 focus:border-blue-500 text-lg" placeholder="https://example.com/immagine.jpg"/>
                 </div>
-                <div className="flex gap-3 pt-4">
-                  <button type="button" onClick={cancelEdit} className="flex-1 py-3 px-4 border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all">Annulla</button>
-                  <button type="submit" className="flex-1 py-3 px-4 bg-gray-800 hover:bg-gray-900 text-white font-semibold rounded-xl shadow-sm transition-all">{editingProduct ? 'Aggiorna' : 'Pubblica'}</button>
+                <div className="flex gap-4 pt-6">
+                  <button type="button" onClick={cancelEdit} className="flex-1 py-4 px-6 border-2 border-gray-300 text-gray-700 font-bold rounded-2xl hover:bg-gray-50 hover:border-gray-400 transition-all shadow-lg text-lg">Annulla</button>
+                  <button type="submit" className="flex-1 py-4 px-6 bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black text-white font-bold rounded-2xl shadow-2xl hover:shadow-3xl transition-all text-lg">{editingProduct ? 'Aggiorna' : 'Pubblica'}</button>
                 </div>
               </form>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

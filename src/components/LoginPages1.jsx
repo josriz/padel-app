@@ -1,4 +1,4 @@
-// src/components/LoginPages.jsx - ✅ PULISCI CAMPi + NO AUTO-MESSAGGIO
+// src/components/LoginPages.jsx - ✅ PULISCI CAMPi + NO AUTO-MESSAGGIO + FIX FACEBOOK
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
@@ -62,13 +62,17 @@ const LoginPages = () => {
     if (loading) return;
     setLoading(true);
     try {
+      // 🔹 FIX FACEBOOK + Google OAuth
       await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: window.location.origin },
+        options: {
+          redirectTo: window.location.origin, // assicura che torni al localhost
+        },
       });
     } catch (err) {
-      setLoading(false);
       showMessage('error', `OAuth ${provider} fallito`);
+    } finally {
+      setLoading(false);
     }
   };
 

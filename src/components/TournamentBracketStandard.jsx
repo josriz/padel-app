@@ -1,3 +1,4 @@
+// src/components/TournamentBracket.jsx - COMPLETO CON ISCRIZIONI MANUALI
 import React, { useState, useEffect } from "react";
 import { ArrowLeft, Printer } from "lucide-react";
 import { supabase } from "../supabaseClient";
@@ -10,8 +11,8 @@ export default function TournamentBracket({ tournamentId }) {
   const [tournamentWinner, setTournamentWinner] = useState(null);
   const [status, setStatus] = useState("Caricando...");
   const [history, setHistory] = useState([]);
+  const [manualPlayerName, setManualPlayerName] = useState(""); // ✅ NUOVO
 
-  // FUNZIONI IDENTICHE (perfette)
   const ensureTournamentExists = async () => {
     if (!tournamentId) return;
     const { data } = await supabase
@@ -64,11 +65,26 @@ export default function TournamentBracket({ tournamentId }) {
     }
   };
 
-  // ✅ BUG FIX 1: TASCO INDIETRO CORRETTO
+  // ✅ NUOVA FUNZIONE - ISCRIZIONE MANUALE
+  const addManualPlayer = async () => {
+    if (!manualPlayerName?.trim()) return;
+    
+    await supabase.from("tournament_registrations").insert({
+      tournament_id: tournamentId,
+      user_id: `manual_${Date.now()}`,
+      full_name: manualPlayerName.trim(),
+      display_name: manualPlayerName.trim(),
+    });
+    
+    setManualPlayerName("");
+    fetchRealParticipants();
+    setStatus("✅ Iscritto manualmente!");
+  };
+
   const goBackPhase = () => {
     if (!history.length) return;
     const last = history[history.length - 1];
-    setBracket([...last.bracket]); // COPIA PROFONDA
+    setBracket([...last.bracket]);
     setCurrentPhase(last.phase);
     setTournamentWinner(last.winner || null);
     setHistory((prev) => prev.slice(0, -1));
@@ -80,7 +96,10 @@ export default function TournamentBracket({ tournamentId }) {
   const handleDrop = (e, matchIdx, teamIdx) => {
     e.preventDefault();
     const player = JSON.parse(e.dataTransfer.getData("text/plain"));
-    const updated = bracket.map(m => ({ ...m, teams: m.teams ? m.teams.map(t => [...t]) : [[], []] }));
+    const updated = bracket.map((m) => ({
+      ...m,
+      teams: m.teams ? m.teams.map((t) => [...t]) : [[], []],
+    }));
     if (!updated[matchIdx].teams[teamIdx]) updated[matchIdx].teams[teamIdx] = [];
     if (updated[matchIdx].teams[teamIdx].length < 2) {
       updated[matchIdx].teams[teamIdx].push(player);
@@ -90,7 +109,10 @@ export default function TournamentBracket({ tournamentId }) {
   };
 
   const removePlayerFromTeam = (matchIdx, teamIdx, playerIdx) => {
-    const updated = bracket.map(m => ({ ...m, teams: m.teams ? m.teams.map(t => [...t]) : [[], []] }));
+    const updated = bracket.map((m) => ({
+      ...m,
+      teams: m.teams ? m.teams.map((t) => [...t]) : [[], []],
+    }));
     if (updated[matchIdx]?.teams[teamIdx]) {
       updated[matchIdx].teams[teamIdx].splice(playerIdx, 1);
       setBracket(updated);
@@ -98,19 +120,18 @@ export default function TournamentBracket({ tournamentId }) {
     }
   };
 
-  // ✅ BUG FIX 2: RISULTATI SEPARATI (6-4 FUNZIONA!)
   const handleScoreChange = (matchIdx, teamIdx, value) => {
-    const updated = bracket.map(m => ({ ...m }));
+    const updated = bracket.map((m) => ({ ...m }));
     if (!updated[matchIdx].scores) updated[matchIdx].scores = ["", ""];
     updated[matchIdx].scores[teamIdx] = value;
-    updated[matchIdx].score = updated[matchIdx].scores.join("-"); // Per compatibilità
+    updated[matchIdx].score = updated[matchIdx].scores.join("-");
     setBracket(updated);
     setTimeout(() => saveToSupabase("Punteggio OK"), 500);
   };
 
   const getWinnersFromMatch = (match) => {
-    if (!match?.scores || match.scores.some(s => !s)) return [];
-    const [a, b] = match.scores.map(s => parseInt(s) || 0);
+    if (!match?.scores || match.scores.some((s) => !s)) return [];
+    const [a, b] = match.scores.map((s) => parseInt(s) || 0);
     if (a > b) return match.teams?.[0] || [];
     if (b > a) return match.teams?.[1] || [];
     return [];
@@ -119,10 +140,10 @@ export default function TournamentBracket({ tournamentId }) {
   const advancePhase = () => {
     setHistory((prev) => [
       ...prev,
-      { 
-        phase: currentPhase, 
-        bracket: bracket.map(m => ({ ...m, teams: m.teams?.map(t => [...t]) || [[], []] })),
-        winner: tournamentWinner 
+      {
+        phase: currentPhase,
+        bracket: bracket.map((m) => ({ ...m, teams: m.teams?.map((t) => [...t]) || [[], []] })),
+        winner: tournamentWinner,
       },
     ]);
     const winners = bracket.flatMap(getWinnersFromMatch).filter(Boolean);
@@ -174,10 +195,7 @@ export default function TournamentBracket({ tournamentId }) {
         .eq("tournament_id", tournamentId)
         .maybeSingle();
       if (data) {
-        setBracket((data.bracket || []).map(m => ({ 
-          ...m, 
-          scores: m.score ? m.score.split("-") : ["", ""] 
-        })));
+        setBracket((data.bracket || []).map((m) => ({ ...m, scores: m.score ? m.score.split("-") : ["", ""] })));
         setCurrentPhase(data.phase || "Ottavi");
         setTournamentWinner(data.winner_team || null);
         setHistory(data.history || []);
@@ -224,60 +242,70 @@ export default function TournamentBracket({ tournamentId }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 space-y-6">
-        
-        {/* ✅ HEADER COMPLETO con USCITA a /tornei */}
-<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-  <div className="flex items-center gap-3 flex-wrap">
-    <button
-      onClick={goBackPhase}
-      disabled={history.length === 0}
-      className="flex items-center gap-2 px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      <ArrowLeft size={18} /> Indietro Fase
-      {history.length > 0 && (
-        <span className="text-xs bg-orange-200 px-2 py-0.5 rounded-full">
-          {history.length}
-        </span>
-      )}
-    </button>
-    
-    {/* 🚪 USCITA TORNE O COMPLETATO */}
-    <button
-  onClick={() => {
-    if (confirm("🏁 Uscire dal torneo? Tornerai alla lista tornei.")) {
-      window.location.href = '/tournaments';  // ✅ FUNZIONA!
-    }
-  }}
-  className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-all hover:shadow-sm"
->
-      🚪 Esci Torneo
-    </button>
-  </div>
-  
-  <div className="flex items-center gap-3">
-    <div className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-sm font-medium">
-      {status}
-      {tournamentWinner && " 🏆 COMPLETATO"}
-    </div>
-    <button
-      onClick={() => window.print()}
-      className="flex items-center gap-2 px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-xl font-medium transition-all"
-    >
-      <Printer size={18} /> Stampa
-    </button>
-  </div>
-</div>
+        {/* HEADER E PULSANTI */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              onClick={goBackPhase}
+              disabled={history.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ArrowLeft size={18} /> Indietro Fase
+              {history.length > 0 && (
+                <span className="text-xs bg-orange-200 px-2 py-0.5 rounded-full">{history.length}</span>
+              )}
+            </button>
 
+            <button
+              onClick={() => {
+                if (confirm("🏁 Uscire dal torneo? Tornerai alla lista tornei.")) {
+                  window.location.href = '/tournaments';
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-all hover:shadow-sm"
+            >
+              🚪 Esci Torneo
+            </button>
+          </div>
 
-        <h1 className="text-3xl sm:text-4xl font-bold text-center text-gray-800 bg-gradient-to-r from-gray-700 to-emerald-600 bg-clip-text text-transparent">
-          🏟️ Tabellone Padel
-          <span className="block text-lg sm:inline text-emerald-600 font-normal mt-1 sm:mt-0">
-            {currentPhase} • {bracket.length} campi
-          </span>
-        </h1>
+          <div className="flex items-center gap-3">
+            <div className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-sm font-medium">
+              {status} {tournamentWinner && " 🏆 COMPLETATO"}
+            </div>
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-xl font-medium transition-all"
+            >
+              <Printer size={18} /> Stampa
+            </button>
+          </div>
+        </div>
 
+        {/* ✅ NUOVA SEZIONE - ISCRIZIONI MANUALI */}
+        <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-6 rounded-2xl border-2 border-dashed border-orange-200">
+          <h3 className="text-xl font-semibold mb-4 text-orange-800 flex items-center gap-2">
+            ➕ Aggiungi Iscritto Manualmente
+          </h3>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <input
+              type="text"
+              placeholder="Nome giocatore (es: Mario Rossi)"
+              value={manualPlayerName}
+              onChange={(e) => setManualPlayerName(e.target.value)}
+              className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+            />
+            <button
+              onClick={addManualPlayer}
+              disabled={!manualPlayerName?.trim()}
+              className="px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              + Aggiungi
+            </button>
+          </div>
+        </div>
+
+        {/* Tabellone e iscritti */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
-          {/* Iscritti */}
           <div className="lg:col-span-1 bg-white/50 backdrop-blur-sm rounded-xl p-6 border border-gray-100 shadow-sm">
             <h3 className="text-xl font-semibold mb-4 text-gray-800 flex items-center gap-2">
               👥 Iscritti
@@ -308,7 +336,7 @@ export default function TournamentBracket({ tournamentId }) {
                     Campo {match.field}
                   </h3>
 
-                  {/* ✅ TEAM 1 - SCORE SOPRA INDIPENDENTE */}
+                  {/* TEAM 1 */}
                   <div
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, matchIdx, 0)}
@@ -340,7 +368,7 @@ export default function TournamentBracket({ tournamentId }) {
                     vs
                   </div>
 
-                  {/* ✅ TEAM 2 - SCORE SOTTO INDIPENDENTE */}
+                  {/* TEAM 2 */}
                   <div
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, matchIdx, 1)}
@@ -382,6 +410,7 @@ export default function TournamentBracket({ tournamentId }) {
           </div>
         </div>
 
+        {/* PULSANTI SALVA / AVANZA / RESET */}
         <div className="flex flex-wrap gap-3 pt-6 border-t border-gray-100">
           <button
             onClick={() => saveToSupabase("Manuale OK")}
@@ -389,17 +418,19 @@ export default function TournamentBracket({ tournamentId }) {
           >
             💾 Salva
           </button>
+
           <button
             onClick={advancePhase}
             className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold text-sm shadow-sm hover:shadow-md transition-all"
           >
-            🚀 Avanza Fase
+            ⏭️ Avanza Fase
           </button>
+
           <button
             onClick={resetTournament}
-            className="px-6 py-3 bg-gray-400 hover:bg-gray-500 text-white rounded-xl font-semibold text-sm shadow-sm hover:shadow-md transition-all"
+            className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold text-sm shadow-sm hover:shadow-md transition-all"
           >
-            ⚠️ Reset
+            🔄 Reset Torneo
           </button>
         </div>
       </div>

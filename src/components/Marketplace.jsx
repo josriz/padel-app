@@ -1,291 +1,287 @@
-// src/components/Marketplace.jsx - ✅ DEBUG TOGGLE VENDUTO + BOTTONI SEMPRE VISIBILI
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import React, { useEffect, useState } from "react";
+import { supabase } from "../supabaseClient";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from '../context/AuthProvider';
-import { ShoppingBag, DollarSign, Plus, Edit3, Trash2, X, Loader2, CheckCircle } from 'lucide-react';
+import { formatPrice, truncateText, isNewItem } from "./marketplaceUtils";
+import { ShoppingCart, MessageCircle, Trash2, Plus, Camera } from "lucide-react";
 
 export default function Marketplace() {
+  const [items, setItems] = useState([]);
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const isAdmin = user?.profile?.role === 'admin' || user?.user_metadata?.role === 'admin' || user?.email?.includes('admin') || user?.email?.includes('giose');
-
-  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newProduct, setNewProduct] = useState({ nome: '', descrizione: '', prezzo: '', immagine_url: '' });
-  const [editingProduct, setEditingProduct] = useState(null);
-
-  // ✅ NUOVI STATE
-  const [togglingId, setTogglingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  
+  // ✅ NUOVI STATE PER FORM INSERIMENTO
+  const [showForm, setShowForm] = useState(false);
+  const [newItem, setNewItem] = useState({ nome: '', descrizione: '', prezzo: '' });
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    if (user?.id) fetchProducts();
-  }, [user]);
+    fetchItems();
+  }, []);
 
-  const fetchProducts = async () => {
-    setLoading(true);
+  const fetchItems = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
-        .from('marketplace_items')
-        .select('*')
+        .from("marketplace_items")
+        .select(`
+          *,
+          profiles(full_name, avatar_url)
+        `)
         .order('created_at', { ascending: false });
+
       if (error) throw error;
-      setProducts(data || []);
-    } catch (err) {
-      console.error('Errore marketplace:', err);
+      setItems(data || []);
+    } catch (error) {
+      console.error('Errore:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const addOrUpdateProduct = async (e) => {
+  // ✅ FUNZIONE INSERIMENTO ARTICOLO
+  const handleAddItem = async (e) => {
     e.preventDefault();
-    if (!newProduct.nome || !newProduct.prezzo) return;
+    
+    if (!newItem.nome.trim() || !newItem.prezzo) {
+      alert('❌ Nome e prezzo obbligatori!');
+      return;
+    }
 
     try {
-      if (editingProduct) {
-        const { error } = await supabase
-          .from('marketplace_items')
-          .update({
-            nome: newProduct.nome,
-            descrizione: newProduct.descrizione,
-            prezzo: parseFloat(newProduct.prezzo),
-            immagine_url: newProduct.immagine_url
-          })
-          .eq('id', editingProduct.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('marketplace_items')
-          .insert({
-            ...newProduct,
-            prezzo: parseFloat(newProduct.prezzo),
-            user_id: user.id,
-            venduto: false
-          });
-        if (error) throw error;
-      }
-      setShowAddModal(false);
-      setEditingProduct(null);
-      setNewProduct({ nome: '', descrizione: '', prezzo: '', immagine_url: '' });
-      fetchProducts();
-    } catch (err) {
-      console.error('Errore salvataggio prodotto:', err);
+      const { data, error } = await supabase
+        .from('marketplace_items')
+        .insert({
+          nome: newItem.nome.trim(),
+          descrizione: newItem.descrizione.trim(),
+          prezzo: parseFloat(newItem.prezzo),
+          user_id: user.id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setItems([data, ...items]);
+      setNewItem({ nome: '', descrizione: '', prezzo: '' });
+      setShowForm(false);
+      alert('✅ Articolo pubblicato!');
+    } catch (error) {
+      alert('❌ Errore: ' + error.message);
     }
   };
 
-  const deleteProduct = async (product) => {
-    if (!confirm(`Eliminare "${product.nome}"?`)) return;
+  const handleDelete = async (id) => {
+    if (!confirm('Eliminare annuncio?')) return;
     
-    const oldProducts = products;
-    setProducts(products.filter(p => p.id !== product.id));
-    setDeletingId(product.id);
-    
+    if (user?.user_metadata?.role !== 'admin') {
+      alert('❌ Solo admin può eliminare!');
+      return;
+    }
+
+    setDeletingId(id);
     try {
       const { error } = await supabase
         .from('marketplace_items')
         .delete()
-        .eq('id', product.id);
-
-      if (error) throw error;
+        .eq('id', id);
       
-    } catch (err) {
-      setProducts(oldProducts);
-      alert('Errore eliminazione: ' + err.message);
+      if (!error) {
+        setItems(items.filter(item => item.id !== id));
+        alert('✅ Eliminato!');
+      } else {
+        throw error;
+      }
+    } catch (error) {
+      alert('❌ Errore: ' + error.message);
     } finally {
       setDeletingId(null);
     }
   };
 
-  // ✅ NUOVA FUNZIONE toggleSold
-  const toggleSold = async (id, currentStatus) => {
-    setTogglingId(id);
-    const newStatus = !currentStatus;
-    try {
-      const { error } = await supabase
-        .from('marketplace_items')
-        .update({ venduto: newStatus })
-        .eq('id', id);
-      if (error) throw error;
-      setProducts(products.map(p => p.id === id ? { ...p, venduto: newStatus } : p));
-    } catch (err) {
-      alert('Errore: ' + err.message);
-    } finally {
-      setTogglingId(null);
+  const handleContact = (item) => {
+    if (!user) {
+      alert('❌ Devi essere loggato!');
+      return;
     }
+    alert(`Contatta ${item.profiles?.full_name || 'il venditore'} per ${item.nome}`);
   };
 
-  const startEdit = (product) => {
-    setEditingProduct(product);
-    setNewProduct({
-      nome: product.nome,
-      descrizione: product.descrizione,
-      prezzo: product.prezzo,
-      immagine_url: product.immagine_url
-    });
-    setShowAddModal(true);
-  };
-
-  const cancelEdit = () => {
-    setEditingProduct(null);
-    setNewProduct({ nome: '', descrizione: '', prezzo: '', immagine_url: '' });
-    setShowAddModal(false);
-  };
-
-  const filteredProducts = products.filter(p =>
-    p.nome?.toLowerCase().includes(search.toLowerCase()) ||
-    p.descrizione?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
-      <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-500 border-t-transparent mx-auto mb-4"></div>
-      <p className="text-lg font-semibold text-gray-700">Caricamento marketplace...</p>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="pt-20 max-w-5xl mx-auto p-8 flex items-center justify-center h-64">
+        <div className="text-xl">Caricamento...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-white pt-4 pb-12">
-      <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 md:space-y-8">
-        <div className="text-center">
-          <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-100 rounded-xl mx-auto mb-4 flex items-center justify-center shadow-sm border border-gray-200">
-            <ShoppingBag className="w-8 h-8 md:w-9 md:h-9 text-gray-600" />
-          </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Marketplace</h1>
-          <p className="text-base md:text-lg text-gray-600 max-w-md mx-auto leading-relaxed">Scopri e vendi attrezzature da padel</p>
-        </div>
+    <div className="pt-20 max-w-5xl mx-auto p-8">
+      <button
+        className="mb-6 px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
+        onClick={() => navigate(-1)}
+      >
+        ← Indietro
+      </button>
 
-        <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto">
-          <button onClick={() => setShowAddModal(true)} className="flex-1 md:flex-none px-6 py-3 bg-gray-800 hover:bg-gray-900 text-white font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm md:text-base">
-            <Plus className="w-4 h-4" /> {editingProduct ? 'Modifica Articolo' : 'Aggiungi Articolo'}
+      <h2 className="text-3xl font-bold mb-8 text-center">🛒 Marketplace Padel</h2>
+      
+      {/* ✅ BUTTON INSERIMENTO PER UTENTI STANDARD */}
+      {user && (
+        <div className="text-center mb-12">
+          <button 
+            onClick={() => setShowForm(!showForm)}
+            className="px-8 py-4 bg-emerald-600 text-white text-xl font-bold rounded-2xl hover:bg-emerald-700 shadow-xl hover:shadow-2xl transition-all flex items-center gap-3 mx-auto"
+          >
+            <Plus className="w-6 h-6" />
+            {showForm ? '❌ Chiudi Form' : '➕ NUOVO ARTICOLO'}
           </button>
-          <div className="flex-1 relative">
-            <input type="text" placeholder="Cerca articoli..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all" />
-          </div>
         </div>
+      )}
 
-        {filteredProducts.length === 0 ? (
-          <div className="text-center py-16 md:py-20 bg-white rounded-2xl md:rounded-xl shadow-sm border border-gray-200">
-            <ShoppingBag className="w-16 h-16 md:w-20 md:h-20 text-gray-400 mx-auto mb-6" />
-            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Nessun prodotto trovato</h3>
-            <p className="text-gray-600 mb-8">{search ? 'Prova con un termine diverso' : 'Sii il primo a mettere in vendita!'}</p>
-            <button onClick={() => setShowAddModal(true)} className="px-8 py-3 bg-gray-800 hover:bg-gray-900 text-white font-semibold rounded-xl shadow-sm transition-all">+ Aggiungi il tuo primo articolo</button>
-          </div>
-        ) : (
-          // ✅ BLOCCO PRODOTTI AGGIORNATO
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-            {filteredProducts.map(product => (
-              <div key={product.id} className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all hover:-translate-y-1 group">
-                <div className="w-full h-24 md:h-32 rounded-xl mb-3 md:mb-4 overflow-hidden group-hover:scale-105 transition-transform">
-                  {product.immagine_url ? <img src={product.immagine_url} alt={product.nome} className="w-full h-full object-cover" /> : <div className="w-full h-24 md:h-32 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center"><ShoppingBag className="w-8 h-8 md:w-12 md:h-12 text-gray-400" /></div>}
-                </div>
-                <h3 className="text-base md:text-lg font-bold text-gray-900 mb-2 md:mb-3 line-clamp-2 leading-tight">{product.nome}</h3>
-                <div className="flex items-center justify-between mb-3 md:mb-4">
-                  <span className="text-lg md:text-xl font-black text-gray-900">€{product.prezzo?.toFixed(2)}</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-bold border ${product.venduto ? 'bg-gray-100 text-gray-700 border-gray-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200'}`}>{product.venduto ? 'VENDUTO' : 'DISPONIBILE'}</span>
-                </div>
-                {product.descrizione && <p className="text-sm text-gray-600 mb-4 md:mb-6 line-clamp-2">{product.descrizione}</p>}
-
-                {/* ✅ TOGGLE VENDUTO - SOLO PROPRIETARIO */}
-                {(product.user_id === user?.id || isAdmin) && (
-                  <button 
-                    onClick={() => toggleSold(product.id, product.venduto)}
-                    disabled={togglingId === product.id}
-                    className={`w-full py-2 px-4 rounded-xl font-semibold transition-all text-sm flex items-center justify-center gap-2 mb-2 ${
-                      product.venduto 
-                        ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border-2 border-emerald-300' 
-                        : 'bg-orange-100 hover:bg-orange-200 text-orange-800 border-2 border-orange-300'
-                    }`}
-                  >
-                    {togglingId === product.id ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Aggiornando...
-                      </>
-                    ) : product.venduto ? (
-                      <>
-                        <CheckCircle className="w-4 h-4" />
-                        Segna Disponibile
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingBag className="w-4 h-4" />
-                        Segna Venduto
-                      </>
-                    )}
-                  </button>
-                )}
-
-                <div className="flex flex-col gap-2">
-                  <button className="w-full py-2 px-3 md:py-3 md:px-4 bg-gray-800 hover:bg-gray-900 text-white font-semibold rounded-xl shadow-sm transition-all text-xs md:text-sm flex items-center justify-center gap-1 md:gap-2">
-                    <DollarSign className="w-3 h-3 md:w-4 md:h-4" /> Contatta venditore
-                  </button>
-
-                  {(product.user_id === user?.id || isAdmin) && (
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <button onClick={() => startEdit(product)} className="flex-1 py-2 px-3 md:py-3 md:px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm transition-all text-xs md:text-sm flex items-center justify-center gap-1">
-                        <Edit3 className="w-4 h-4" />
-                        Modifica
-                      </button>
-                      <button 
-                        onClick={() => deleteProduct(product)} 
-                        disabled={deletingId === product.id}
-                        className="flex-1 py-2 px-3 md:py-3 md:px-4 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white font-semibold rounded-xl shadow-sm transition-all text-xs md:text-sm flex items-center justify-center gap-1"
-                      >
-                        {deletingId === product.id ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Eliminando...
-                          </>
-                        ) : (
-                          <>
-                            <Trash2 className="w-4 h-4" />
-                            Elimina
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {showAddModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl md:text-2xl font-bold text-gray-900">{editingProduct ? 'Modifica Articolo' : 'Aggiungi Articolo'}</h2>
-                <button onClick={cancelEdit} className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X className="w-5 h-5 text-gray-500" /></button>
-              </div>
-              <form onSubmit={addOrUpdateProduct} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Nome*</label>
-                  <input type="text" required value={newProduct.nome} onChange={e => setNewProduct({...newProduct, nome: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-300 focus:border-transparent" placeholder="Es: Palmera Carbono"/>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Prezzo (€)*</label>
-                  <input type="number" step="0.01" required value={newProduct.prezzo} onChange={e => setNewProduct({...newProduct, prezzo: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-300 focus:border-transparent" placeholder="50.00"/>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Descrizione</label>
-                  <textarea rows="3" value={newProduct.descrizione} onChange={e => setNewProduct({...newProduct, descrizione: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-300 focus:border-transparent resize-vertical" placeholder="Condizioni, taglia, etc..."/>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">URL Immagine (opzionale)</label>
-                  <input type="url" value={newProduct.immagine_url} onChange={e => setNewProduct({...newProduct, immagine_url: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-300 focus:border-transparent" placeholder="https://example.com/immagine.jpg"/>
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <button type="button" onClick={cancelEdit} className="flex-1 py-3 px-4 border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all">Annulla</button>
-                  <button type="submit" className="flex-1 py-3 px-4 bg-gray-800 hover:bg-gray-900 text-white font-semibold rounded-xl shadow-sm transition-all">{editingProduct ? 'Aggiorna' : 'Pubblica'}</button>
-                </div>
-              </form>
+      {/* ✅ FORM INSERIMENTO - PER UTENTI STANDARD */}
+      {showForm && user && (
+        <div className="bg-gradient-to-r from-emerald-50 to-blue-50 p-8 rounded-3xl mb-12 shadow-2xl border-4 border-emerald-200">
+          <h3 className="text-2xl font-bold mb-6 text-center text-emerald-800">📦 Pubblica il tuo articolo</h3>
+          
+          <form onSubmit={handleAddItem} className="grid md:grid-cols-2 gap-6">
+            <div>
+              <label className="block font-semibold mb-3 text-lg">Nome articolo *</label>
+              <input
+                required
+                value={newItem.nome}
+                onChange={(e) => setNewItem({ ...newItem, nome: e.target.value })}
+                placeholder="Es: Racchetta Head Speed Pro"
+                className="w-full p-4 border-2 border-gray-200 rounded-2xl focus:ring-4 ring-emerald-500 focus:border-emerald-500 text-lg"
+              />
             </div>
+            
+            <div>
+              <label className="block font-semibold mb-3 text-lg">Prezzo (€) *</label>
+              <input
+                required
+                type="number"
+                step="0.01"
+                min="0.01"
+                value={newItem.prezzo}
+                onChange={(e) => setNewItem({ ...newItem, prezzo: e.target.value })}
+                placeholder="150.00"
+                className="w-full p-4 border-2 border-gray-200 rounded-2xl focus:ring-4 ring-emerald-500 focus:border-emerald-500 text-lg"
+              />
+            </div>
+            
+            <div className="md:col-span-2">
+              <label className="block font-semibold mb-3 text-lg">Descrizione</label>
+              <textarea
+                value={newItem.descrizione}
+                onChange={(e) => setNewItem({ ...newItem, descrizione: e.target.value })}
+                placeholder="Condizioni, dettagli, caratteristiche..."
+                rows="3"
+                className="w-full p-4 border-2 border-gray-200 rounded-2xl focus:ring-4 ring-emerald-500 focus:border-emerald-500 text-lg resize-vertical"
+              />
+            </div>
+            
+            <div className="md:col-span-2 text-center">
+              <button
+                type="submit"
+                className="px-12 py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white text-xl font-bold rounded-3xl hover:from-emerald-700 hover:to-emerald-800 shadow-2xl hover:shadow-3xl transition-all"
+              >
+                🚀 PUBBLICA ARTICOLO
+              </button>
+            </div>
+          </form>
+          
+          <p className="text-center mt-4 text-sm text-gray-600">
+            👤 I venditori ti contatteranno via email: {user.email}
+          </p>
+        </div>
+      )}
+
+      {/* ✅ ADMIN BUTTON (mantiene originale) */}
+      {user?.user_metadata?.role === 'admin' && (
+        <div className="text-center mb-8">
+          <button className="px-8 py-4 bg-blue-600 text-white text-xl font-bold rounded-2xl hover:bg-blue-700 shadow-xl hover:shadow-2xl transition-all">
+            🔧 Pannello Admin
+          </button>
+        </div>
+      )}
+
+      <div className="grid md:grid-cols-3 gap-6">
+        {items.map((item) => (
+          <div key={item.id} className="p-6 border rounded-2xl shadow-lg hover:shadow-2xl transition-all group relative bg-white/80 backdrop-blur-sm">
+            {/* ADMIN DELETE */}
+            {user?.user_metadata?.role === 'admin' && (
+              <button
+                onClick={() => handleDelete(item.id)}
+                disabled={deletingId === item.id}
+                className="absolute top-4 right-4 p-2 bg-red-500 text-white rounded-xl opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50 shadow-lg"
+                title="Elimina"
+              >
+                {deletingId === item.id ? '⏳' : <Trash2 className="w-4 h-4" />}
+              </button>
+            )}
+            
+            {isNewItem(item.created_at) && (
+              <span className="absolute top-4 left-4 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg">
+                ✨ NUOVO
+              </span>
+            )}
+            
+            <h3 className="text-2xl font-bold mb-4 mt-12 leading-tight">{item.nome || item.name}</h3>
+            <p className="text-gray-600 mb-4 leading-relaxed">{truncateText(item.descrizione || item.description, 80)}</p>
+            <p className="text-3xl font-black text-emerald-600 mb-6 drop-shadow-lg">€{formatPrice(item.prezzo || item.price)}</p>
+            
+            {item.profiles?.full_name && (
+              <p className="text-sm text-gray-500 mb-6 flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                  {item.profiles.full_name.charAt(0).toUpperCase()}
+                </div>
+                {item.profiles.full_name}
+              </p>
+            )}
+            
+            {/* RUOLI BOTTONI */}
+            {user?.user_metadata?.role === 'admin' ? (
+              <button className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl font-bold hover:from-blue-700 hover:to-blue-800 shadow-xl hover:shadow-2xl transition-all">
+                🔧 Gestisci
+              </button>
+            ) : user && item.user_id === user.id ? (
+              <div className="space-y-2">
+                <span className="block text-xs text-emerald-600 font-bold bg-emerald-100 px-3 py-1 rounded-full text-center">
+                  ✅ Il tuo articolo
+                </span>
+                <button className="w-full py-3 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 shadow-xl hover:shadow-2xl transition-all">
+                  👁️ Visualizza
+                </button>
+              </div>
+            ) : user ? (
+              <button 
+                onClick={() => handleContact(item)}
+                className="w-full py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-2xl font-bold hover:from-orange-700 hover:to-orange-800 shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="w-5 h-5" />
+                Contatta venditore
+              </button>
+            ) : (
+              <button className="w-full py-3 bg-gray-500 text-white rounded-2xl font-bold hover:bg-gray-600 transition-all">
+                🔐 Login per contattare
+              </button>
+            )}
           </div>
-        )}
+        ))}
       </div>
+
+      {items.length === 0 && (
+        <div className="text-center py-24 text-gray-500 bg-gradient-to-r from-emerald-50 to-blue-50 rounded-3xl mt-12">
+          <ShoppingCart className="w-24 h-24 mx-auto mb-6 text-gray-400" />
+          <h3 className="text-3xl font-bold mb-4">Nessun articolo disponibile</h3>
+          {user && (
+            <p className="text-xl mb-8">Clicca "➕ NUOVO ARTICOLO" per iniziare!</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-// src/components/TournamentRegisterAuth.jsx - ✅ LAYOUT DASHBOARD COMPATTO
+// src/components/TournamentRegisterAuth.jsx - ✅ 100% FUNZIONANTE!
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../context/AuthProvider";
@@ -23,54 +23,80 @@ export default function TournamentRegisterAuth() {
   }, []);
 
   const fetchTournaments = async () => {
-    const { data, error } = await supabase
-      .from("tournaments")
-      .select(
-        `
-        *,
-        tournament_registrations:user_id (user_id)
-      `
-      );
+    setLoading(true);
+    try {
+      // ✅ 1 STEP: Tornei
+      const { data: tournamentData } = await supabase
+        .from("tournaments")
+        .select('id, name, type, players, status, created_at')
+        .eq('status', 'registration'); // Solo tornei aperti
 
-    if (error) {
-      console.error(error);
-    } else {
-      const tournamentsWithCount = (data || []).map((t) => ({
-        ...t,
-        totalIscritti: t.tournament_registrations?.length || 0,
-      }));
+      // ✅ 2 STEP: Conteggio iscritti (usa tournament_players!)
+      const tournamentsWithCount = await Promise.all(
+        (tournamentData || []).map(async (t) => {
+          const { count } = await supabase
+            .from("tournament_players")
+            .select("*", { count: "exact", head: true })
+            .eq("tournament_id", t.id);
+          return { ...t, totalIscritti: count || 0 };
+        })
+      );
+      
+      console.log("✅ Tornei caricati:", tournamentsWithCount);
       setTournaments(tournamentsWithCount);
+    } catch (error) {
+      console.error("❌ Fetch error:", error);
+      setMessage({ type: "error", text: "Errore caricamento tornei" });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleIscrizione = async () => {
     if (!selectedTorneo || !user) {
       setMessage({
         type: "error",
-        text: "❌ Devi fare login e selezionare un torneo!",
+        text: "❌ Seleziona un torneo!",
       });
       return;
     }
 
     setRegisterLoading(true);
+    setMessage(null);
+
     try {
-      const { error } = await supabase.from("tournament_registrations").insert({
+      // ✅ CHECK duplicati PRIMA
+      const { data: existing } = await supabase
+        .from("tournament_players")
+        .select("id")
+        .eq("tournament_id", selectedTorneo)
+        .eq("player_id", user.id);
+
+      if (existing?.length > 0) {
+        setMessage({ type: "error", text: "❌ Già iscritto!" });
+        return;
+      }
+
+      // ✅ INSERT in tournament_players (tabella corretta!)
+      const playerName = user.email?.split('@')[0] || 'Giocatore';
+      
+      const { error } = await supabase.from("tournament_players").insert({
         tournament_id: selectedTorneo,
-        user_id: user.id,
+        player_id: user.id,
+        player_name: playerName,
+        rating: 1500
       });
 
-      if (error) {
-        setMessage({ type: "error", text: `❌ Errore: ${error.message}` });
-      } else {
-        setMessage({
-          type: "success",
-          text: "✅ Iscrizione avvenuta con successo!",
-        });
-        setSelectedTorneo("");
-        fetchTournaments();
-      }
+      if (error) throw error;
+
+      setMessage({
+        type: "success",
+        text: "✅ Iscrizione avvenuta con successo!",
+      });
+      setSelectedTorneo("");
+      fetchTournaments(); // Refresh conteggi
     } catch (err) {
+      console.error(err);
       setMessage({ type: "error", text: `❌ Errore: ${err.message}` });
     } finally {
       setRegisterLoading(false);
@@ -151,9 +177,10 @@ export default function TournamentRegisterAuth() {
                 >
                   <option value="">📋 Seleziona un torneo</option>
                   {tournaments.map((t) => (
-                    <option key={t.id} value={t.id} className="text-sm">
-                      {t.name} ({t.totalIscritti}/{t.max_players || 16} max) - €
-                      {t.price || 0}
+                    <option key={t.id} value={t.id}>
+                      {t.name} 
+                      {t.type === 'Diretta' ? ' ⚡' : t.type === 'Gironi' ? ' 🏟️' : ' 🛠️'}
+                      ({t.totalIscritti}/{t.players}) - Aperto
                     </option>
                   ))}
                 </select>
@@ -196,199 +223,11 @@ export default function TournamentRegisterAuth() {
 
               <div className="pt-4 border-t border-gray-100 text-center">
                 <p className="text-xs text-gray-500">
-                  Tornei disponibili: <strong>{tournaments.length}</strong>
+                  Tornei aperti: <strong>{tournaments.length}</strong>
                 </p>
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ------------------------------------------------------------
-
-// src/components/TournamentViewOnly.jsx
-import React, { useState, useEffect } from "react";
-import { supabase } from "../supabaseClient";
-import {
-  Users,
-  Plus,
-  CheckCircle,
-  Loader2,
-  Calendar,
-} from "lucide-react";
-
-export function TournamentViewOnly() {
-  const [tournaments, setTournaments] = useState([]);
-  const [myRegistrations, setMyRegistrations] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(null);
-  const [message, setMessage] = useState(null);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    setLoading(true);
-    setFetchError(null);
-    try {
-      const { data: tournamentsData, error: tournamentsError } = await supabase
-        .from("tournaments")
-        .select(
-          `
-          *,
-          tournament_registrations:user_id (user_id)
-        `
-        )
-        .order("created_at", { ascending: false });
-
-      if (tournamentsError) throw tournamentsError;
-
-      const tournamentsWithCount = (tournamentsData || []).map((t) => ({
-        ...t,
-        totalIscritti: t.tournament_registrations?.length || 0,
-      }));
-      setTournaments(tournamentsWithCount);
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user && user.id) {
-        const { data: myRegs } = await supabase
-          .from("tournament_registrations")
-          .select("tournament_id")
-          .eq("user_id", user.id);
-        const regsMap = {};
-        myRegs?.forEach((reg) => {
-          regsMap[reg.tournament_id] = true;
-        });
-        setMyRegistrations(regsMap);
-      }
-    } catch (error) {
-      setFetchError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRegister = async (tournamentId) => {
-    setLoading(true);
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        setMessage({ type: "error", text: "❌ Effettua il login!" });
-        return;
-      }
-
-      const { error } = await supabase.from("tournament_registrations").insert({
-        tournament_id: tournamentId,
-        user_id: user.id,
-      });
-
-      if (error) throw error;
-      setMessage({ type: "success", text: "✅ Iscritto con successo!" });
-      fetchData();
-    } catch (error) {
-      setMessage({ type: "error", text: `❌ Errore: ${error.message}` });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading)
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin w-12 h-12 text-blue-600" />
-      </div>
-    );
-  if (fetchError)
-    return (
-      <div className="min-h-screen flex items-center justify-center text-red-600">
-        {fetchError}
-      </div>
-    );
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 pt-4 pb-12">
-      <div className="p-6 max-w-6xl mx-auto space-y-8">
-        <div className="text-center">
-          <div className="w-20 h-20 bg-blue-100 rounded-xl mx-auto mb-4 flex items-center justify-center shadow-sm border border-gray-200">
-            <Calendar className="w-9 h-9 text-blue-600" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Tornei Disponibili
-          </h1>
-          <p className="text-lg text-gray-600 max-w-md mx-auto leading-relaxed">
-            ({tournaments.length}) Iscriviti ai tornei padel
-          </p>
-        </div>
-
-        {message && (
-          <div
-            className={`p-4 rounded-xl mb-4 flex items-start gap-3 shadow-sm ${
-              message.type === "success"
-                ? "bg-emerald-50 border border-emerald-200 text-emerald-800"
-                : "bg-red-50 border border-red-200 text-red-800"
-            }`}
-          >
-            {message.type === "success" ? (
-              <CheckCircle className="w-5 h-5 mt-0.5" />
-            ) : (
-              <Users className="w-5 h-5 mt-0.5" />
-            )}
-            <span className="font-medium">{message.text}</span>
-          </div>
-        )}
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tournaments.map((t) => (
-            <div
-              key={t.id}
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col gap-3 group"
-            >
-              <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
-                {t.name}
-              </h3>
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl">
-                  <Users className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-semibold text-gray-700">
-                    {t.totalIscritti}/{t.max_players || 16} posti | €
-                    {t.price || 0}
-                  </span>
-                </div>
-                <span
-                  className={`block w-full px-4 py-2 rounded-xl text-sm font-bold text-center text-white ${
-                    t.status === "pianificato"
-                      ? "bg-blue-600"
-                      : t.status === "in_corso"
-                      ? "bg-yellow-600"
-                      : "bg-green-600"
-                  }`}
-                >
-                  {t.status}
-                </span>
-              </div>
-
-              <button
-                disabled={myRegistrations[t.id]}
-                onClick={() => handleRegister(t.id)}
-                className={`w-full py-3 px-6 font-bold rounded-xl text-white flex items-center justify-center gap-2 text-sm transition-all hover:-translate-y-0.5 ${
-                  myRegistrations[t.id]
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-emerald-500 to-green-600 hover:shadow-md"
-                }`}
-              >
-                <Plus className="w-4 h-4" />
-                {myRegistrations[t.id] ? "Già iscritto" : "Iscriviti"}
-              </button>
-            </div>
-          ))}
         </div>
       </div>
     </div>

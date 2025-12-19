@@ -1,130 +1,179 @@
-// src/components/TournamentAdminPanel.jsx - ✅ CREAZIONE SOLA (NO ISCRITTI!)
-import React, { useState } from 'react';
-import { supabase } from '../supabaseClient';
-import { useAuth } from '../context/AuthProvider';
-import { Plus, Loader2, CheckCircle } from 'lucide-react';
-import BackButton from './BackButton';
+// src/components/TournamentAdminPanel.jsx - COMPLETO E FUNZIONANTE
+import React, { useState, useEffect } from "react";
+import { supabase } from "../supabaseClient";
+
+function AdminTournamentForm({ onTournamentCreated }) {
+  const [name, setName] = useState("");
+  const [type, setType] = useState("Diretta");
+  const [players, setPlayers] = useState(16);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    setLoading(true);
+
+    const { error } = await supabase.from("tournaments").insert([
+      {
+        name: name.trim(),
+        type,
+        players,
+        status: 'registration'
+      },
+    ]);
+
+    setLoading(false);
+
+    if (error) {
+      alert("Errore creazione torneo: " + error.message);
+      return;
+    }
+
+    if (typeof onTournamentCreated === "function") {
+      onTournamentCreated();
+    }
+
+    setName(""); 
+    setType("Diretta"); 
+    setPlayers(16);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="bg-white p-4 rounded-lg shadow-sm border space-y-3">
+      <h3 className="text-base font-semibold text-gray-800">➕ Nuovo torneo</h3>
+      
+      <input
+        type="text"
+        placeholder="Nome torneo"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+        required
+      />
+
+      <div className="grid grid-cols-2 gap-2">
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+        >
+          <option value="Diretta">Diretta</option>
+          <option value="Gironi">Gironi</option>
+        </select>
+
+        <input
+          type="number"
+          min="2"
+          max="64"
+          value={players}
+          onChange={(e) => setPlayers(Number(e.target.value))}
+          className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-emerald-500 text-white py-2 rounded-md font-medium text-sm hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+      >
+        {loading ? "Creando..." : "Crea torneo"}
+      </button>
+    </form>
+  );
+}
 
 export default function TournamentAdminPanel() {
-  const { isAdmin } = useAuth();
-  const [formData, setFormData] = useState({
-    name: '',
-    price: 0,
-    max_players: 16,
-    date: '',
-    status: 'pianificato'
-  });
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
+  const [tournaments, setTournaments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
-  if (!isAdmin) return null;
-
-  const handleCreateTournament = async (e) => {
-    e.preventDefault();
+  const fetchTournaments = async () => {
     setLoading(true);
-    setMessage(null);
-
+    setError(null);
     try {
-      const { error } = await supabase.from('tournaments').insert([formData]);
+      const { data, error } = await supabase
+        .from("tournaments")
+        .select("id, name, type, players, status, created_at")
+        .order("created_at", { ascending: false });
+      
       if (error) throw error;
-
-      setMessage({ type: 'success', text: '✅ Torneo creato con successo!' });
-      setFormData({ name: '', price: 0, max_players: 16, date: '', status: 'pianificato' });
-    } catch (error) {
-      setMessage({ type: 'error', text: `❌ Errore: ${error.message}` });
+      
+      const tournamentsWithCount = await Promise.all(
+        (data || []).map(async (t) => {
+          const { count } = await supabase
+            .from("tournament_players")
+            .select("*", { count: "exact", head: true })
+            .eq("tournament_id", t.id);
+          return { ...t, iscritti: count || 0 };
+        })
+      );
+      
+      setTournaments(tournamentsWithCount);
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchTournaments();
+  }, []);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Eliminare torneo + tutte le iscrizioni?")) return;
+    setDeletingId(id);
+    
+    try {
+      await supabase.from("tournament_players").delete().eq("tournament_id", id);
+      await supabase.from("tournaments").delete().eq("id", id);
+      setTournaments((prev) => prev.filter((t) => t.id !== id));
+    } catch (error) {
+      alert("Errore eliminazione: " + error.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  if (loading) return <div className="p-6 text-center text-indigo-600 text-sm font-medium">Caricamento tornei...</div>;
+  if (error) return <div className="p-6 bg-red-50 text-red-600 text-sm border rounded-lg text-center">Errore: {error}</div>;
+  if (tournaments.length === 0) return <div className="p-6 text-gray-500 italic text-sm text-center">Nessun torneo creato.</div>;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-blue-50 p-8">
-      <BackButton />
-      
-      <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-2xl p-12 border border-emerald-200">
-        <div className="text-center mb-12">
-          <div className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-green-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-2xl">
-            <Plus className="w-12 h-12 text-white" />
-          </div>
-          <h1 className="text-5xl font-black bg-gradient-to-r from-gray-900 to-emerald-900 bg-clip-text text-transparent mb-4">
-            🏆 CREA TORNEO
-          </h1>
-          <p className="text-xl text-gray-600 font-semibold">Gestione tornei PadelClub</p>
+    <div className="max-w-2xl mx-auto p-6 space-y-6">
+      <AdminTournamentForm onTournamentCreated={fetchTournaments} />
+
+      <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900">Tornei ({tournaments.length})</h2>
         </div>
-
-        {message && (
-          <div className={`p-6 rounded-2xl mb-8 flex items-center gap-4 font-bold text-lg ${
-            message.type === 'success'
-              ? 'bg-emerald-50 border-4 border-emerald-200 text-emerald-800'
-              : 'bg-red-50 border-4 border-red-200 text-red-800'
-          }`}>
-            {message.type === 'success' ? <CheckCircle className="w-8 h-8" /> : <Plus className="w-8 h-8" />}
-            <span>{message.text}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleCreateTournament} className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <label className="block text-xl font-bold text-gray-900 mb-4">🏆 Nome Torneo</label>
-              <input
-                type="text"
-                placeholder="Es: CieffePadelADMIN 2025"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full p-6 text-2xl font-bold border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-lg"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-xl font-bold text-gray-900 mb-4">💰 Prezzo (€)</label>
-              <input
-                type="number"
-                placeholder="0"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                className="w-full p-6 text-2xl font-bold border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-lg"
-                min="0"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <label className="block text-xl font-bold text-gray-900 mb-4">📅 Data</label>
-              <input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full p-6 text-xl font-bold border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-lg"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xl font-bold text-gray-900 mb-4">👥 Max Giocatori</label>
-              <select
-                value={formData.max_players}
-                onChange={(e) => setFormData({ ...formData, max_players: Number(e.target.value) })}
-                className="w-full p-6 text-xl font-bold border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-lg"
+        
+        <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+          {tournaments.map((t) => (
+            <div key={t.id} className="flex items-center justify-between p-4 hover:bg-gray-50">
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-sm text-gray-900 truncate">{t.name}</div>
+                <div className="text-xs text-gray-500 mt-0.5">
+                  {t.iscritti}/{t.players} iscritti • {t.type} • {t.status}
+                </div>
+              </div>
+              <button
+                onClick={() => handleDelete(t.id)}
+                disabled={deletingId === t.id}
+                className={`ml-4 px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                  deletingId === t.id 
+                    ? "bg-gray-200 text-gray-500 cursor-not-allowed" 
+                    : "bg-red-500 text-white hover:bg-red-600"
+                }`}
+                title="Elimina torneo"
               >
-                <option value={8}>8 giocatori</option>
-                <option value={16}>16 giocatori</option>
-                <option value={24}>24 giocatori</option>
-                <option value={32}>32 giocatori</option>
-              </select>
+                {deletingId === t.id ? "..." : "🗑️"}
+              </button>
             </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading || !formData.name}
-            className="w-full py-8 px-12 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white text-2xl font-black rounded-3xl shadow-2xl hover:shadow-3xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-4 mx-auto"
-          >
-            {loading ? <Loader2 className="w-8 h-8 animate-spin" /> : <Plus className="w-8 h-8" />}
-            CREA TORNEO ORA
-          </button>
-        </form>
+          ))}
+        </div>
       </div>
     </div>
   );

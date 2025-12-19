@@ -1,109 +1,54 @@
-// src/components/TournamentBoard.jsx
 import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
+import { Trophy } from "lucide-react";
 
 export default function TournamentBoard({ tournamentId }) {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!tournamentId) return;
-
-    const load = async () => {
-      setLoading(true);
+    const fetchMatches = async () => {
       const { data, error } = await supabase
-        .from("matches")
-        .select("*")
+        .from("tournament_matches")
+        .select(`
+          id, round, player1:profiles(full_name), player2:profiles(full_name), winner:profiles(full_name)
+        `)
         .eq("tournament_id", tournamentId)
-        .in("round", ["ottavi", "quarti", "semifinale", "finale"])
-        .order("round", { ascending: true })
-        .order("court", { ascending: true });
+        .order("round", { ascending: true });
 
-      if (!error) {
-        setMatches(data || []);
-      } else {
-        console.error("Errore caricamento matches:", error);
-        setMatches([]);
-      }
+      if (error) console.error(error);
+      else setMatches(data || []);
       setLoading(false);
     };
 
-    load();
+    fetchMatches();
   }, [tournamentId]);
 
-  const byRound = (round) => matches.filter((m) => m.round === round);
+  if (loading) return <p>Caricamento tabellone...</p>;
+  if (!matches.length) return <p>Ancora nessuna partita disponibile</p>;
 
-  const renderTeam = (teamStr, fallback) => {
-    if (!teamStr) return fallback;
-    const parts = teamStr.split(",").filter(Boolean);
-    if (parts.length === 0) return fallback;
-    if (parts.length === 1) return `Giocatore ${parts[0].slice(0, 6)}…`;
-    return `Coppia ${parts[0].slice(0, 4)}… / ${parts[1].slice(0, 4)}…`;
-  };
-
-  const renderMatchCard = (m) => (
-    <div
-      key={m.id}
-      className="bg-white border border-gray-300 rounded-md px-3 py-2 min-w-[160px] text-center"
-    >
-      <div className="flex flex-col mb-1">
-        <div className="flex justify-center gap-1 my-0.5">
-          <div className="px-1 py-0.5 bg-emerald-50 rounded text-xs">
-            {renderTeam(m.player1, "Squadra 1")}
-          </div>
-        </div>
-        <div className="flex justify-center gap-1 my-0.5">
-          <div className="px-1 py-0.5 bg-emerald-50 rounded text-xs">
-            {renderTeam(m.player2, "Squadra 2")}
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-1 bg-cyan-50 font-semibold px-1 py-0.5 rounded text-[11px]">
-        {m.court ? String(m.court) : "Campo -"}
-      </div>
-
-      {m.score && (
-        <div className="mt-1 bg-amber-50 px-1 py-0.5 rounded text-[11px]">
-          {m.score}
-        </div>
-      )}
-    </div>
-  );
-
-  if (!tournamentId) return <div>Nessun torneo selezionato.</div>;
-  if (loading) return <div>Caricamento tabellone...</div>;
-  if (matches.length === 0) return <div>Nessun match generato.</div>;
+  const rounds = Array.from(new Set(matches.map((m) => m.round)));
 
   return (
-    <div className="p-4 bg-[#f8f8f8]">
-      <h1 className="text-center text-xl font-bold mb-4">
-        Tabellone Padel 2vs2
-      </h1>
-
-      <div className="flex flex-col items-center space-y-6">
-        <Round title="Ottavi" matches={byRound("ottavi")} render={renderMatchCard} />
-        <Round title="Quarti" matches={byRound("quarti")} render={renderMatchCard} />
-        <Round
-          title="Semifinali"
-          matches={byRound("semifinale")}
-          render={renderMatchCard}
-        />
-        <Round title="Finale" matches={byRound("finale")} render={renderMatchCard} />
-      </div>
-    </div>
-  );
-}
-
-function Round({ title, matches, render }) {
-  if (matches.length === 0) return null;
-
-  return (
-    <div className="w-full max-w-4xl">
-      <div className="text-center font-bold mb-2">{title}</div>
-      <div className="flex justify-center gap-2 flex-wrap">
-        {matches.map(render)}
-      </div>
+    <div>
+      <h2 className="text-xl font-bold mb-4">Tabellone Torneo</h2>
+      {rounds.map((round) => (
+        <div key={round} className="mb-6">
+          <h3 className="font-semibold mb-2">Round {round}</h3>
+          <ul className="space-y-2">
+            {matches
+              .filter((m) => m.round === round)
+              .map((m) => (
+                <li key={m.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <span>{m.player1?.full_name || "?"} vs {m.player2?.full_name || "?"}</span>
+                  {m.winner && (
+                    <Trophy className="w-5 h-5 text-yellow-500 ml-2" title={`Vincitore: ${m.winner.full_name}`} />
+                  )}
+                </li>
+              ))}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 }
