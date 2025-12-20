@@ -1,220 +1,332 @@
+// src/components/PadelBracket.jsx
 import React, { useState, useEffect } from "react";
-import { ChevronLeft, Trophy, Users, GripVertical, Edit3, ArrowRight, User } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
+import { ChevronLeft, Users, GripVertical } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 
 export default function PadelBracket() {
   const navigate = useNavigate();
-  const [round, setRound] = useState('ottavi');
-  const [players, setPlayers] = useState([
-    "Mario Rossi", "Luca Bianchi", "Giulia Verdi", "Sara Nero", 
-    "Marco Oro", "Anna Rossi2", "Paolo Verdi2", "Laura Grigi",
-    "Antonio Azzurri", "Federica Gialli", "Davide Neri", "Chiara Arancioni",
-    "Roberto Blu", "Elena Bianchi2", "Stefano Rossi3", "Martina Bianchi3"
-  ]);
+  const { tournamentId } = useParams();
+  const [round, setRound] = useState("ottavi");
+  const [allPlayers, setAllPlayers] = useState([]);
+  const [players, setPlayers] = useState([]);
   const [bracket, setBracket] = useState({
     ottavi: [
-      [[null, null], [null, null]], [[null, null], [null, null]], 
-      [[null, null], [null, null]], [[null, null], [null, null]]
+      [[null, null], [null, null]],
+      [[null, null], [null, null]],
+      [[null, null], [null, null]],
+      [[null, null], [null, null]],
     ],
-    quarti: [[[null, null], [null, null]], [[null, null], [null, null]]],
+    quarti: [
+      [[null, null], [null, null]],
+      [[null, null], [null, null]],
+    ],
     semi: [[[null, null], [null, null]]],
-    finale: [[null, null], [null, null]]
+    finale: [[[null, null], [null, null]]],
   });
   const [results, setResults] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [tournamentName, setTournamentName] = useState("Tabellone Padel");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const TOURNAMENT_ID = tournamentId || "1ed0d77f-894d-4f67-ae5d-01a7ba4df8f7";
 
-  const fields = ["Campo 1", "Campo 2", "Campo 3", "Campo 4"];
-
-  // ✅ AUTO-PROPAGA VINCITORI SQUADRE
-  useEffect(() => {
-    propagateWinners();
-  }, [results]);
-
-  const propagateWinners = () => {
-    const newBracket = { ...bracket };
-    
-    // Ottavi → Quarti
-    for (let i = 0; i < 4; i++) {
-      const match1 = bracket.ottavi[i];
-      const result1 = results[`ottavi_${i}`];
-      if (match1[0][0] && match1[0][1] && match1[1][0] && match1[1][1] && result1) {
-        const winnerTeam = result1.set1 > result1.set2 ? match1[0] : match1[1];
-        newBracket.quarti[Math.floor(i / 2)][i % 2] = winnerTeam;
+  // ---- Check Admin ----
+  useEffect(() => { checkUserRole(); }, []);
+  const checkUserRole = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: userProfile } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        const { data: tournamentAdmins } = await supabase
+          .from("tournament_admins")
+          .select("user_id")
+          .eq("tournament_id", TOURNAMENT_ID);
+        const isGlobalAdmin = userProfile?.role === "admin";
+        const isTournamentAdmin = tournamentAdmins?.some((a) => a.user_id === user.id);
+        setIsAdmin(isGlobalAdmin || isTournamentAdmin);
       }
-    }
-    
-    setBracket(newBracket);
+    } catch (error) { console.log("User role check:", error); }
   };
 
-  const onDragStart = (e, player) => {
-    e.dataTransfer.setData("player", player);
+  // ---- Load Players ----
+  useEffect(() => { loadData(); }, [TOURNAMENT_ID]);
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const { data: tournamentData } = await supabase
+        .from("tournaments")
+        .select("name")
+        .eq("id", TOURNAMENT_ID)
+        .single();
+      setTournamentName(tournamentData?.name || "Tabellone Padel");
+
+      const { data: registrations } = await supabase
+        .from("tournament_registrations")
+        .select(`id,user_id,profiles!inner(full_name, display_name, player_name)`)
+        .eq("tournament_id", TOURNAMENT_ID);
+
+      if (registrations?.length > 0) {
+        const realPlayers = registrations
+          .map((reg) =>
+            reg.profiles?.full_name ||
+            reg.profiles?.player_name ||
+            reg.profiles?.display_name ||
+            `User ${reg.user_id?.slice(-6)}`
+          )
+          .filter(Boolean);
+        setAllPlayers(realPlayers);
+      } else {
+        setAllPlayers([
+          "Mario Rossi","Luca Verdi","Giulia Bianchi","Sara Neri",
+          "Paolo Bianchi","Anna Verdi","Marco Rossi","Laura Neri",
+          "Giorgio Neri","Francesca Rossi","Antonio Verdi","Elena Bianchi",
+          "Roberto Neri","Chiara Rossi","Davide Verdi","Sofia Bianchi",
+        ]);
+      }
+
+      // Load existing bracket from Supabase
+      const { data: bracketData } = await supabase
+        .from("tournament_brackets")
+        .select("*")
+        .eq("tournament_id", TOURNAMENT_ID);
+
+      if (bracketData?.length > 0) {
+        const newBracket = { ...bracket };
+        const newResults = {};
+        bracketData.forEach((b) => {
+          if (!newBracket[b.round]) newBracket[b.round] = [];
+          newBracket[b.round][b.match_index] = [b.team_1 || [null, null], b.team_2 || [null, null]];
+          newResults[`${b.round}_${b.match_index}`] = { set1: b.result_set1 || 0, set2: b.result_set2 || 0 };
+        });
+        setBracket(newBracket);
+        setResults(newResults);
+      }
+
+    } catch (error) {
+      console.error("Load error:", error);
+      setAllPlayers(["Mario Rossi","Luca Verdi","Giulia Bianchi","Sara Neri"]);
+    } finally { setLoading(false); }
   };
 
-  const onDrop = (e, round, matchIndex, teamIndex, playerIndex) => {
-    e.preventDefault();
+  // ---- Players left to assign ----
+  useEffect(() => {
+    const usedPlayers = [];
+    Object.values(bracket).forEach(roundMatches => {
+      roundMatches?.forEach(match => match?.forEach(team => team?.forEach(player => { if(player) usedPlayers.push(player); })));
+    });
+    setPlayers(allPlayers.filter(p => !usedPlayers.includes(p)));
+  }, [allPlayers, bracket]);
+
+  // ---- Drag & Drop ----
+  const onDragStart = (e, player) => { if (!isAdmin) return; e.dataTransfer.setData("player", player); };
+  const onDrop = (e, roundKey, matchIndex, teamIndex, playerIndex) => {
+    if (!isAdmin) return; e.preventDefault();
     const player = e.dataTransfer.getData("player");
-    setBracket(prev => ({
-      ...prev,
-      [round]: prev[round].map((match, i) => 
-        i === matchIndex 
-          ? match.map((team, j) => 
-              j === teamIndex 
-                ? team.map((p, k) => k === playerIndex ? player : p)
-                : team
-            )
-          : match
-      )
-    }));
-    setPlayers(prev => prev.filter(p => p !== player));
+    setBracket(prev => {
+      const newBracket = JSON.parse(JSON.stringify(prev));
+      if (!newBracket[roundKey]) newBracket[roundKey] = [];
+      if (!newBracket[roundKey][matchIndex]) newBracket[roundKey][matchIndex] = [];
+      if (!newBracket[roundKey][matchIndex][teamIndex])
+        newBracket[roundKey][matchIndex][teamIndex] = [null, null];
+      newBracket[roundKey][matchIndex][teamIndex][playerIndex] = player;
+      saveMatchToSupabase(roundKey, matchIndex, newBracket[roundKey][matchIndex]);
+      return newBracket;
+    });
+  };
+  const onDragOver = (e) => { if (!isAdmin) return; e.preventDefault(); };
+
+  // ---- Determine Winner ----
+  const getMatchWinner = (team1, team2, result) => {
+    if (!team1 || !team2 || !result) return null;
+    if (result.set1 > result.set2) return team1;
+    if (result.set2 > result.set1) return team2;
+    return team1;
   };
 
-  const onDragOver = (e) => e.preventDefault();
+  // ---- Advance Winner Automatically ----
+  const advanceWinner = (roundKey, matchIndex, matchResult) => {
+    const roundOrder = ["ottavi", "quarti", "semi", "finale"];
+    const currentRoundIdx = roundOrder.indexOf(roundKey);
+    if (currentRoundIdx === -1 || currentRoundIdx === roundOrder.length-1) return;
 
-  const updateResult = (round, matchIndex, set1, set2) => {
-    setResults(prev => ({
-      ...prev,
-      [`${round}_${matchIndex}`]: { set1: parseInt(set1) || 0, set2: parseInt(set2) || 0 }
-    }));
+    const nextRoundKey = roundOrder[currentRoundIdx + 1];
+    const nextMatchIndex = Math.floor(matchIndex/2);
+    const teamPosition = matchIndex % 2;
+
+    const winner = getMatchWinner(
+      bracket[roundKey][matchIndex][0],
+      bracket[roundKey][matchIndex][1],
+      matchResult
+    );
+    if (!winner) return;
+
+    setBracket(prev => {
+      const newBracket = JSON.parse(JSON.stringify(prev));
+      if (!newBracket[nextRoundKey]) newBracket[nextRoundKey] = [];
+      if (!newBracket[nextRoundKey][nextMatchIndex] === undefined) newBracket[nextRoundKey][nextMatchIndex] = [[null,null],[null,null]];
+      newBracket[nextRoundKey][nextMatchIndex][teamPosition] = [...winner];
+      saveMatchToSupabase(nextRoundKey, nextMatchIndex, newBracket[nextRoundKey][nextMatchIndex]);
+      return newBracket;
+    });
   };
 
-  const rounds = ['ottavi', 'quarti', 'semi', 'finale'];
+  // ---- Update Result ----
+  const updateResult = (roundKey, matchIndex, set1, set2) => {
+    if (!isAdmin) return;
+    const newResult = { set1: parseInt(set1)||0, set2: parseInt(set2)||0 };
+    setResults(prev => ({ ...prev, [`${roundKey}_${matchIndex}`]: newResult }));
+    advanceWinner(roundKey, matchIndex, newResult);
+    saveBracketAuto();
+  };
 
+  // ---- Save match to Supabase ----
+  const saveMatchToSupabase = async (roundKey, matchIndex, matchTeams) => {
+    const result = results[`${roundKey}_${matchIndex}`] || { set1:0,set2:0 };
+    await supabase
+      .from("tournament_brackets")
+      .upsert({
+        tournament_id: TOURNAMENT_ID,
+        round: roundKey,
+        match_index: matchIndex,
+        team_1: matchTeams[0],
+        team_2: matchTeams[1],
+        result_set1: result.set1,
+        result_set2: result.set2
+      }, { onConflict: ["tournament_id","round","match_index"] });
+  };
+
+  const saveBracketAuto = () => localStorage.setItem(`bracket_${TOURNAMENT_ID}`, JSON.stringify({ bracket, results, round }));
+
+  // ---- Delete Tournament ----
+  const handleDeleteTournament = async () => {
+    if (!isAdmin) return;
+    if (!confirm("Sei sicuro di voler eliminare il torneo?")) return;
+    try {
+      await supabase.from("tournament_registrations").delete().eq("tournament_id", TOURNAMENT_ID);
+      await supabase.from("tournaments").delete().eq("id", TOURNAMENT_ID);
+      alert("Torneo eliminato!");
+      navigate(-1);
+    } catch (error) {
+      console.error("Errore eliminazione torneo:", error);
+      alert("Errore durante l'eliminazione");
+    }
+  };
+
+  const rounds = ["ottavi","quarti","semi","finale"];
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full"></div>
+  </div>;
+
+  // ---- RENDER ----
   return (
-    <div className="min-h-screen bg-white py-6">
-      <div className="max-w-6xl mx-auto px-4 space-y-6">
-        
-        <button onClick={() => navigate(-1)} className="px-4 py-2 border rounded-lg hover:bg-gray-50">
-          ← Indietro
-        </button>
-        
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-4">🏆 Tabellone Padel 2vs2</h1>
-          <div className="flex gap-2 justify-center flex-wrap">
-            {rounds.map(r => (
-              <button
-                key={r}
-                onClick={() => setRound(r)}
-                className={`px-6 py-2 rounded-lg font-bold ${
-                  round === r ? 'bg-emerald-600 text-white shadow-lg' : 'bg-gray-200 hover:bg-gray-300'
-                }`}
-              >
-                {r.toUpperCase()}
+    <div className="min-h-screen bg-white py-4 px-2 sm:px-4">
+      <div className="max-w-6xl mx-auto space-y-4">
+        {/* HEADER */}
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={()=>navigate(-1)} className="p-2 border rounded-lg hover:bg-gray-50 flex items-center gap-1">
+            <ChevronLeft className="w-4 h-4"/> Indietro
+          </button>
+          <h1 className="text-xl font-bold text-center flex-1">
+            🏆 {tournamentName} (ID: {TOURNAMENT_ID.slice(-8)})
+            <span className={`ml-2 px-2 py-0.5 text-xs rounded-full font-bold ${isAdmin?"bg-emerald-100 text-emerald-800":"bg-gray-100 text-gray-600"}`}>
+              {isAdmin?"👑 ADMIN":"👁️ VIEW"}
+            </span>
+          </h1>
+          <div className="flex gap-2 items-center">
+            <div className="px-3 py-1 text-xs font-bold rounded-full bg-emerald-100 text-emerald-800">💾 SALVATO</div>
+            {isAdmin && (
+              <button onClick={handleDeleteTournament} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-bold">
+                Elimina torneo
               </button>
-            ))}
+            )}
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          
+        {/* TABS */}
+        <div className="flex gap-1 overflow-x-auto pb-2 border-b border-gray-200">
+          {rounds.map(r=>(
+            <button key={r} onClick={()=>setRound(r)}
+              className={`px-4 py-2 text-sm font-bold rounded-t-md whitespace-nowrap flex-shrink-0 ${round===r?"bg-emerald-600 text-white shadow-sm":"bg-gray-100 hover:bg-gray-200 text-gray-700"}`}>
+              {r.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
+        {/* GRID RESPONSIVE */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 min-h-[70vh]">
           {/* ISCRITTI */}
-          <div>
-            <h2 className="text-2xl font-bold mb-6 text-center">👥 Iscritti (Drag)</h2>
-            <div className="bg-gray-50 p-6 rounded-xl border-2 border-dashed border-gray-300 min-h-96 overflow-y-auto max-h-96">
-              {players.map((player, i) => (
-                <div
-                  key={i}
-                  className="bg-white p-4 mb-3 rounded-lg shadow-sm hover:shadow-md cursor-grab active:cursor-grabbing flex items-center gap-3 border-l-4 border-emerald-500"
-                  draggable
-                  onDragStart={(e) => onDragStart(e, player)}
-                >
-                  <GripVertical className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                  <div className="font-bold text-lg">{player}</div>
-                </div>
-              ))}
+          <div className="space-y-3 order-2 xl:order-1">
+            <h3 className="font-semibold text-sm text-center flex items-center justify-center gap-2">
+              👥 {isAdmin ? `Disponibili (${players.length}/${allPlayers.length})` : `Iscritti (${allPlayers.length})`}
+            </h3>
+            <div className="bg-gray-50 p-3 rounded-xl border h-64 xl:h-auto overflow-y-auto space-y-1.5">
+              {isAdmin
+                ? (players.length===0
+                  ? <div className="text-center text-gray-500 text-xs py-4">Tutti posizionati! 🎾</div>
+                  : players.map((player,i)=>(
+                    <div key={i} className="bg-white p-2.5 rounded-lg text-xs shadow-sm cursor-grab hover:bg-emerald-50 flex items-center gap-2 border hover:border-emerald-400 transition-all"
+                      draggable onDragStart={(e)=>onDragStart(e,player)}>
+                      <GripVertical className="w-3.5 h-3.5 flex-shrink-0 text-gray-400"/>
+                      <span className="font-medium truncate flex-1">{player}</span>
+                    </div>
+                  ))
+                )
+                : allPlayers.map((player,i)=>(
+                  <div key={i} className="bg-gray-100 p-2.5 rounded-lg text-xs flex items-center gap-2 border cursor-default">
+                    <Users className="w-4 h-4 text-gray-400 flex-shrink-0"/>
+                    <span className="font-medium truncate flex-1">{player}</span>
+                  </div>
+                ))
+              }
             </div>
           </div>
 
-          {/* TABELLONE 2vs2 */}
-          <div>
-            <h2 className="text-2xl font-bold mb-6 text-center">{round.toUpperCase()}</h2>
-            <div className="space-y-6">
-              {bracket[round].map((matchesGroup, matchIndex) => {
+          {/* TABELLONE */}
+          <div className="space-y-3 order-1 xl:order-2">
+            <h3 className="font-semibold text-sm text-center flex items-center justify-center gap-2">
+              {round.toUpperCase()} {isAdmin && `- ${bracket[round]?.length || 0} Campi`}
+            </h3>
+            <div className="bg-gray-50 p-4 rounded-xl border min-h-[500px] overflow-y-auto space-y-3">
+              {bracket[round].map((matchesGroup, matchIndex)=>{
                 const resultKey = `${round}_${matchIndex}`;
-                const result = results[resultKey] || { set1: 0, set2: 0 };
+                const result = results[resultKey] || {set1:0,set2:0};
                 return (
-                  <div key={matchIndex} className="bg-gray-50 p-6 rounded-xl border hover:shadow-lg">
-                    {/* CAMPO */}
-                    <div className="flex items-center justify-between mb-4 p-3 bg-emerald-100 rounded-lg">
-                      <span className="font-bold text-lg">🏟️ {fields[matchIndex % fields.length]}</span>
-                      <span className="font-bold text-lg bg-emerald-600 text-white px-3 py-1 rounded-full">
-                        Partita {matchIndex + 1}
-                      </span>
+                  <div key={matchIndex} className={`p-4 rounded-xl border shadow-sm ${isAdmin?"bg-white hover:shadow-md":"bg-gray-50"}`}>
+                    <div className="flex items-center justify-between mb-2.5 pb-1.5 border-b border-gray-200">
+                      <span className="text-xs font-semibold">🏟️ Campo {matchIndex+1}</span>
+                      <span className="bg-emerald-600 text-white px-2 py-0.5 rounded text-xs font-bold">P{matchIndex+1}</span>
                     </div>
-                    
-                    {/* ✅ SQUADRE 2 GIOCATORI */}
-                    <div className="space-y-4 mb-6">
-                      {matchesGroup.map((team, teamIndex) => (
-                        <div
-                          key={teamIndex}
-                          className="p-4 border-2 border-dashed rounded-lg min-h-24 flex flex-col gap-2 cursor-pointer hover:border-emerald-400 transition-all"
-                          onDragOver={onDragOver}
-                        >
-                          {team.map((player, playerIndex) => (
-                            <div
-                              key={playerIndex}
-                              className={`p-3 rounded-lg border-2 border-dashed text-center min-h-12 flex items-center justify-center cursor-pointer hover:border-emerald-400 transition-all ${
-                                player ? 'bg-white shadow-md border-emerald-500' : 'bg-white/50 border-gray-300'
-                              }`}
-                              onDrop={(e) => onDrop(e, round, matchIndex, teamIndex, playerIndex)}
-                            >
-                              {player ? (
-                                <div className="font-bold text-sm text-emerald-700 flex items-center gap-2">
-                                  <User className="w-4 h-4" />
-                                  {player}
-                                </div>
-                              ) : (
-                                <Users className="w-8 h-8 text-gray-400" />
-                              )}
+                    <div className="space-y-2 mb-3">
+                      {matchesGroup.map((team,teamIndex)=>(
+                        <div key={teamIndex} className={`border rounded-lg p-2.5 min-h-[68px] ${isAdmin?"bg-white/70 border-gray-200 hover:border-emerald-400":"bg-gray-100 border-gray-300"}`}>
+                          {team.map((player,playerIndex)=>(
+                            <div key={playerIndex} className={`p-1.5 rounded-md border text-center text-xs flex items-center justify-center h-9 cursor-pointer ${player?"bg-emerald-50 border-emerald-400 font-semibold shadow-sm":isAdmin?"bg-white border-gray-300 hover:border-emerald-400":"bg-gray-100 border-gray-300"}`}
+                              draggable={isAdmin&&!player?false:true} onDragOver={onDragOver}
+                              onDrop={(e)=>onDrop(e,round,matchIndex,teamIndex,playerIndex)}>
+                              {player||"-"}
                             </div>
                           ))}
                         </div>
                       ))}
                     </div>
-                    
-                    {/* RISULTATI */}
-                    <div className="flex items-center justify-center gap-6 p-4 bg-white rounded-xl shadow-sm mb-4">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          min="0"
-                          max="9"
-                          value={result.set1}
-                          onChange={(e) => updateResult(round, matchIndex, e.target.value, result.set2)}
-                          className="w-16 p-3 text-2xl font-black text-center border-2 border-gray-300 rounded-lg focus:ring-4 ring-emerald-500 focus:border-emerald-500"
-                        />
-                        <span className="text-xl font-bold">-</span>
-                        <input
-                          type="number"
-                          min="0"
-                          max="9"
-                          value={result.set2}
-                          onChange={(e) => updateResult(round, matchIndex, result.set1, e.target.value)}
-                          className="w-16 p-3 text-2xl font-black text-center border-2 border-gray-300 rounded-lg focus:ring-4 ring-emerald-500 focus:border-emerald-500"
-                        />
-                      </div>
-                      <Edit3 className="w-6 h-6 text-emerald-600" />
-                    </div>
-                    
-                    {/* VINCITORE */}
-                    {result.set1 > 0 && result.set2 > 0 && (
-                      <div className="text-center p-4 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl text-white font-bold shadow-lg">
-                        <div className="text-2xl mb-2">🏆 VINCITORE</div>
-                        <div className="text-xl">
-                          {result.set1 > result.set2 ? matchesGroup[0][0] || matchesGroup[0][1] : matchesGroup[1][0] || matchesGroup[1][1]}
-                        </div>
-                        <ArrowRight className="w-8 h-8 mx-auto mt-2 animate-pulse" />
+                    {isAdmin && (
+                      <div className="flex gap-2 text-xs">
+                        <input type="number" value={result.set1} onChange={(e)=>updateResult(round,matchIndex,e.target.value,result.set2)}
+                          className="w-12 p-1 border rounded text-center"/>
+                        <span className="self-center">-</span>
+                        <input type="number" value={result.set2} onChange={(e)=>updateResult(round,matchIndex,result.set1,e.target.value)}
+                          className="w-12 p-1 border rounded text-center"/>
                       </div>
                     )}
                   </div>
-                );
+                )
               })}
             </div>
           </div>
-        </div>
-
-        <div className="text-center">
-          <button className="px-12 py-4 bg-emerald-600 text-white font-bold text-xl rounded-2xl hover:bg-emerald-700 shadow-xl hover:shadow-2xl transition-all">
-            💾 SALVA TABELLONE
-          </button>
         </div>
       </div>
     </div>

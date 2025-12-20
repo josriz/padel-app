@@ -23,23 +23,34 @@ export default function TournamentAdminPanel() {
 
   const fetchTournaments = async () => {
     try {
+      console.log('🔍 Inizio fetch...');
+      
       const { data: tournamentsData } = await supabase
         .from('tournaments')
-        .select('*, tournament_registrations(*, profiles(full_name))');
+        .select('*')
+        .order('created_at', { ascending: false });
       
+      console.log('🏆 TORNEI:', tournamentsData);
       setTournaments(tournamentsData || []);
 
-      // Mappa iscrizioni per torneo
       const regs = {};
-      tournamentsData?.forEach(t => {
-        regs[t.id] = t.tournament_registrations?.map(reg => ({
-          ...reg,
-          display_name: reg.profiles?.full_name || reg.display_name || 'Anonimo'
-        })) || [];
-      });
+      for (const t of tournamentsData || []) {
+        console.log('📋 Cerco iscrizioni per torneo:', t.id);
+        
+        const { data: registrationsData } = await supabase
+          .from('tournament_registrations')
+          .select('id, display_name, status, created_at, user_id')
+          .eq('tournament_id', t.id);
+        
+        console.log(`👥 ${t.id}:`, registrationsData);
+        regs[t.id] = registrationsData || [];
+      }
+      
+      console.log('📊 REGISTRATIONS FINALI:', regs);
       setRegistrations(regs);
+      
     } catch (err) {
-      console.error(err);
+      console.error('❌ Errore:', err);
     } finally {
       setLoading(false);
     }
@@ -117,9 +128,10 @@ export default function TournamentAdminPanel() {
                     </p>
                   </div>
                   <div className="flex gap-2">
+                    {/* ✅ LINK CORRETTO PADELBRACKET */}
                     <Link 
                       to={`/tabellone/${t.id}`}
-                      className="px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded hover:bg-emerald-700"
+                      className="px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded hover:bg-emerald-700 flex items-center gap-1 transition-all"
                     >
                       📋 Tabellone
                     </Link>
@@ -144,9 +156,9 @@ export default function TournamentAdminPanel() {
                     <div className="space-y-1 max-h-32 overflow-y-auto">
                       {regs.map(reg => (
                         <div key={reg.id} className="flex items-center justify-between p-2 bg-white rounded border-l-4 border-emerald-400 hover:bg-emerald-50">
-                          <span className="text-sm font-medium">{reg.display_name}</span>
+                          <span className="text-sm font-medium">{reg.display_name || 'Anonimo'}</span>
                           <button 
-                            onClick={() => deleteRegistration(reg.id, reg.display_name, t.id)}
+                            onClick={() => deleteRegistration(reg.id, reg.display_name || 'Giocatore', t.id)}
                             className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded hover:bg-red-600 flex items-center gap-1"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -158,28 +170,35 @@ export default function TournamentAdminPanel() {
                   </div>
                 )}
 
-                {/* PULSANTI TIPI */}
-                <div className="flex gap-2 flex-wrap">
-                  <button 
-                    onClick={() => navigate(`/tabellone/${t.id}`)}
+                {/* NO ISCRITTI */}
+                {regs.length === 0 && (
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded text-center text-sm text-yellow-800">
+                    Nessun iscritto ancora
+                  </div>
+                )}
+
+                {/* ✅ PULSANTI SEMPLIFICATI - TUTTI STESSO LINK */}
+                <div className="flex gap-2 flex-wrap mt-4 pt-4 border-t">
+                  <Link 
+                    to={`/tabellone/${t.id}`}
                     className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded hover:bg-blue-700 flex items-center gap-1"
                   >
-                    ✋ Manuale
-                  </button>
+                    ✋ Tabellone Manuale
+                  </Link>
                   
-                  <button 
-                    onClick={() => navigate(`/tabellone/${t.id}`)}
+                  <Link 
+                    to={`/tabellone/${t.id}`}
                     className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded hover:bg-green-700 flex items-center gap-1"
                   >
-                    ⚾ Diretto
-                  </button>
+                    ⚾ Tabellone Diretto
+                  </Link>
                   
-                  <button 
-                    onClick={() => navigate(`/tabellone/${t.id}`)}
+                  <Link 
+                    to={`/tabellone/${t.id}`}
                     className="px-4 py-2 bg-purple-600 text-white text-sm font-bold rounded hover:bg-purple-700 flex items-center gap-1"
                   >
-                    📊 Gironi
-                  </button>
+                    📊 Tabellone Gironi
+                  </Link>
                 </div>
               </div>
             );

@@ -15,41 +15,52 @@ export default function TabellonePage() {
   const [positions, setPositions] = useState(Array(16).fill(null));
   const [loading, setLoading] = useState(true);
   const [draggedPlayer, setDraggedPlayer] = useState(null);
-
+  
+  // ✅ FIX: Check tournamentId DOPO tutti gli useState
   useEffect(() => {
+    if (!tournamentId) {
+      setLoading(false);
+      return;
+    }
     fetchTournamentData();
   }, [tournamentId]);
 
   const fetchTournamentData = async () => {
     setLoading(true);
-    const { data: tourneyData } = await supabase
-      .from('tournaments')
-      .select('id, name, max_players')
-      .eq('id', tournamentId)
-      .single();
     
-    const { data: regsData } = await supabase
-      .from('tournament_registrations')
-      .select('id, player_name, created_at')
-      .eq('tournament_id', tournamentId)
-      .order('created_at');
-    
-    setTournament(tourneyData);
-    setParticipants(regsData || []);
-    
-    const { data: posData } = await supabase
-      .from('tournament_brackets')
-      .select('position, player_name')
-      .eq('tournament_id', tournamentId)
-      .order('position');
-    
-    const savedPositions = posData?.reduce((acc, p) => {
-      acc[p.position] = p.player_name;
-      return acc;
-    }, Array(16).fill(null)) || Array(16).fill(null);
-    
-    setPositions(savedPositions);
-    setLoading(false);
+    try {
+      const { data: tourneyData } = await supabase
+        .from('tournaments')
+        .select('id, name, max_players')
+        .eq('id', tournamentId)
+        .single();
+      
+      const { data: regsData } = await supabase
+        .from('tournament_registrations')
+        .select('id, display_name, created_at') // ✅ FIX: display_name
+        .eq('tournament_id', tournamentId)
+        .order('created_at');
+      
+      setTournament(tourneyData);
+      setParticipants(regsData || []);
+      
+      const { data: posData } = await supabase
+        .from('tournament_brackets')
+        .select('position, player_name')
+        .eq('tournament_id', tournamentId)
+        .order('position');
+      
+      const savedPositions = posData?.reduce((acc, p) => {
+        acc[p.position] = p.player_name;
+        return acc;
+      }, Array(16).fill(null)) || Array(16).fill(null);
+      
+      setPositions(savedPositions);
+    } catch (error) {
+      console.error('❌ Errore fetch:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDragStart = useCallback((e, playerIndex) => {
@@ -67,12 +78,16 @@ export default function TabellonePage() {
     if (!draggedPlayer) return;
 
     const newPositions = [...positions];
-    newPositions[positionIndex] = draggedPlayer.player_name;
+    newPositions[positionIndex] = draggedPlayer.display_name; // ✅ FIX: display_name
     setPositions(newPositions);
     
     supabase
       .from('tournament_brackets')
-      .upsert([{ tournament_id: tournamentId, position: positionIndex, player_name: draggedPlayer.player_name }]);
+      .upsert([{ 
+        tournament_id: tournamentId, 
+        position: positionIndex, 
+        player_name: draggedPlayer.display_name 
+      }]);
     
     setDraggedPlayer(null);
   }, [draggedPlayer, positions, tournamentId]);
@@ -99,12 +114,18 @@ export default function TabellonePage() {
     );
   }
 
-  if (!tournament) {
+  if (!tournamentId || !tournament) {
     return (
       <TournamentLayout title="Torneo non trovato" subtitle="">
         <div className="text-center py-20">
           <Trophy className="w-24 h-24 text-gray-400 mx-auto mb-6" />
           <p className="text-2xl text-gray-500">Tabellone non disponibile</p>
+          <Link 
+            to="/admin-tournaments" 
+            className="px-8 py-3 bg-emerald-600 text-white rounded-xl font-bold text-lg hover:bg-emerald-700 mt-4 inline-block"
+          >
+            ← Torna ai Tornei
+          </Link>
         </div>
       </TournamentLayout>
     );
@@ -135,7 +156,7 @@ export default function TabellonePage() {
                     {i + 1}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">{player.player_name}</h4>
+                    <h4 className="font-semibold text-gray-900">{player.display_name}</h4> {/* ✅ FIX: display_name */}
                     <p className="text-sm text-gray-600">{new Date(player.created_at).toLocaleDateString('it-IT')}</p>
                   </div>
                 </div>

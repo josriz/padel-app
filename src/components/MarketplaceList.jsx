@@ -11,7 +11,7 @@ export default function MarketplaceList() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
-  const [selectedItem, setSelectedItem] = useState(null); // ✅ MODAL
+  const [selectedItem, setSelectedItem] = useState(null);
   
   // ✅ FORM UTENTE STANDARD
   const [showForm, setShowForm] = useState(false);
@@ -20,6 +20,11 @@ export default function MarketplaceList() {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [uploading, setUploading] = useState(false);
+
+  // ✅ CACHE PER MANTENERE ARTICOLI
+  const [cache, setCache] = useState(new Map());
+  const [lastFetch, setLastFetch] = useState(0);
+  const [showSold, setShowSold] = useState(false);
 
   const isAdmin = role === "admin";
 
@@ -30,25 +35,96 @@ export default function MarketplaceList() {
     "https://images.unsplash.com/photo-1606813908898-7e5db4ef3de2"
   ];
 
+  // ✅ USEFFECT OTTIMIZZATO - non si riavvia sempre
   useEffect(() => {
-    fetchItems();
-  }, []);
+    const now = Date.now();
+    const shouldRefresh = now - lastFetch > 30000 || items.length === 0;
+    
+    if (shouldRefresh) {
+      fetchItems();
+    }
+  }, [showSold, items.length === 0]);
 
-  const fetchItems = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
+  // ✅ FETCH CON LEFT JOIN + CACHE
+  // ✅ VERSIONE DEBUG - sostituisci fetchItems
+const fetchItems = async () => {
+  setLoading(true);
+  console.log('🔍 DEBUG: Inizio fetch...');
+  
+  try {
+    // ✅ PRIMA: Test SIMPLE senza JOIN
+    const { data: simpleData, error: simpleError } = await supabase
       .from("marketplace_items")
       .select("*")
+      .limit(5);
+
+    console.log('🔍 SIMPLE QUERY:', simpleData, simpleError);
+    
+    if (simpleError) {
+      console.error('❌ TABELL ERROR:', simpleError);
+      alert('❌ Tabella marketplace_items non esiste o errore: ' + simpleError.message);
+      setLoading(false);
+      return;
+    }
+
+    if (!simpleData || simpleData.length === 0) {
+      console.log('📭 TABELL VUOTA - Crea un articolo di test!');
+      alert('📭 Tabella VUOTA! Aggiungi un articolo con "➕ Nuovo articolo"');
+      setLoading(false);
+      return;
+    }
+
+    // ✅ SE FUNZIONA SIMPLE, prova JOIN
+    const { data, error } = await supabase
+      .from("marketplace_items")
+      .select(`
+        *,
+        profiles:user_id!left(full_name, display_name, email, phone)
+      `)
       .order("created_at", { ascending: false });
 
-    if (!error) {
+    console.log('🔍 JOIN QUERY:', data, error);
+
+    if (!error && data) {
       const itemsWithImages = (data || []).map((item, index) => ({
         ...item,
         immagine_url: item.immagine_url || demoImages[index % demoImages.length],
+        profiles: item.profiles || { full_name: 'Utente' }
       }));
       setItems(itemsWithImages);
+      console.log('✅ OK! Items:', itemsWithImages.length);
+    } else {
+      // ✅ FALLBACK: usa simple query se JOIN fallisce
+      const itemsWithImages = (simpleData || []).map((item, index) => ({
+        ...item,
+        immagine_url: demoImages[index % demoImages.length],
+        profiles: { full_name: 'Utente' }
+      }));
+      setItems(itemsWithImages);
+      console.log('✅ FALLBACK OK:', itemsWithImages.length);
     }
+  } catch (error) {
+    console.error('💥 ERRORE TOTALE:', error);
+  } finally {
     setLoading(false);
+  }
+};
+
+
+  // ✅ MERGE CACHE - CRITICO!
+  const mergeWithCache = (newItems) => {
+    const merged = [...items];
+    
+    newItems.forEach(newItem => {
+      const existingIndex = merged.findIndex(item => item.id === newItem.id);
+      if (existingIndex >= 0) {
+        merged[existingIndex] = { ...merged[existingIndex], ...newItem };
+      } else {
+        merged.unshift(newItem);
+      }
+    });
+    
+    return merged;
   };
 
   // ✅ UPLOAD IMMAGINE
@@ -75,16 +151,33 @@ export default function MarketplaceList() {
     }
   };
 
-  // ✅ ELIMINA
+  // ✅ DELETE SICURO
   const handleDelete = async (id) => {
     if (!window.confirm("Eliminare definitivamente?")) return;
     setDeletingId(id);
+    
     try {
-      const { error } = await supabase.from("marketplace_items").delete().eq("id", id);
-      if (!error) {
-        setItems((prev) => prev.filter((i) => i.id !== id));
-        if (selectedItem?.id === id) setSelectedItem(null);
-        alert('✅ Eliminato!');
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const { data: item } = await supabase
+        .from("marketplace_items")
+        .select('user_id')
+        .eq("id", id)
+        .single();
+
+      if (!currentUser) {
+        alert('❌ Devi essere loggato');
+        return;
+      }
+
+      if (isAdmin || currentUser.id === item?.user_id) {
+        const { error } = await supabase.from("marketplace_items").delete().eq("id", id);
+        if (!error) {
+          setItems((prev) => prev.filter((i) => i.id !== id));
+          if (selectedItem?.id === id) setSelectedItem(null);
+          alert('✅ Eliminato!');
+        }
+      } else {
+        alert('❌ Non hai i permessi per eliminare questo articolo');
       }
     } catch (error) {
       alert('❌ Errore: ' + error.message);
@@ -97,20 +190,31 @@ export default function MarketplaceList() {
   const handleMarkSold = async (id) => {
     if (!window.confirm("Segnare come VENDUTO?")) return;
     try {
-      const { error } = await supabase
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const { data: item } = await supabase
         .from("marketplace_items")
-        .update({ venduto: !items.find(i => i.id === id)?.venduto })
-        .eq("id", id);
-      if (!error) {
-        setItems(prev => prev.map(item => item.id === id ? { ...item, venduto: !item.venduto } : item));
-        alert('✅ Aggiornato!');
+        .select('user_id')
+        .eq("id", id)
+        .single();
+
+      if (isAdmin || currentUser.id === item?.user_id) {
+        const { error } = await supabase
+          .from("marketplace_items")
+          .update({ venduto: true })
+          .eq("id", id);
+        if (!error) {
+          setItems(prev => prev.map(item => item.id === id ? { ...item, venduto: true } : item));
+          alert('✅ Aggiornato!');
+        }
+      } else {
+        alert('❌ Non hai i permessi');
       }
     } catch (error) {
       alert('❌ Errore: ' + error.message);
     }
   };
 
-  // ✅ INSERIMENTO CON FOTO
+  // ✅ ADD CON CACHE - NON RICARICA DB
   const handleAddItem = async (e) => {
     e.preventDefault();
     if (!newItem.nome.trim() || !newItem.prezzo) {
@@ -142,7 +246,21 @@ export default function MarketplaceList() {
 
       if (error) throw error;
       
-      setItems([data, ...items]);
+      // ✅ AGGIUNGI ALLA CACHE - MANTIENE IN MEMORIA!
+      const newItemWithProfile = {
+        ...data,
+        profiles: { 
+          full_name: user.email?.split('@')[0] || 'Utente', 
+          display_name: user.email?.split('@')[0] || 'Utente',
+          email: user.email 
+        },
+        immagine_url: data.immagine_url || demoImages[0]
+      };
+      
+      setItems(prev => [newItemWithProfile, ...prev]);
+      setCache(prev => new Map(prev).set(data.id, newItemWithProfile));
+      
+      // Reset form
       setNewItem({ nome: '', descrizione: '', prezzo: '' });
       setTelefono('');
       setImageFile(null);
@@ -156,12 +274,10 @@ export default function MarketplaceList() {
     }
   };
 
-  // ✅ APRI MODAL
   const openItemView = (item) => {
     setSelectedItem(item);
   };
 
-  // ✅ CHIUDI MODAL
   const closeItemView = () => {
     setSelectedItem(null);
   };
@@ -177,7 +293,7 @@ export default function MarketplaceList() {
 
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold">Marketplace</h1>
-          <p>{items.length} articoli</p>
+          <p>{items.length} articoli {showSold && '(inclusi venduti)'}</p>
           {user && (
             <button 
               onClick={() => setShowForm(!showForm)}
@@ -188,6 +304,28 @@ export default function MarketplaceList() {
             </button>
           )}
         </div>
+
+        {/* ✅ TOGGLE VENDUTI */}
+        {!isAdmin && (
+          <div className="flex gap-4 mb-4 justify-center max-w-md mx-auto">
+            <button 
+              onClick={() => setShowSold(false)}
+              className={`px-6 py-2 rounded-lg font-bold flex-1 transition-all ${
+                !showSold ? 'bg-emerald-600 text-white shadow-lg' : 'bg-gray-200 hover:bg-gray-300'
+              }`}
+            >
+              Solo attivi ({items.filter(i => !i.venduto).length})
+            </button>
+            <button 
+              onClick={() => setShowSold(true)}
+              className={`px-6 py-2 rounded-lg font-bold flex-1 transition-all ${
+                showSold ? 'bg-orange-600 text-white shadow-lg' : 'bg-gray-200 hover:bg-gray-300'
+              }`}
+            >
+              Mostra venduti ({items.filter(i => i.venduto).length})
+            </button>
+          </div>
+        )}
 
         {/* ✅ FORM INSERIMENTO */}
         {showForm && user && (
@@ -212,7 +350,6 @@ export default function MarketplaceList() {
               <div className="md:col-span-2"><label className="block font-semibold mb-2">Descrizione</label><textarea value={newItem.descrizione} onChange={(e) => setNewItem({ ...newItem, descrizione: e.target.value })} rows="3" className="w-full p-3 border rounded-lg" /></div>
               <div className="md:col-span-2"><label className="block font-semibold mb-2">📱 Telefono</label><input type="tel" placeholder="+39 333 1234567" value={telefono} onChange={(e) => setTelefono(e.target.value)} className="w-full p-3 border rounded-lg" /></div>
               
-              {/* UPLOAD FOTO */}
               <div className="md:col-span-2">
                 <label className="block font-semibold mb-2 flex items-center gap-2">
                   <ImageIcon className="w-5 h-5" /> Foto articolo
@@ -248,14 +385,21 @@ export default function MarketplaceList() {
           </div>
         )}
 
-        {/* ✅ GRID - SOLO BOTTONI SEMPLICI */}
+        {/* ✅ GRID ARTICOLI */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {items.map((item) => (
             <div key={item.id} className="bg-white rounded-lg shadow border p-4 hover:shadow-lg transition-all">
               <img src={item.immagine_url} alt={item.nome} className="w-full h-40 object-cover rounded-lg mb-4" />
               <h3 className="font-bold text-lg mb-2">{item.nome}</h3>
-              <p className="text-gray-600 mb-4 text-sm">{item.descrizione}</p>
+              <p className="text-gray-600 mb-4 text-sm line-clamp-2">{item.descrizione}</p>
               <p className="text-2xl font-bold text-emerald-600 mb-4">€{item.prezzo}</p>
+              
+              <div className="flex items-center gap-2 text-xs text-gray-500 mb-3 p-2 bg-gray-50 rounded">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
+                </svg>
+                <span>{item.profiles?.full_name || item.profiles?.display_name || 'Utente'}</span>
+              </div>
               
               {item.venduto && (
                 <div className="mb-3 p-2 bg-green-100 text-green-800 text-xs font-bold rounded-full flex items-center gap-1 justify-center">
@@ -263,7 +407,6 @@ export default function MarketplaceList() {
                 </div>
               )}
               
-              {/* ✅ BOTTONI LISTA SEMPLIFICATI */}
               {user && item.user_id === user.id ? (
                 <div className="space-y-2">
                   <span className="block text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full">Il tuo articolo</span>
@@ -296,12 +439,12 @@ export default function MarketplaceList() {
         {items.length === 0 && (
           <div className="text-center py-12">
             <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p>Nessun articolo disponibile</p>
-            {user && <p className="mt-4">Clicca "➕ Nuovo articolo" per iniziare!</p>}
+            <p className="text-xl font-semibold text-gray-600">Nessun articolo disponibile</p>
+            {user && <p className="mt-4 text-gray-500">Clicca "➕ Nuovo articolo" per iniziare!</p>}
           </div>
         )}
 
-        {/* ✅ MODAL DETTAGLI COMPLETO */}
+        {/* ✅ MODAL */}
         {selectedItem && (
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={closeItemView}>
             <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
@@ -312,7 +455,6 @@ export default function MarketplaceList() {
               
               <div className="p-6 space-y-6">
                 <img src={selectedItem.immagine_url} alt={selectedItem.nome} className="w-full h-64 object-cover rounded-xl" />
-                
                 <div className="text-center">
                   <p className="text-4xl font-black text-emerald-600">€{selectedItem.prezzo}</p>
                   {selectedItem.venduto && (
@@ -321,20 +463,18 @@ export default function MarketplaceList() {
                     </div>
                   )}
                 </div>
-                
                 <div>
                   <h3 className="font-bold text-xl mb-3">Descrizione</h3>
                   <p className="text-lg leading-relaxed">{selectedItem.descrizione || 'Nessuna descrizione'}</p>
                 </div>
                 
-                {/* ✅ CONTATTI SOLO NEL MODAL */}
                 {!selectedItem.venduto && (
                   <div className="p-6 bg-gradient-to-r from-blue-50 to-emerald-50 rounded-2xl">
                     <h3 className="text-xl font-bold mb-4 text-center text-gray-800">📞 Contatta venditore</h3>
                     <div className="grid md:grid-cols-2 gap-4 text-center">
                       <div className="bg-white p-4 rounded-xl shadow-sm">
                         <Mail className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
-                        <p className="font-mono text-sm">{user?.email || 'email@venditore.it'}</p>
+                        <p className="font-mono text-sm">{selectedItem.profiles?.email || 'email@venditore.it'}</p>
                       </div>
                       {selectedItem.telefono && (
                         <div className="bg-white p-4 rounded-xl shadow-sm">
@@ -346,7 +486,6 @@ export default function MarketplaceList() {
                   </div>
                 )}
                 
-                {/* BOTTONI MODAL */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
                   {user && selectedItem.user_id === user.id ? (
                     <div className="flex-1 space-y-2">
@@ -361,18 +500,14 @@ export default function MarketplaceList() {
                     </div>
                   ) : user ? (
                     !selectedItem.venduto ? (
-                      <button className="flex-1 bg-emerald-600 text-white py-4 px-8 rounded-2xl font-black text-lg hover:bg-emerald-700 shadow-xl">
+                      <button className="flex-1 bg-emerald-600 text-white py-4 px-8 rounded-2xl font-black text-lg hover:bg-emerald-700">
                         💬 CONTATTA ORA
                       </button>
                     ) : (
-                      <button className="flex-1 bg-gray-400 text-white py-4 px-8 rounded-2xl font-bold cursor-not-allowed">
-                        VENDUTO
-                      </button>
+                      <button className="flex-1 bg-gray-400 text-white py-4 px-8 rounded-2xl font-bold">VENDUTO</button>
                     )
                   ) : (
-                    <button className="flex-1 bg-gray-500 text-white py-4 px-8 rounded-2xl font-bold">
-                      🔐 Effettua Login
-                    </button>
+                    <button className="flex-1 bg-gray-500 text-white py-4 px-8 rounded-2xl font-bold">🔐 Login</button>
                   )}
                   <button onClick={closeItemView} className="px-6 py-3 bg-gray-200 hover:bg-gray-300 rounded-xl font-bold">Chiudi</button>
                 </div>

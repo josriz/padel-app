@@ -50,10 +50,24 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-white px-4">
       <div className="w-full max-w-md">
-        {/* LOGO */}
-        <div className="flex justify-center mb-6">
-          <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl font-bold">
-            P
+        {/* ✅ LOGO - CENTRO PERFETTO + BANNER SOTTO */}
+        <div className="flex flex-col items-center mb-6 space-y-4">
+          {/* ✅ LOGO.PNG - CENTRO, SENZA "P" */}
+          <div className="w-32 h-32 p-3 bg-white rounded-2xl shadow-lg border-4 border-white">
+            <img 
+              src="/logo.png" 
+              alt="PadelClub Logo"
+              className="w-full h-full object-contain"
+            />
+          </div>
+          
+          {/* ✅ BANNER-HOME.JPG - ESATTAMENTE SOTTO LOGO */}
+          <div className="w-full h-28 rounded-2xl overflow-hidden shadow-lg">
+            <img 
+              src="/banner-home.jpg" 
+              alt="Padel Banner Home"
+              className="w-full h-full object-cover"
+            />
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-// src/App.jsx - ✅ ISCRIZIONI + ADMIN BOTTONI ROSSI FUNZIONANTI + MARKETPLACE COMPLETO + TABELLONE COPPA ITALIA
+// src/App.jsx - ✅ PADELBRACKET PER TUTTI I TABELLONI!
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import AuthProvider, { useAuth } from "./context/AuthProvider";
@@ -10,23 +10,23 @@ import RegistrationPage from "./components/RegistrationPage";
 // 👤 DASHBOARD
 import Dashboard from "./components/Dashboard";
 import ProfilePage from "./components/ProfilePage";
-import Marketplace from "./components/Marketplace";  // ✅ Lista pubblica
-import MarketplaceList from "./components/MarketplaceList";  // ✅ Lista grid 4-colonne
+import Marketplace from "./components/Marketplace";
+import MarketplaceList from "./components/MarketplaceList";
 
 // 🏆 TORNEI
 import TournamentList from "./components/TournamentList";
 import SingleTournament from "./components/SingleTournament";
 import TournamentListAndAdmin from "./components/TournamentListAndAdmin";
-import TournamentAdminPanel from "./components/TournamentAdminPanel";  // ✅ BOTTONI ROSSI
+import TournamentAdminPanel from "./components/TournamentAdminPanel";
 import EventiTornei from "./components/EventiTornei";
 
 // ⚙️ ADMIN MARKETPLACE
-import MarketplaceAdmin from "./components/MarketplaceAdmin";  // ✅ Admin panel completo
-import MarketplaceGestion from "./components/MarketplaceGestion";  // ✅ Gestione admin
-import MarketplaceUser from "./components/MarketplaceUser";  // ✅ Utente suoi prodotti
+import MarketplaceAdmin from "./components/MarketplaceAdmin";
+import MarketplaceGestion from "./components/MarketplaceGestion";
+import MarketplaceUser from "./components/MarketplaceUser";
 
-// 📱 TABELLONE + COPPA ITALIA
-import PadelBracket from "./components/PadelBracket";  // ✅ IL TUO TABELLONE DRAG&DROP!
+// 📱 NUOVO TABELLONE
+import PadelBracket from "./components/PadelBracket";  // ✅ IL NUOVO TABELLONE!
 
 // 404
 import NotFound from "./components/NotFound";
@@ -39,7 +39,6 @@ function LoadingSpinner() {
   );
 }
 
-// ✅ FIXED ProtectedRoute - FUNZIONA CON LINK DIRETTO!
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { user, role, loading } = useAuth();
 
@@ -69,15 +68,13 @@ export default function App() {
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           
           {/* 🛒 MARKETPLACE */}
-          <Route path="/marketplace" element={<ProtectedRoute><MarketplaceList /></ProtectedRoute>} />  {/* ✅ Lista principale */}
-          <Route path="/marketplace/simple" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />  {/* ✅ Versione semplice */}
-          
-          {/* 👤 MARKETPLACE UTENTE */}
-          <Route path="/marketplace/user" element={<ProtectedRoute><MarketplaceUser /></ProtectedRoute>} />  {/* ✅ I suoi prodotti */}
+          <Route path="/marketplace" element={<ProtectedRoute><MarketplaceList /></ProtectedRoute>} />
+          <Route path="/marketplace/simple" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+          <Route path="/marketplace/user" element={<ProtectedRoute><MarketplaceUser /></ProtectedRoute>} />
           
           {/* 👑 MARKETPLACE ADMIN */}
-          <Route path="/admin/marketplace" element={<ProtectedRoute adminOnly={true}><MarketplaceAdmin /></ProtectedRoute>} />  {/* ✅ Admin completo */}
-          <Route path="/admin/marketplace-gestion" element={<ProtectedRoute adminOnly={true}><MarketplaceGestion /></ProtectedRoute>} />  {/* ✅ Gestione admin */}
+          <Route path="/admin/marketplace" element={<ProtectedRoute adminOnly={true}><MarketplaceAdmin /></ProtectedRoute>} />
+          <Route path="/admin/marketplace-gestion" element={<ProtectedRoute adminOnly={true}><MarketplaceGestion /></ProtectedRoute>} />
 
           {/* 🏆 TORNEI UTENTI */}
           <Route path="/tournaments" element={<ProtectedRoute><TournamentList /></ProtectedRoute>} />
@@ -85,15 +82,18 @@ export default function App() {
           <Route path="/tournaments/:tournamentId" element={<ProtectedRoute><SingleTournament /></ProtectedRoute>} />
           <Route path="/eventi-tornei/:torneoId" element={<ProtectedRoute><SingleTournament /></ProtectedRoute>} />
 
+          {/* ✅ NUOVO TABELLONE PADELBRACKET - PER TUTTO! */}
+          <Route path="/tabellone/:tournamentId" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
+          
           {/* ✅ ADMIN TORNEI CON BOTTONI ROSSI */}
           <Route path="/admin-tournaments" element={<ProtectedRoute adminOnly={true}><TournamentAdminPanel /></ProtectedRoute>} />
 
           {/* ADMIN */}
           <Route path="/admin" element={<ProtectedRoute adminOnly={true}><TournamentListAndAdmin /></ProtectedRoute>} />
 
-          {/* 🔥 TABELLONI - IL TUO PADELBRACKET! */}
-          <Route path="/tabellone/:tournamentId" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />  {/* ✅ CORRETTO! */}
-          <Route path="/tabellone-coppa" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />  {/* ✅ Coppa Italia */}
+          {/* 🔥 PADELBRACKET OVUNQUE */}
+          <Route path="/bracket/:id" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
+          <Route path="/tabellone-coppa" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />
