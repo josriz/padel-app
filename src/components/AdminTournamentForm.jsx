@@ -1,3 +1,4 @@
+// src/components/AdminTournamentForm.jsx - RLS SEMPLICE
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { Plus, Loader2 } from 'lucide-react';
@@ -7,6 +8,8 @@ export default function AdminTournamentForm({ onTournamentCreated }) {
   const [formData, setFormData] = useState({
     name: '',
     data_inizio: '',
+    level: 'open',
+    format: 'eliminazione8',
     max_players: 16
   });
 
@@ -14,15 +17,17 @@ export default function AdminTournamentForm({ onTournamentCreated }) {
     e.preventDefault();
     setLoading(true);
     
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('tournaments')
-      .insert([formData]);
+      .insert([formData])
+      .select()
+      .single();
     
     setLoading(false);
     if (!error) {
+      alert('✅ CREATO! ID: ' + data.id);
       onTournamentCreated();
-      setFormData({ name: '', data_inizio: '', max_players: 16 });
-      alert('✅ Torneo creato!');
+      setFormData({ name: '', data_inizio: '', level: 'open', format: 'eliminazione8', max_players: 16 });
     } else {
       alert('❌ ' + error.message);
     }
@@ -37,7 +42,7 @@ export default function AdminTournamentForm({ onTournamentCreated }) {
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <input
           type="text"
-          placeholder="Nome Torneo (es: Natale Padel 2025)"
+          placeholder="Nome Torneo"
           value={formData.name}
           onChange={(e) => setFormData({...formData, name: e.target.value})}
           className="p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-lg"
@@ -50,6 +55,14 @@ export default function AdminTournamentForm({ onTournamentCreated }) {
           className="p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-lg"
           required
         />
+        <select 
+          value={formData.level}
+          onChange={(e) => setFormData({...formData, level: e.target.value})}
+          className="p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-lg"
+        >
+          <option value="open">🏆 Open</option>
+          <option value="amateur">🥉 Amatoriale</option>
+        </select>
         <div className="flex gap-3">
           <input
             type="number"
@@ -63,7 +76,7 @@ export default function AdminTournamentForm({ onTournamentCreated }) {
           <button
             type="submit"
             disabled={loading}
-            className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-8 py-4 rounded-2xl font-bold shadow-xl hover:shadow-2xl disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+            className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-8 py-4 rounded-2xl font-bold shadow-xl hover:shadow-2xl disabled:opacity-50 flex items-center gap-2"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
             Crea
