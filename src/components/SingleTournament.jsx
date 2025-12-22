@@ -99,22 +99,39 @@ export default function SingleTournament() {
           </div>
         </div>
 
-        {/* BUTTONS */}
-        <div className="grid md:grid-cols-2 gap-4">
+        {/* ✅ BUTTONS CON RIPESCAGGI */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {!pieno && !isAdmin && (
             <button
               onClick={handleRegister}
               disabled={registering}
-              className="w-full bg-emerald-600 text-white p-3 rounded-xl font-semibold hover:bg-emerald-700 transition disabled:opacity-50"
+              className="w-full bg-emerald-600 text-white p-4 rounded-xl font-semibold hover:bg-emerald-700 transition disabled:opacity-50 text-lg flex items-center justify-center gap-2"
             >
-              {registering ? '...' : 'ISCRIVITI ORA'}
+              {registering ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <UserPlus className="w-5 h-5" />
+                  ISCRIVITI ORA
+                </>
+              )}
             </button>
           )}
+          
           <Link
             to={`/tabellone/${tournamentId}`}
-            className="w-full bg-blue-600 text-white p-3 rounded-xl font-semibold text-center hover:bg-blue-700 transition flex items-center justify-center"
+            className="w-full bg-blue-600 text-white p-4 rounded-xl font-semibold text-center hover:bg-blue-700 transition flex items-center justify-center gap-2 text-lg"
           >
+            <Trophy className="w-5 h-5" />
             VEDI TABELLONE
+          </Link>
+          
+          {/* 🎯 NUOVO BUTTON RIPESCAGGI */}
+          <Link
+            to={`/ripescaggi/${tournamentId}`}
+            className="w-full bg-orange-600 text-white p-4 rounded-xl font-semibold text-center hover:bg-orange-700 transition flex items-center justify-center gap-2 text-lg"
+          >
+            🎯 TABELLONE RIPESCAGGI
           </Link>
         </div>
 

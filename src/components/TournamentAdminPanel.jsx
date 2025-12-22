@@ -23,31 +23,39 @@ export default function TournamentAdminPanel() {
 
   const fetchTournaments = async () => {
     try {
-      console.log('🔍 Inizio fetch...');
+      console.log('🔥 Fetch tornei...');
       
-      const { data: tournamentsData } = await supabase
+      // TORNEI
+      const { data: tournamentsData, error: tournamentsError } = await supabase
         .from('tournaments')
-        .select('*')
+        .select('id, name, data_inizio, status, created_at')
         .order('created_at', { ascending: false });
-      
-      console.log('🏆 TORNEI:', tournamentsData);
+
+      if (tournamentsError) throw tournamentsError;
+      console.log('✅ Tornei:', tournamentsData?.length);
       setTournaments(tournamentsData || []);
 
-      const regs = {};
-      for (const t of tournamentsData || []) {
-        console.log('📋 Cerco iscrizioni per torneo:', t.id);
-        
-        const { data: registrationsData } = await supabase
-          .from('tournament_registrations')
-          .select('id, display_name, status, created_at, user_id')
-          .eq('tournament_id', t.id);
-        
-        console.log(`👥 ${t.id}:`, registrationsData);
-        regs[t.id] = registrationsData || [];
+      // ISCRITTI - UNA SOLA QUERY
+      const { data: allRegs, error: regsError } = await supabase
+        .from('tournament_registrations')
+        .select('id, display_name, status, user_id, tournament_id')
+        .order('created_at');
+
+      if (regsError) {
+        console.warn('No iscrizioni:', regsError.message);
+        setRegistrations({});
+      } else {
+        // GROUP BY torneo
+        const regsByTournament = {};
+        allRegs?.forEach(r => {
+          if (!regsByTournament[r.tournament_id]) {
+            regsByTournament[r.tournament_id] = [];
+          }
+          regsByTournament[r.tournament_id].push(r);
+        });
+        console.log('✅ Iscritti grouped:', Object.keys(regsByTournament));
+        setRegistrations(regsByTournament);
       }
-      
-      console.log('📊 REGISTRATIONS FINALI:', regs);
-      setRegistrations(regs);
       
     } catch (err) {
       console.error('❌ Errore:', err);
@@ -57,14 +65,12 @@ export default function TournamentAdminPanel() {
   };
 
   const deleteTournament = async (tournamentId, tournamentName) => {
-    if (!confirm(`Elimina torneo "${tournamentName}"?`)) return;
-    
+    if (!confirm(`Elimina "${tournamentName}"?`)) return;
     setDeleting(prev => ({ ...prev, [tournamentId]: true }));
     try {
-      await supabase.from('tournaments').delete().eq('id', tournamentId);
-      fetchTournaments();
-    } catch (err) {
-      alert('Errore eliminazione');
+      const { error } = await supabase.from('tournaments').delete().eq('id', tournamentId);
+      if (!error) fetchTournaments();
+      else alert('Errore: ' + error.message);
     } finally {
       setDeleting(prev => ({ ...prev, [tournamentId]: false }));
     }
@@ -72,145 +78,135 @@ export default function TournamentAdminPanel() {
 
   const deleteRegistration = async (registrationId, playerName, tournamentId) => {
     if (!confirm(`Elimina "${playerName}"?`)) return;
-    
     try {
-      await supabase.from('tournament_registrations').delete().eq('id', registrationId);
-      fetchTournaments(); // Ricarica tutto
+      const { error } = await supabase
+        .from('tournament_registrations')
+        .delete()
+        .eq('id', registrationId);
+      if (!error) {
+        fetchTournaments();
+        alert('✅ Eliminato!');
+      } else {
+        alert('❌ ' + error.message);
+      }
     } catch (err) {
-      alert('Errore eliminazione');
+      alert('❌ Errore');
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white py-4 px-2 sm:px-4">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-emerald-600" />
-          <p className="text-sm font-bold text-gray-700">Caricamento...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <Loader2 className="w-12 h-12 animate-spin text-emerald-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white py-4 px-2 sm:px-4">
-      <div className="max-w-4xl mx-auto space-y-6">
-        
+    <div className="min-h-screen bg-white py-8 px-4">
+      <div className="max-w-6xl mx-auto space-y-8">
         {/* HEADER */}
-        <div className="flex items-center gap-2 mb-6">
-          <button onClick={() => navigate(-1)} className="p-2 border rounded hover:bg-gray-50">
-            ← Indietro
+        <div className="flex items-center gap-4 mb-8">
+          <button onClick={() => navigate(-1)} className="p-3 border rounded-lg hover:bg-gray-50">
+            <ChevronLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-xl font-bold flex-1 text-center">👑 Gestione Tornei</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Gestione Tornei</h1>
         </div>
 
-        {/* FORM CREA */}
+        {/* FORM */}
         <AdminTournamentForm onTournamentCreated={fetchTournaments} />
 
-        {/* LISTA TORNEI */}
-        <div className="space-y-4">
-          <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-            <Plus className="w-5 h-5" />
+        {/* TORNEI */}
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold flex items-center gap-3">
+            <Users className="w-8 h-8 text-emerald-600" />
             Tornei ({tournaments.length})
-          </h3>
+          </h2>
           
           {tournaments.map(t => {
             const regs = registrations[t.id] || [];
             return (
-              <div key={t.id} className="bg-gray-50 p-6 rounded-lg border shadow-sm hover:shadow-md transition-all">
+              <div key={t.id} className="bg-white border rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all">
                 {/* HEADER TORNEO */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
                   <div>
-                    <h4 className="font-bold text-lg">{t.name}</h4>
-                    <p className="text-sm text-gray-600">
-                      📅 {t.data_inizio ? new Date(t.data_inizio).toLocaleDateString('it-IT') : '—'} • 
-                      👥 {regs.length} iscritti
+                    <h3 className="text-2xl font-bold text-gray-900">{t.name}</h3>
+                    <p className="text-lg text-gray-600 mt-1">
+                      {t.data_inizio ? new Date(t.data_inizio).toLocaleDateString('it-IT') : '—'} • 
+                      <span className="font-semibold text-emerald-600 ml-2">{regs.length} iscritti</span>
                     </p>
                   </div>
-                  <div className="flex gap-2">
-                    {/* ✅ LINK CORRETTO PADELBRACKET */}
-                    <Link 
-                      to={`/tabellone/${t.id}`}
-                      className="px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded hover:bg-emerald-700 flex items-center gap-1 transition-all"
-                    >
-                      📋 Tabellone
+                  <div className="flex gap-3">
+                    <Link to={`/tabellone/${t.id}`} className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700">
+                      Tabellone
                     </Link>
                     <button 
                       onClick={() => deleteTournament(t.id, t.name)}
                       disabled={deleting[t.id]}
-                      className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded hover:bg-red-700 disabled:opacity-50 flex items-center gap-1"
+                      className="px-6 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
                     >
-                      <Trash2 className="w-4 h-4" />
-                      Elimina
+                      <Trash2 className="w-5 h-5" />
+                      {deleting[t.id] ? '...' : 'Elimina'}
                     </button>
                   </div>
                 </div>
 
                 {/* ISCRITTI */}
-                {regs.length > 0 && (
-                  <div className="mb-4">
-                    <h5 className="font-bold text-sm mb-2 flex items-center gap-2 text-gray-800">
-                      <Users className="w-4 h-4" />
-                      Iscritti ({regs.length})
-                    </h5>
-                    <div className="space-y-1 max-h-32 overflow-y-auto">
-                      {regs.map(reg => (
-                        <div key={reg.id} className="flex items-center justify-between p-2 bg-white rounded border-l-4 border-emerald-400 hover:bg-emerald-50">
-                          <span className="text-sm font-medium">{reg.display_name || 'Anonimo'}</span>
-                          <button 
-                            onClick={() => deleteRegistration(reg.id, reg.display_name || 'Giocatore', t.id)}
-                            className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded hover:bg-red-600 flex items-center gap-1"
+                <div className="bg-gradient-to-r from-emerald-50 to-blue-50 p-6 rounded-2xl border-2 border-emerald-200">
+                  <h4 className="text-xl font-bold mb-4 flex items-center gap-2">
+                    <Users className="w-6 h-6 text-emerald-600" />
+                    Iscritti ({regs.length})
+                  </h4>
+                  
+                  {regs.length === 0 ? (
+                    <div className="p-8 bg-yellow-50 border-2 border-yellow-200 rounded-xl text-center text-lg">
+                      Nessun iscritto
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 max-h-80 overflow-y-auto">
+                      {regs.map(r => (
+                        <div key={r.id} className="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm hover:shadow-md border hover:border-emerald-300 transition-all">
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg">
+                              {r.display_name?.charAt(0)?.toUpperCase() || 'G'}
+                            </div>
+                            <div>
+                              <div className="font-bold text-xl text-gray-900">
+                                {r.display_name || 'Giocatore'}
+                              </div>
+                              <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full inline-block">
+                                {r.status || 'registered'}
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => deleteRegistration(r.id, r.display_name || 'giocatore', t.id)}
+                            className="p-3 bg-red-100 text-red-600 hover:bg-red-200 rounded-2xl transition-all hover:scale-105 shadow-sm"
                           >
-                            <Trash2 className="w-3 h-3" />
-                            Rimuovi
+                            <Trash2 className="w-6 h-6" />
                           </button>
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
-                {/* NO ISCRITTI */}
-                {regs.length === 0 && (
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded text-center text-sm text-yellow-800">
-                    Nessun iscritto ancora
-                  </div>
-                )}
-
-                {/* ✅ PULSANTI SEMPLIFICATI - TUTTI STESSO LINK */}
-                <div className="flex gap-2 flex-wrap mt-4 pt-4 border-t">
-                  <Link 
-                    to={`/tabellone/${t.id}`}
-                    className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded hover:bg-blue-700 flex items-center gap-1"
-                  >
-                    ✋ Tabellone Manuale
+                {/* AZIONI */}
+                <div className="flex flex-wrap gap-3 mt-8 pt-8 border-t border-gray-200">
+                  <Link to={`/tabellone/${t.id}`} className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700">
+                    Tabellone Manuale
                   </Link>
-                  
-                  <Link 
-                    to={`/tabellone/${t.id}`}
-                    className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded hover:bg-green-700 flex items-center gap-1"
-                  >
-                    ⚾ Tabellone Diretto
+                  <Link to={`/tabellone/${t.id}`} className="px-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700">
+                    Tabellone Diretto
                   </Link>
-                  
-                  <Link 
-                    to={`/tabellone/${t.id}`}
-                    className="px-4 py-2 bg-purple-600 text-white text-sm font-bold rounded hover:bg-purple-700 flex items-center gap-1"
-                  >
-                    📊 Tabellone Gironi
+                  <Link to={`/tabellone/${t.id}`} className="px-6 py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700">
+                    Tabellone Gironi
                   </Link>
                 </div>
               </div>
             );
           })}
         </div>
-
-        {tournaments.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
-            <p className="text-lg mb-4">Nessun torneo creato</p>
-            <p className="text-sm">Usa il form sopra per crearne uno!</p>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -1,32 +1,32 @@
-// src/App.jsx - ✅ PADELBRACKET PER TUTTI I TABELLONI!
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import AuthProvider, { useAuth } from "./context/AuthProvider";
 
-// 🌟 PUBLIC
+// PUBLIC
 import LoginPages from "./components/LoginPages";
 import RegistrationPage from "./components/RegistrationPage";
 
-// 👤 DASHBOARD
+// DASHBOARD
 import Dashboard from "./components/Dashboard";
 import ProfilePage from "./components/ProfilePage";
 import Marketplace from "./components/Marketplace";
 import MarketplaceList from "./components/MarketplaceList";
 
-// 🏆 TORNEI
+// TORNEI
 import TournamentList from "./components/TournamentList";
 import SingleTournament from "./components/SingleTournament";
 import TournamentListAndAdmin from "./components/TournamentListAndAdmin";
 import TournamentAdminPanel from "./components/TournamentAdminPanel";
 import EventiTornei from "./components/EventiTornei";
 
-// ⚙️ ADMIN MARKETPLACE
+// ADMIN MARKETPLACE
 import MarketplaceAdmin from "./components/MarketplaceAdmin";
 import MarketplaceGestion from "./components/MarketplaceGestion";
 import MarketplaceUser from "./components/MarketplaceUser";
 
-// 📱 NUOVO TABELLONE
-import PadelBracket from "./components/PadelBracket";  // ✅ IL NUOVO TABELLONE!
+// TABELLONI PADEL
+import PadelBracket from "./components/PadelBracket";
+import TabelloneRipescaggi from "./components/TabelloneRipescaggi";
 
 // 404
 import NotFound from "./components/NotFound";
@@ -59,43 +59,27 @@ export default function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* PUBLIC */}
           <Route path="/" element={<LoginPages />} />
           <Route path="/register" element={<RegistrationPage />} />
-
-          {/* DASHBOARD */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          
-          {/* 🛒 MARKETPLACE */}
           <Route path="/marketplace" element={<ProtectedRoute><MarketplaceList /></ProtectedRoute>} />
           <Route path="/marketplace/simple" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
           <Route path="/marketplace/user" element={<ProtectedRoute><MarketplaceUser /></ProtectedRoute>} />
-          
-          {/* 👑 MARKETPLACE ADMIN */}
           <Route path="/admin/marketplace" element={<ProtectedRoute adminOnly={true}><MarketplaceAdmin /></ProtectedRoute>} />
           <Route path="/admin/marketplace-gestion" element={<ProtectedRoute adminOnly={true}><MarketplaceGestion /></ProtectedRoute>} />
-
-          {/* 🏆 TORNEI UTENTI */}
           <Route path="/tournaments" element={<ProtectedRoute><TournamentList /></ProtectedRoute>} />
-          <Route path="/eventi-tornei" element={<ProtectedRoute><TournamentList /></ProtectedRoute>} />
+          <Route path="/eventi-tornei" element={<ProtectedRoute><EventiTornei /></ProtectedRoute>} />
           <Route path="/tournaments/:tournamentId" element={<ProtectedRoute><SingleTournament /></ProtectedRoute>} />
           <Route path="/eventi-tornei/:torneoId" element={<ProtectedRoute><SingleTournament /></ProtectedRoute>} />
-
-          {/* ✅ NUOVO TABELLONE PADELBRACKET - PER TUTTO! */}
           <Route path="/tabellone/:tournamentId" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
-          
-          {/* ✅ ADMIN TORNEI CON BOTTONI ROSSI */}
-          <Route path="/admin-tournaments" element={<ProtectedRoute adminOnly={true}><TournamentAdminPanel /></ProtectedRoute>} />
-
-          {/* ADMIN */}
-          <Route path="/admin" element={<ProtectedRoute adminOnly={true}><TournamentListAndAdmin /></ProtectedRoute>} />
-
-          {/* 🔥 PADELBRACKET OVUNQUE */}
           <Route path="/bracket/:id" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
           <Route path="/tabellone-coppa" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
-
-          {/* 404 */}
+          
+          <Route path="/ripescaggi/:tournamentId" element={<TabelloneRipescaggi />} />
+          
+          <Route path="/admin-tournaments" element={<ProtectedRoute adminOnly={true}><TournamentAdminPanel /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute adminOnly={true}><TournamentListAndAdmin /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>

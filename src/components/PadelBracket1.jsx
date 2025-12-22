@@ -1,333 +1,301 @@
-// src/components/PadelBracket.jsx
-import React, { useState, useEffect } from "react";
-import { supabase } from "../supabaseClient";
-import { ChevronLeft, Users, GripVertical } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthProvider";
+import { ArrowLeft, Calendar } from "lucide-react";
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 export default function PadelBracket() {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const { tournamentId } = useParams();
-  const [round, setRound] = useState("ottavi");
-  const [allPlayers, setAllPlayers] = useState([]);
-  const [players, setPlayers] = useState([]);
-  const [bracket, setBracket] = useState({
-    ottavi: [
-      [[null, null], [null, null]],
-      [[null, null], [null, null]],
-      [[null, null], [null, null]],
-      [[null, null], [null, null]],
-    ],
-    quarti: [
-      [[null, null], [null, null]],
-      [[null, null], [null, null]],
-    ],
-    semi: [[[null, null], [null, null]]],
-    finale: [[[null, null], [null, null]]],
+  const [currentFase, setCurrentFase] = useState(0);
+  const [showIscritti, setShowIscritti] = useState(true);
+  const bracketRef = useRef(null);
+
+  const fasi = ['ottavi', 'quarti', 'semi', 'finale', 'ripescaggi'];
+  const titoliFasi = ['OTTAVI', 'QUARTI', 'SEMIFINALI', 'FINALE', '🛡️ RIPESTAGGI'];
+
+  const iscritti = [
+    "Luca Bianchi", "Marco Verdi", "Giovanni Rossi", "Antonio Nero",
+    "Paolo Azzurri", "Roberto Verdi", "Stefano Gialli", "Davide Blu",
+    "Giulia Rosa", "Sara Viola", "Elena Arancio", "Chiara Verde"
+  ];
+
+  const [data, setData] = useState({
+    ottavi: Array(8).fill().map((_, i) => ({
+      id: i, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: `Campo ${i+1}`
+    })),
+    quarti: Array(4).fill().map((_, i) => ({
+      id: i, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: `Campo ${i+9}`
+    })),
+    semi: Array(2).fill().map((_, i) => ({
+      id: i, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: `Campo ${i+13}`
+    })),
+    finale: [{ id: 0, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: "🏆 Finale" }],
+    ripescaggi: Array(4).fill().map((_, i) => ({
+      id: i, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: `R${i+1}`
+    }))
   });
-  const [results, setResults] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [tournamentName, setTournamentName] = useState("Tabellone Padel");
-  const [isAdmin, setIsAdmin] = useState(false);
-  const TOURNAMENT_ID = tournamentId || "1ed0d77f-894d-4f67-ae5d-01a7ba4df8f7";
 
-  // ---- Check Admin ----
-  useEffect(() => { checkUserRole(); }, []);
-  const checkUserRole = async () => {
+  const [draggedGiocatore, setDraggedGiocatore] = useState(null);
+  const [history, setHistory] = useState([]);
+
+  // ✅ PDF COMPRESSO
+  const esportaPDF = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: userProfile } = await supabase
-          .from("users")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-        const { data: tournamentAdmins } = await supabase
-          .from("tournament_admins")
-          .select("user_id")
-          .eq("tournament_id", TOURNAMENT_ID);
-        const isGlobalAdmin = userProfile?.role === "admin";
-        const isTournamentAdmin = tournamentAdmins?.some((a) => a.user_id === user.id);
-        setIsAdmin(isGlobalAdmin || isTournamentAdmin);
-      }
-    } catch (error) { console.log("User role check:", error); }
-  };
+      const bracket = bracketRef.current;
+      if (!bracket) return alert('❌ Bracket non trovato');
 
-  // ---- Load Players ----
-  useEffect(() => { loadData(); }, [TOURNAMENT_ID]);
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const { data: tournamentData } = await supabase
-        .from("tournaments")
-        .select("name")
-        .eq("id", TOURNAMENT_ID)
-        .single();
-      setTournamentName(tournamentData?.name || "Tabellone Padel");
+      document.querySelector('[data-print="partecipanti"]')?.style.setProperty('display', 'none');
+      document.querySelector('[data-print="storico"]')?.style.setProperty('display', 'none');
 
-      const { data: registrations } = await supabase
-        .from("tournament_registrations")
-        .select(`id,user_id,profiles!inner(full_name, display_name, player_name)`)
-        .eq("tournament_id", TOURNAMENT_ID);
+      await new Promise(r => setTimeout(r, 200));
 
-      if (registrations?.length > 0) {
-        const realPlayers = registrations
-          .map((reg) =>
-            reg.profiles?.full_name ||
-            reg.profiles?.player_name ||
-            reg.profiles?.display_name ||
-            `User ${reg.user_id?.slice(-6)}`
-          )
-          .filter(Boolean);
-        setAllPlayers(realPlayers);
-      } else {
-        setAllPlayers([
-          "Mario Rossi","Luca Verdi","Giulia Bianchi","Sara Neri",
-          "Paolo Bianchi","Anna Verdi","Marco Rossi","Laura Neri",
-          "Giorgio Neri","Francesca Rossi","Antonio Verdi","Elena Bianchi",
-          "Roberto Neri","Chiara Rossi","Davide Verdi","Sofia Bianchi",
-        ]);
-      }
+      const canvas = await html2canvas(bracket, {
+        scale: 1,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        width: 650
+      });
 
-      // Load existing bracket from Supabase
-      const { data: bracketData } = await supabase
-        .from("tournament_brackets")
-        .select("*")
-        .eq("tournament_id", TOURNAMENT_ID);
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('l', 'mm', 'a4');
 
-      if (bracketData?.length > 0) {
-        const newBracket = { ...bracket };
-        const newResults = {};
-        bracketData.forEach((b) => {
-          if (!newBracket[b.round]) newBracket[b.round] = [];
-          newBracket[b.round][b.match_index] = [b.team_1 || [null, null], b.team_2 || [null, null]];
-          newResults[`${b.round}_${b.match_index}`] = { set1: b.result_set1 || 0, set2: b.result_set2 || 0 };
-        });
-        setBracket(newBracket);
-        setResults(newResults);
-      }
+      pdf.setFontSize(22);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('🏓 TABELLONE PADEL', 148.5, 20, { align: 'center' });
+      pdf.setFontSize(16);
+      pdf.text(titoliFasi[currentFase], 148.5, 35, { align: 'center' });
+
+      const pdfWidth = 260;
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width * 0.9;
+      pdf.addImage(imgData, 'PNG', 18, 50, pdfWidth, pdfHeight);
+
+      pdf.save(`tabellone-${fasi[currentFase]}.pdf`);
+      alert('✅ PDF COMPRESSO OK!');
 
     } catch (error) {
-      console.error("Load error:", error);
-      setAllPlayers(["Mario Rossi","Luca Verdi","Giulia Bianchi","Sara Neri"]);
-    } finally { setLoading(false); }
-  };
-
-  // ---- Players left to assign ----
-  useEffect(() => {
-    const usedPlayers = [];
-    Object.values(bracket).forEach(roundMatches => {
-      roundMatches?.forEach(match => match?.forEach(team => team?.forEach(player => { if(player) usedPlayers.push(player); })));
-    });
-    setPlayers(allPlayers.filter(p => !usedPlayers.includes(p)));
-  }, [allPlayers, bracket]);
-
-  // ---- Drag & Drop ----
-  const onDragStart = (e, player) => { if (!isAdmin) return; e.dataTransfer.setData("player", player); };
-  const onDrop = (e, roundKey, matchIndex, teamIndex, playerIndex) => {
-    if (!isAdmin) return; e.preventDefault();
-    const player = e.dataTransfer.getData("player");
-    setBracket(prev => {
-      const newBracket = JSON.parse(JSON.stringify(prev));
-      if (!newBracket[roundKey]) newBracket[roundKey] = [];
-      if (!newBracket[roundKey][matchIndex]) newBracket[roundKey][matchIndex] = [];
-      if (!newBracket[roundKey][matchIndex][teamIndex])
-        newBracket[roundKey][matchIndex][teamIndex] = [null, null];
-      newBracket[roundKey][matchIndex][teamIndex][playerIndex] = player;
-      saveMatchToSupabase(roundKey, matchIndex, newBracket[roundKey][matchIndex]);
-      return newBracket;
-    });
-  };
-  const onDragOver = (e) => { if (!isAdmin) return; e.preventDefault(); };
-
-  // ---- Determine Winner ----
-  const getMatchWinner = (team1, team2, result) => {
-    if (!team1 || !team2 || !result) return null;
-    if (result.set1 > result.set2) return team1;
-    if (result.set2 > result.set1) return team2;
-    return team1;
-  };
-
-  // ---- Advance Winner Automatically ----
-  const advanceWinner = (roundKey, matchIndex, matchResult) => {
-    const roundOrder = ["ottavi", "quarti", "semi", "finale"];
-    const currentRoundIdx = roundOrder.indexOf(roundKey);
-    if (currentRoundIdx === -1 || currentRoundIdx === roundOrder.length-1) return;
-
-    const nextRoundKey = roundOrder[currentRoundIdx + 1];
-    const nextMatchIndex = Math.floor(matchIndex/2);
-    const teamPosition = matchIndex % 2;
-
-    const winner = getMatchWinner(
-      bracket[roundKey][matchIndex][0],
-      bracket[roundKey][matchIndex][1],
-      matchResult
-    );
-    if (!winner) return;
-
-    setBracket(prev => {
-      const newBracket = JSON.parse(JSON.stringify(prev));
-      if (!newBracket[nextRoundKey]) newBracket[nextRoundKey] = [];
-      if (!newBracket[nextRoundKey][nextMatchIndex] === undefined) newBracket[nextRoundKey][nextMatchIndex] = [[null,null],[null,null]];
-      newBracket[nextRoundKey][nextMatchIndex][teamPosition] = [...winner];
-      saveMatchToSupabase(nextRoundKey, nextMatchIndex, newBracket[nextRoundKey][nextMatchIndex]);
-      return newBracket;
-    });
-  };
-
-  // ---- Update Result ----
-  const updateResult = (roundKey, matchIndex, set1, set2) => {
-    if (!isAdmin) return;
-    const newResult = { set1: parseInt(set1)||0, set2: parseInt(set2)||0 };
-    setResults(prev => ({ ...prev, [`${roundKey}_${matchIndex}`]: newResult }));
-    advanceWinner(roundKey, matchIndex, newResult);
-    saveBracketAuto();
-  };
-
-  // ---- Save match to Supabase ----
-  const saveMatchToSupabase = async (roundKey, matchIndex, matchTeams) => {
-    const result = results[`${roundKey}_${matchIndex}`] || { set1:0,set2:0 };
-    await supabase
-      .from("tournament_brackets")
-      .upsert({
-        tournament_id: TOURNAMENT_ID,
-        round: roundKey,
-        match_index: matchIndex,
-        team_1: matchTeams[0],
-        team_2: matchTeams[1],
-        result_set1: result.set1,
-        result_set2: result.set2
-      }, { onConflict: ["tournament_id","round","match_index"] });
-  };
-
-  const saveBracketAuto = () => localStorage.setItem(`bracket_${TOURNAMENT_ID}`, JSON.stringify({ bracket, results, round }));
-
-  // ---- Delete Tournament ----
-  const handleDeleteTournament = async () => {
-    if (!isAdmin) return;
-    if (!confirm("Sei sicuro di voler eliminare il torneo?")) return;
-    try {
-      await supabase.from("tournament_registrations").delete().eq("tournament_id", TOURNAMENT_ID);
-      await supabase.from("tournaments").delete().eq("id", TOURNAMENT_ID);
-      alert("Torneo eliminato!");
-      navigate(-1);
-    } catch (error) {
-      console.error("Errore eliminazione torneo:", error);
-      alert("Errore durante l'eliminazione");
+      alert('❌ Errore: ' + error.message);
+    } finally {
+      document.querySelector('[data-print="partecipanti"]')?.style.setProperty('display', 'block');
+      document.querySelector('[data-print="storico"]')?.style.setProperty('display', 'block');
     }
   };
 
-  const rounds = ["ottavi","quarti","semi","finale"];
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-white">
-    <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full"></div>
-  </div>;
+  const handleDragStart = (e, giocatore) => {
+    setDraggedGiocatore(giocatore);
+    e.dataTransfer.effectAllowed = 'move';
+  };
 
-  // ---- RENDER ----
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, fase, index, squadra, giocatoreSlot) => {
+    e.preventDefault();
+    if (!draggedGiocatore) return;
+
+    setData(prev => {
+      const newData = { ...prev };
+      const oldData = JSON.parse(JSON.stringify(prev));
+      setHistory(h => [...h, { data: oldData, timestamp: new Date().toISOString() }]);
+
+      const match = newData[fase][index];
+      if (giocatoreSlot === 'p1') match[squadra].p1 = draggedGiocatore;
+      else if (giocatoreSlot === 'p2') match[squadra].p2 = draggedGiocatore;
+
+      return newData;
+    });
+    setDraggedGiocatore(null);
+  };
+
+  const handlePuntiChange = (fase, index, squadra, punti) => {
+    setData(prev => {
+      const newData = { ...prev };
+      newData[fase][index][squadra].punti = punti;
+      return newData;
+    });
+  };
+
+  const resetFase = (fase) => {
+    setData(prev => {
+      const defaultMatch = { sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" } };
+      const newData = { ...prev };
+      newData[fase] = newData[fase].map((_, i) => ({ ...defaultMatch, id: i, campo: newData[fase][i]?.campo || '' }));
+      return newData;
+    });
+  };
+
+  const getNumeroMatches = (fase) => data[fase]?.length || 0;
+
   return (
-    <div className="min-h-screen bg-white py-4 px-2 sm:px-4">
-      <div className="max-w-6xl mx-auto space-y-4">
-        {/* HEADER */}
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={()=>navigate(-1)} className="p-2 border rounded-lg hover:bg-gray-50 flex items-center gap-1">
-            <ChevronLeft className="w-4 h-4"/> Indietro
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-blue-50 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <button onClick={() => navigate(-1)} className="flex items-center space-x-2 text-emerald-600 hover:text-emerald-700 font-medium">
+            <ArrowLeft size={20} /><span>Torna indietro</span>
           </button>
-          <h1 className="text-xl font-bold text-center flex-1">
-            🏆 {tournamentName} (ID: {TOURNAMENT_ID.slice(-8)})
-            <span className={`ml-2 px-2 py-0.5 text-xs rounded-full font-bold ${isAdmin?"bg-emerald-100 text-emerald-800":"bg-gray-100 text-gray-600"}`}>
-              {isAdmin?"👑 ADMIN":"👁️ VIEW"}
-            </span>
-          </h1>
-          <div className="flex gap-2 items-center">
-            <div className="px-3 py-1 text-xs font-bold rounded-full bg-emerald-100 text-emerald-800">💾 SALVATO</div>
-            {isAdmin && (
-              <button onClick={handleDeleteTournament} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-bold">
-                Elimina torneo
-              </button>
-            )}
+          <div className="text-center">
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent mb-2">
+              🏓 TORNEO PADEL
+            </h1>
+            <div className="flex items-center justify-center space-x-4 text-sm text-gray-600">
+              <Calendar size={16} /><span>22 Dic 2025</span>
+            </div>
           </div>
+          <div className="w-12" />
         </div>
 
-        {/* TABS */}
-        <div className="flex gap-1 overflow-x-auto pb-2 border-b border-gray-200">
-          {rounds.map(r=>(
-            <button key={r} onClick={()=>setRound(r)}
-              className={`px-4 py-2 text-sm font-bold rounded-t-md whitespace-nowrap flex-shrink-0 ${round===r?"bg-emerald-600 text-white shadow-sm":"bg-gray-100 hover:bg-gray-200 text-gray-700"}`}>
-              {r.toUpperCase()}
+        {/* Pulsanti Fasi */}
+        <div className="flex flex-wrap justify-center gap-2 mb-8 bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-white/50">
+          {fasi.map((fase, index) => (
+            <button
+              key={fase}
+              onClick={() => setCurrentFase(index)}
+              className={`px-6 py-3 rounded-xl font-bold text-sm transition-all ${
+                currentFase === index
+                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg scale-105'
+                  : 'bg-white/70 hover:bg-white shadow-md text-gray-700 hover:scale-105'
+              }`}
+            >
+              {titoliFasi[index]}
             </button>
           ))}
         </div>
 
-        {/* GRID RESPONSIVE */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 min-h-[70vh]">
-          {/* ISCRITTI */}
-          <div className="space-y-3 order-2 xl:order-1">
-            <h3 className="font-semibold text-sm text-center flex items-center justify-center gap-2">
-              👥 {isAdmin ? `Disponibili (${players.length}/${allPlayers.length})` : `Iscritti (${allPlayers.length})`}
-            </h3>
-            <div className="bg-gray-50 p-3 rounded-xl border h-64 xl:h-auto overflow-y-auto space-y-1.5">
-              {isAdmin
-                ? (players.length===0
-                  ? <div className="text-center text-gray-500 text-xs py-4">Tutti posizionati! 🎾</div>
-                  : players.map((player,i)=>(
-                    <div key={i} className="bg-white p-2.5 rounded-lg text-xs shadow-sm cursor-grab hover:bg-emerald-50 flex items-center gap-2 border hover:border-emerald-400 transition-all"
-                      draggable onDragStart={(e)=>onDragStart(e,player)}>
-                      <GripVertical className="w-3.5 h-3.5 flex-shrink-0 text-gray-400"/>
-                      <span className="font-medium truncate flex-1">{player}</span>
-                    </div>
-                  ))
-                )
-                : allPlayers.map((player,i)=>(
-                  <div key={i} className="bg-gray-100 p-2.5 rounded-lg text-xs flex items-center gap-2 border cursor-default">
-                    <Users className="w-4 h-4 text-gray-400 flex-shrink-0"/>
-                    <span className="font-medium truncate flex-1">{player}</span>
+        {/* Contenitore iscritti e tabellone */}
+        <div className="flex gap-6">
+          {/* Lista iscritti a scomparsa */}
+          {showIscritti && (
+            <div className="w-64 bg-white/90 rounded-2xl p-4 shadow-xl border border-white/50" data-print="partecipanti">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="font-bold text-lg">📋 Partecipanti ({iscritti.length})</h2>
+                <button onClick={() => setShowIscritti(false)} className="text-sm text-gray-500 hover:text-gray-700">X</button>
+              </div>
+              <div className="space-y-2">
+                {iscritti.map((giocatore, i) => (
+                  <div
+                    key={i}
+                    className="bg-gradient-to-br from-emerald-50 to-blue-50 rounded-xl p-2 cursor-move hover:shadow-md border-2 border-transparent hover:border-emerald-300"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, giocatore)}
+                  >
+                    <div className="text-gray-800 font-semibold text-sm">{giocatore}</div>
                   </div>
-                ))
-              }
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* TABELLONE */}
-          <div className="space-y-3 order-1 xl:order-2">
-            <h3 className="font-semibold text-sm text-center flex items-center justify-center gap-2">
-              {round.toUpperCase()} {isAdmin && `- ${bracket[round]?.length || 0} Campi`}
-            </h3>
-            <div className="bg-gray-50 p-4 rounded-xl border min-h-[500px] overflow-y-auto space-y-3">
-              {bracket[round].map((matchesGroup, matchIndex)=>{
-                const resultKey = `${round}_${matchIndex}`;
-                const result = results[resultKey] || {set1:0,set2:0};
-                return (
-                  <div key={matchIndex} className={`p-4 rounded-xl border shadow-sm ${isAdmin?"bg-white hover:shadow-md":"bg-gray-50"}`}>
-                    <div className="flex items-center justify-between mb-2.5 pb-1.5 border-b border-gray-200">
-                      <span className="text-xs font-semibold">🏟️ Campo {matchIndex+1}</span>
-                      <span className="bg-emerald-600 text-white px-2 py-0.5 rounded text-xs font-bold">P{matchIndex+1}</span>
-                    </div>
-                    <div className="space-y-2 mb-3">
-                      {matchesGroup.map((team,teamIndex)=>(
-                        <div key={teamIndex} className={`border rounded-lg p-2.5 min-h-[68px] ${isAdmin?"bg-white/70 border-gray-200 hover:border-emerald-400":"bg-gray-100 border-gray-300"}`}>
-                          {team.map((player,playerIndex)=>(
-                            <div key={playerIndex} className={`p-1.5 rounded-md border text-center text-xs flex items-center justify-center h-9 cursor-pointer ${player?"bg-emerald-50 border-emerald-400 font-semibold shadow-sm":isAdmin?"bg-white border-gray-300 hover:border-emerald-400":"bg-gray-100 border-gray-300"}`}
-                              draggable={isAdmin&&!player?false:true} onDragOver={onDragOver}
-                              onDrop={(e)=>onDrop(e,round,matchIndex,teamIndex,playerIndex)}>
-                              {player||"-"}
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                    {isAdmin && (
-                      <div className="flex gap-2 text-xs">
-                        <input type="number" value={result.set1} onChange={(e)=>updateResult(round,matchIndex,e.target.value,result.set2)}
-                          className="w-12 p-1 border rounded text-center"/>
-                        <span className="self-center">-</span>
-                        <input type="number" value={result.set2} onChange={(e)=>updateResult(round,matchIndex,result.set1,e.target.value)}
-                          className="w-12 p-1 border rounded text-center"/>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+          {/* Tabellone */}
+          <div ref={bracketRef} className="flex-1 bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-white/60 print:bg-white print:shadow-none" data-print="bracket">
+            <div className="flex items-center justify-between mb-6 print:mb-4 print:flex-col print:items-start print:gap-4">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent print:text-2xl print:text-black">
+                {titoliFasi[currentFase]}
+              </h2>
+              <div className="flex items-center space-x-4 print:hidden">
+                <span className="text-lg font-bold text-gray-700">{getNumeroMatches(fasi[currentFase])} partite</span>
+                <button onClick={() => resetFase(fasi[currentFase])} className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl text-sm shadow-md hover:shadow-lg">
+                  🔄 Reset
+                </button>
+              </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {data[fasi[currentFase]].map((match, matchIndex) => (
+                <div key={match.id} className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-4 shadow-lg border border-gray-200 print:bg-white print:shadow-none print:border print:p-2">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="font-bold text-white text-lg bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl w-24 h-12 flex items-center justify-center shadow-lg">{match.campo}</div>
+                    <button className="px-2 py-1 bg-gray-200 hover:bg-gray-300 text-xs font-bold rounded-lg print:hidden">Salva</button>
+                  </div>
+
+                  {/* Squadre */}
+                  <div className="space-y-2">
+                    {/* Squadra 1 */}
+                    <div className="flex items-center justify-between p-2 border-b border-gray-300">
+                      <div>
+                        <div
+                          className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-1 text-sm text-gray-500 cursor-pointer"
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, 'sq1', 'p1')}
+                        >{match.sq1.p1 || 'Trascina giocatore'}</div>
+                        <div
+                          className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-1 text-sm text-gray-500 cursor-pointer mt-1"
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, 'sq1', 'p2')}
+                        >{match.sq1.p2 || 'Trascina giocatore'}</div>
+                      </div>
+                      <input
+                        type="text"
+                        value={match.sq1.punti}
+                        onChange={(e) => handlePuntiChange(fasi[currentFase], matchIndex, 'sq1', e.target.value)}
+                        className="w-16 px-2 py-1 border border-gray-300 rounded-xl text-sm font-mono text-center"
+                        placeholder="6-4"
+                      />
+                    </div>
+
+                    {/* Squadra 2 */}
+                    <div className="flex items-center justify-between p-2 border-b border-gray-300">
+                      <div>
+                        <div
+                          className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-1 text-sm text-gray-500 cursor-pointer"
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, 'sq2', 'p1')}
+                        >{match.sq2.p1 || 'Trascina giocatore'}</div>
+                        <div
+                          className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-1 text-sm text-gray-500 cursor-pointer mt-1"
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, 'sq2', 'p2')}
+                        >{match.sq2.p2 || 'Trascina giocatore'}</div>
+                      </div>
+                      <input
+                        type="text"
+                        value={match.sq2.punti}
+                        onChange={(e) => handlePuntiChange(fasi[currentFase], matchIndex, 'sq2', e.target.value)}
+                        className="w-16 px-2 py-1 border border-gray-300 rounded-xl text-sm font-mono text-center"
+                        placeholder="6-4"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Azioni */}
+            <div className="flex flex-col sm:flex-row gap-4 mt-6 print:hidden">
+              <button
+                onClick={() => setShowIscritti(!showIscritti)}
+                className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-xl text-lg"
+              >
+                {showIscritti ? '👆 Nascondi Partecipanti' : '📋 Mostra Partecipanti'}
+              </button>
+              <div className="flex-1 flex gap-3">
+                <button className="flex-1 px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-2xl shadow-lg text-sm">💾 Salva Torneo</button>
+                <button onClick={esportaPDF} className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-2xl shadow-lg text-sm flex items-center justify-center space-x-2">
+                  <span>📤</span><span>Esporta PDF</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Storico */}
+            {history.length > 0 && (
+              <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-2xl border border-orange-200" data-print="storico">
+                <h3 className="font-bold text-lg text-orange-800 mb-2">📜 Ultime Modifiche ({history.length})</h3>
+                <div className="flex space-x-2 overflow-x-auto pb-2">
+                  {history.slice(-5).map((h) => (
+                    <button key={h.timestamp} className="px-2 py-1 bg-orange-400 text-white text-xs font-bold rounded-full hover:bg-orange-500 whitespace-nowrap">
+                      {new Date(h.timestamp).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
+
       </div>
     </div>
   );

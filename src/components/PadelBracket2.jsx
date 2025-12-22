@@ -1,0 +1,248 @@
+import React, { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthProvider";
+import { ArrowLeft, Calendar } from "lucide-react";
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+
+export default function PadelBracket() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [currentFase, setCurrentFase] = useState(0);
+  const [showIscritti, setShowIscritti] = useState(true);
+  const bracketRef = useRef(null);
+
+  const fasi = ['ottavi', 'quarti', 'semi', 'finale', 'ripescaggi'];
+  const titoliFasi = ['OTTAVI', 'QUARTI', 'SEMIFINALI', 'FINALE', '🛡️ RIPESCAGGI'];
+
+  const iscritti = [
+    "Luca Bianchi", "Marco Verdi", "Giovanni Rossi", "Antonio Nero",
+    "Paolo Azzurri", "Roberto Verdi", "Stefano Gialli", "Davide Blu",
+    "Giulia Rosa", "Sara Viola", "Elena Arancio", "Chiara Verde"
+  ];
+
+  const [data, setData] = useState({
+    ottavi: Array(8).fill().map((_, i) => ({
+      id: i, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: `${i+1}`
+    })),
+    quarti: Array(4).fill().map((_, i) => ({
+      id: i, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: `${i+9}`
+    })),
+    semi: Array(2).fill().map((_, i) => ({
+      id: i, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: `${i+13}`
+    })),
+    finale: [{ id: 0, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: "🏆" }],
+    ripescaggi: Array(4).fill().map((_, i) => ({
+      id: i, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: `R${i+1}`
+    }))
+  });
+
+  const [draggedGiocatore, setDraggedGiocatore] = useState(null);
+  const [history, setHistory] = useState([]);
+
+  const handleDragStart = (e, giocatore) => {
+    setDraggedGiocatore(giocatore);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, fase, index, squadra, giocatoreSlot) => {
+    e.preventDefault();
+    if (!draggedGiocatore) return;
+
+    setData(prev => {
+      const newData = { ...prev };
+      const oldData = JSON.parse(JSON.stringify(prev));
+      setHistory(h => [...h, { data: oldData, timestamp: new Date().toISOString() }]);
+
+      const match = newData[fase][index];
+      if (giocatoreSlot === 'p1') match[squadra].p1 = draggedGiocatore;
+      else if (giocatoreSlot === 'p2') match[squadra].p2 = draggedGiocatore;
+
+      return newData;
+    });
+    setDraggedGiocatore(null);
+  };
+
+  const handlePuntiChange = (fase, index, squadra, punti) => {
+    setData(prev => {
+      const newData = { ...prev };
+      newData[fase][index][squadra].punti = punti;
+      return newData;
+    });
+  };
+
+  const resetFase = (fase) => {
+    setData(prev => {
+      const defaultMatch = { sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" } };
+      const newData = { ...prev };
+      newData[fase] = newData[fase].map((_, i) => ({ ...defaultMatch, id: i, campo: newData[fase][i]?.campo || '' }));
+      return newData;
+    });
+  };
+
+  const getNumeroMatches = (fase) => data[fase]?.length || 0;
+
+  // ✅ PDF compatto
+  const esportaPDF = async () => {
+    try {
+      const bracket = bracketRef.current;
+      if (!bracket) return alert('❌ Bracket non trovato');
+
+      document.querySelector('[data-print="partecipanti"]')?.style.setProperty('display', 'none');
+      document.querySelector('[data-print="storico"]')?.style.setProperty('display', 'none');
+
+      await new Promise(r => setTimeout(r, 200));
+
+      const canvas = await html2canvas(bracket, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('l', 'mm', 'a4');
+
+      pdf.setFontSize(22);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('🏓 TABELLONE PADEL', 148.5, 20, { align: 'center' });
+
+      pdf.setFontSize(16);
+      pdf.text(titoliFasi[currentFase], 148.5, 35, { align: 'center' });
+
+      const pdfWidth = 260;
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 18, 50, pdfWidth, pdfHeight);
+
+      pdf.save(`tabellone-${fasi[currentFase]}.pdf`);
+      alert('✅ PDF COMPRESSO OK!');
+    } catch (error) {
+      alert('❌ Errore: ' + error.message);
+    } finally {
+      document.querySelector('[data-print="partecipanti"]')?.style.setProperty('display', 'block');
+      document.querySelector('[data-print="storico"]')?.style.setProperty('display', 'block');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-blue-50 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header con Torna indietro e titolo */}
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={() => navigate(-1)} className="flex items-center space-x-2 text-emerald-600 hover:text-emerald-700 font-medium">
+            <ArrowLeft size={20} /><span>Torna indietro</span>
+          </button>
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
+            🏓 TORNEO PADEL
+          </h1>
+          <div className="w-12" />
+        </div>
+
+        <div className="flex items-center justify-center space-x-4 text-sm text-gray-600 mb-4">
+          <Calendar size={16} /><span>22 Dic 2025</span>
+        </div>
+
+        {/* Bottoni Fasi */}
+        <div className="flex flex-wrap justify-center gap-2 mb-6 bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-white/50">
+          {fasi.map((fase, index) => (
+            <button
+              key={fase}
+              onClick={() => setCurrentFase(index)}
+              className={`px-6 py-3 rounded-xl font-bold text-sm transition-all ${
+                currentFase === index
+                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg scale-105'
+                  : 'bg-white/70 hover:bg-white shadow-md text-gray-700 hover:scale-105'
+              }`}
+            >
+              {titoliFasi[index]}
+            </button>
+          ))}
+        </div>
+
+        {/* Contenitore iscritti + bracket */}
+        <div className="flex flex-col md:flex-row gap-4">
+          {showIscritti && (
+            <div className="w-full md:w-1/3" data-print="partecipanti">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">📋 Partecipanti ({iscritti.length})</h2>
+              <div className="grid grid-cols-1 gap-3 bg-white rounded-2xl p-4 shadow-xl border border-white/50">
+                {iscritti.map((giocatore, i) => (
+                  <div
+                    key={i}
+                    className="group bg-gradient-to-br from-emerald-50 to-blue-50 rounded-xl p-3 cursor-move hover:shadow-lg border-2 border-transparent hover:border-emerald-300 hover:scale-105"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, giocatore)}
+                  >
+                    <div className="font-semibold text-gray-800 text-sm leading-tight group-hover:text-emerald-700">{giocatore}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div ref={bracketRef} className="flex-1 bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-white/60 print:bg-white print:shadow-none" data-print="bracket">
+            <div className="space-y-4">
+              {data[fasi[currentFase]].map((match, matchIndex) => (
+                <div key={match.id} className="flex justify-between bg-gradient-to-r from-gray-50 to-white rounded-2xl p-4 shadow-lg border border-gray-200 print:bg-white print:shadow-none print:border">
+                  {/* Squadre verticale */}
+                  <div className="flex flex-col space-y-2 w-1/2">
+                    <div className="font-bold text-gray-800">Squadra 1</div>
+                    <div
+                      className="bg-white border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-between p-2 text-sm text-gray-500 cursor-pointer hover:border-emerald-400 hover:shadow-md"
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, 'sq1', 'p1')}
+                    >
+                      {match.sq1.p1 || 'Trascina'}
+                      <span className="ml-2 font-mono">{match.sq1.punti}</span>
+                    </div>
+                    <div
+                      className="bg-white border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-between p-2 text-sm text-gray-500 cursor-pointer hover:border-emerald-400 hover:shadow-md"
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, 'sq1', 'p2')}
+                    >
+                      {match.sq1.p2 || 'Trascina'}
+                      <span className="ml-2 font-mono">{match.sq1.punti}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col space-y-2 w-1/2">
+                    <div className="font-bold text-gray-800">Squadra 2</div>
+                    <div
+                      className="bg-white border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-between p-2 text-sm text-gray-500 cursor-pointer hover:border-blue-400 hover:shadow-md"
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, 'sq2', 'p1')}
+                    >
+                      {match.sq2.p1 || 'Trascina'}
+                      <span className="ml-2 font-mono">{match.sq2.punti}</span>
+                    </div>
+                    <div
+                      className="bg-white border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-between p-2 text-sm text-gray-500 cursor-pointer hover:border-blue-400 hover:shadow-md"
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, 'sq2', 'p2')}
+                    >
+                      {match.sq2.p2 || 'Trascina'}
+                      <span className="ml-2 font-mono">{match.sq2.punti}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 mt-6 print:hidden">
+              <button onClick={esportaPDF} className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-2xl shadow-lg text-sm">
+                📤 Esporta PDF
+              </button>
+              <button onClick={() => setShowIscritti(!showIscritti)} className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg text-sm">
+                {showIscritti ? '👆 Nascondi Partecipanti' : '📋 Mostra Partecipanti'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
