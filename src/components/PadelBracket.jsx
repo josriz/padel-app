@@ -14,29 +14,35 @@ export default function PadelBracket() {
   const bracketRef = useRef(null);
 
   const fasi = ["ottavi", "quarti", "semi", "finale", "ripescaggi"];
-  const titoliFasi = ["OTTAVI", "QUARTI", "SEMIFINALI", "FINALE", "🛡️ RIPESTAGGI"];
+  const titoliFasi = ["OTTAVI", "QUARTI", "SEMIFINALI", "FINALE", "🛡️ RIPESCAGGI"];
 
   const [iscritti, setIscritti] = useState([]);
 
   const [data, setData] = useState({
-    ottavi: Array(8).fill().map((_, i) => ({
-      id: i,
-      sq1: { p1: "", p2: "", punti: "" },
-      sq2: { p1: "", p2: "", punti: "" },
-      campo: `Campo ${i + 1}`,
-    })),
-    quarti: Array(4).fill().map((_, i) => ({
-      id: i,
-      sq1: { p1: "", p2: "", punti: "" },
-      sq2: { p1: "", p2: "", punti: "" },
-      campo: `Campo ${i + 9}`,
-    })),
-    semi: Array(2).fill().map((_, i) => ({
-      id: i,
-      sq1: { p1: "", p2: "", punti: "" },
-      sq2: { p1: "", p2: "", punti: "" },
-      campo: `Campo ${i + 13}`,
-    })),
+    ottavi: Array(8)
+      .fill()
+      .map((_, i) => ({
+        id: i,
+        sq1: { p1: "", p2: "", punti: "" },
+        sq2: { p1: "", p2: "", punti: "" },
+        campo: `Campo ${i + 1}`,
+      })),
+    quarti: Array(4)
+      .fill()
+      .map((_, i) => ({
+        id: i,
+        sq1: { p1: "", p2: "", punti: "" },
+        sq2: { p1: "", p2: "", punti: "" },
+        campo: `Campo ${i + 9}`,
+      })),
+    semi: Array(2)
+      .fill()
+      .map((_, i) => ({
+        id: i,
+        sq1: { p1: "", p2: "", punti: "" },
+        sq2: { p1: "", p2: "", punti: "" },
+        campo: `Campo ${i + 13}`,
+      })),
     finale: [
       {
         id: 0,
@@ -45,12 +51,14 @@ export default function PadelBracket() {
         campo: "🏆 Finale",
       },
     ],
-    ripescaggi: Array(4).fill().map((_, i) => ({
-      id: i,
-      sq1: { p1: "", p2: "", punti: "" },
-      sq2: { p1: "", p2: "", punti: "" },
-      campo: `R${i + 1}`,
-    })),
+    ripescaggi: Array(4)
+      .fill()
+      .map((_, i) => ({
+        id: i,
+        sq1: { p1: "", p2: "", punti: "" },
+        sq2: { p1: "", p2: "", punti: "" },
+        campo: `R${i + 1}`,
+      })),
   });
 
   const [draggedGiocatore, setDraggedGiocatore] = useState(null);
@@ -73,8 +81,12 @@ export default function PadelBracket() {
       const bracket = bracketRef.current;
       if (!bracket) return alert("❌ Bracket non trovato");
 
-      document.querySelector('[data-print="partecipanti"]')?.style.setProperty("display", "none");
-      document.querySelector('[data-print="storico"]')?.style.setProperty("display", "none");
+      document
+        .querySelector('[data-print="partecipanti"]')
+        ?.style.setProperty("display", "none");
+      document
+        .querySelector('[data-print="storico"]')
+        ?.style.setProperty("display", "none");
 
       await new Promise((r) => setTimeout(r, 200));
 
@@ -96,7 +108,7 @@ export default function PadelBracket() {
       pdf.text(titoliFasi[currentFase], 148.5, 35, { align: "center" });
 
       const pdfWidth = 260;
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width * 0.9;
+      const pdfHeight = ((canvas.height * pdfWidth) / canvas.width) * 0.9;
       pdf.addImage(imgData, "PNG", 18, 50, pdfWidth, pdfHeight);
 
       pdf.save(`tabellone-${fasi[currentFase]}.pdf`);
@@ -104,8 +116,12 @@ export default function PadelBracket() {
     } catch (error) {
       alert("❌ Errore: " + error.message);
     } finally {
-      document.querySelector('[data-print="partecipanti"]')?.style.setProperty("display", "block");
-      document.querySelector('[data-print="storico"]')?.style.setProperty("display", "block");
+      document
+        .querySelector('[data-print="partecipanti"]')
+        ?.style.setProperty("display", "block");
+      document
+        .querySelector('[data-print="storico"]')
+        ?.style.setProperty("display", "block");
     }
   };
 
@@ -126,7 +142,10 @@ export default function PadelBracket() {
     setData((prev) => {
       const newData = { ...prev };
       const oldData = JSON.parse(JSON.stringify(prev));
-      setHistory((h) => [...h, { data: oldData, timestamp: new Date().toISOString() }]);
+      setHistory((h) => [
+        ...h,
+        { data: oldData, timestamp: new Date().toISOString() },
+      ]);
 
       const match = newData[fase][index];
       if (giocatoreSlot === "p1") match[squadra].p1 = draggedGiocatore;
@@ -147,9 +166,16 @@ export default function PadelBracket() {
 
   const resetFase = (fase) => {
     setData((prev) => {
-      const defaultMatch = { sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" } };
+      const defaultMatch = {
+        sq1: { p1: "", p2: "", punti: "" },
+        sq2: { p1: "", p2: "", punti: "" },
+      };
       const newData = { ...prev };
-      newData[fase] = newData[fase].map((_, i) => ({ ...defaultMatch, id: i, campo: newData[fase][i]?.campo || "" }));
+      newData[fase] = newData[fase].map((_, i) => ({
+        ...defaultMatch,
+        id: i,
+        campo: newData[fase][i]?.campo || "",
+      }));
       return newData;
     });
   };
@@ -157,7 +183,7 @@ export default function PadelBracket() {
   const getNumeroMatches = (fase) => data[fase]?.length || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-blue-50 p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-b from-[#001F5B] via-[#003A8F] to-[#001F5B] p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <button
@@ -200,10 +226,18 @@ export default function PadelBracket() {
         <div className="flex gap-6">
           {/* Lista iscritti a scomparsa */}
           {showIscritti && (
-            <div className="w-64 bg-white/90 rounded-2xl p-4 shadow-xl border border-white/50" data-print="partecipanti">
+            <div
+              className="w-64 bg-white/90 rounded-2xl p-4 shadow-xl border border-white/50"
+              data-print="partecipanti"
+            >
               <div className="flex justify-between items-center mb-4">
-                <h2 className="font-bold text-lg">📋 Partecipanti ({iscritti.length})</h2>
-                <button onClick={() => setShowIscritti(false)} className="text-sm text-gray-500 hover:text-gray-700">
+                <h2 className="font-bold text-lg">
+                  📋 Partecipanti ({iscritti.length})
+                </h2>
+                <button
+                  onClick={() => setShowIscritti(false)}
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                >
                   X
                 </button>
               </div>
@@ -215,7 +249,9 @@ export default function PadelBracket() {
                     draggable
                     onDragStart={(e) => handleDragStart(e, giocatore)}
                   >
-                    <div className="text-gray-800 font-semibold text-sm">{giocatore}</div>
+                    <div className="text-gray-800 font-semibold text-sm">
+                      {giocatore}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -223,13 +259,19 @@ export default function PadelBracket() {
           )}
 
           {/* Tabellone */}
-          <div ref={bracketRef} className="flex-1 bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-white/60 print:bg-white print:shadow-none" data-print="bracket">
+          <div
+            ref={bracketRef}
+            className="flex-1 bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-white/60 print:bg-white print:shadow-none"
+            data-print="bracket"
+          >
             <div className="flex items-center justify-between mb-6 print:mb-4 print:flex-col print:items-start print:gap-4">
               <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent print:text-2xl print:text-black">
                 {titoliFasi[currentFase]}
               </h2>
               <div className="flex items-center space-x-4 print:hidden">
-                <span className="text-lg font-bold text-gray-700">{getNumeroMatches(fasi[currentFase])} partite</span>
+                <span className="text-lg font-bold text-gray-700">
+                  {getNumeroMatches(fasi[currentFase])} partite
+                </span>
                 <button
                   onClick={() => resetFase(fasi[currentFase])}
                   className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl text-sm shadow-md hover:shadow-lg"
@@ -241,12 +283,18 @@ export default function PadelBracket() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {data[fasi[currentFase]].map((match, matchIndex) => (
-                <div key={match.id} className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-4 shadow-lg border border-gray-200 print:bg-white print:shadow-none print:border print:p-2">
+                <div
+                  key={match.id}
+                  className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-4 shadow-lg border border-gray-200 print:bg-white print:shadow-none print:border print:p-2"
+                >
                   <div className="flex justify-between items-center mb-2">
-                    <div className="font-bold text-white text-lg bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl w-24 h-12 flex items-center justify-center shadow-lg">
+                    {/* CAMPO – stile tabellone Serie A */}
+                    <div className="font-bold text-white text-lg bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-800 rounded-2xl w-28 h-12 flex items-center justify-center shadow-[0_0_0_2px_rgba(255,255,255,0.5)] border border-blue-400/70 tracking-wide">
                       {match.campo}
                     </div>
-                    <button className="px-2 py-1 bg-gray-200 hover:bg-gray-300 text-xs font-bold rounded-lg print:hidden">Salva</button>
+                    <button className="px-2 py-1 bg-gray-200 hover:bg-gray-300 text-xs font-bold rounded-lg print:hidden">
+                      Salva
+                    </button>
                   </div>
 
                   {/* Squadre compatte con linea separatrice */}
@@ -257,14 +305,30 @@ export default function PadelBracket() {
                         <div
                           className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-1 text-sm text-gray-500 cursor-pointer"
                           onDragOver={handleDragOver}
-                          onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, "sq1", "p1")}
+                          onDrop={(e) =>
+                            handleDrop(
+                              e,
+                              fasi[currentFase],
+                              matchIndex,
+                              "sq1",
+                              "p1"
+                            )
+                          }
                         >
                           {match.sq1.p1 || "Trascina giocatore"}
                         </div>
                         <div
                           className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-1 text-sm text-gray-500 cursor-pointer mt-1"
                           onDragOver={handleDragOver}
-                          onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, "sq1", "p2")}
+                          onDrop={(e) =>
+                            handleDrop(
+                              e,
+                              fasi[currentFase],
+                              matchIndex,
+                              "sq1",
+                              "p2"
+                            )
+                          }
                         >
                           {match.sq1.p2 || "Trascina giocatore"}
                         </div>
@@ -272,13 +336,20 @@ export default function PadelBracket() {
                       <input
                         type="text"
                         value={match.sq1.punti}
-                        onChange={(e) => handlePuntiChange(fasi[currentFase], matchIndex, "sq1", e.target.value)}
+                        onChange={(e) =>
+                          handlePuntiChange(
+                            fasi[currentFase],
+                            matchIndex,
+                            "sq1",
+                            e.target.value
+                          )
+                        }
                         className="w-16 px-2 py-1 border border-gray-300 rounded-xl text-sm font-mono text-center"
                         placeholder="6-4"
                       />
                     </div>
 
-                    {/* Linea separatrice sotto squadra */}
+                    {/* Linea separatrice */}
                     <div className="border-b border-gray-400 my-1" />
 
                     {/* Squadra 2 */}
@@ -287,14 +358,30 @@ export default function PadelBracket() {
                         <div
                           className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-1 text-sm text-gray-500 cursor-pointer"
                           onDragOver={handleDragOver}
-                          onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, "sq2", "p1")}
+                          onDrop={(e) =>
+                            handleDrop(
+                              e,
+                              fasi[currentFase],
+                              matchIndex,
+                              "sq2",
+                              "p1"
+                            )
+                          }
                         >
                           {match.sq2.p1 || "Trascina giocatore"}
                         </div>
                         <div
                           className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-1 text-sm text-gray-500 cursor-pointer mt-1"
                           onDragOver={handleDragOver}
-                          onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, "sq2", "p2")}
+                          onDrop={(e) =>
+                            handleDrop(
+                              e,
+                              fasi[currentFase],
+                              matchIndex,
+                              "sq2",
+                              "p2"
+                            )
+                          }
                         >
                           {match.sq2.p2 || "Trascina giocatore"}
                         </div>
@@ -302,7 +389,14 @@ export default function PadelBracket() {
                       <input
                         type="text"
                         value={match.sq2.punti}
-                        onChange={(e) => handlePuntiChange(fasi[currentFase], matchIndex, "sq2", e.target.value)}
+                        onChange={(e) =>
+                          handlePuntiChange(
+                            fasi[currentFase],
+                            matchIndex,
+                            "sq2",
+                            e.target.value
+                          )
+                        }
                         className="w-16 px-2 py-1 border border-gray-300 rounded-xl text-sm font-mono text-center"
                         placeholder="6-4"
                       />
@@ -312,16 +406,49 @@ export default function PadelBracket() {
               ))}
             </div>
 
+            {/* Box Vincitori – solo in FINALE */}
+            {fasi[currentFase] === "finale" && (
+              <div className="mt-6 bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 rounded-3xl p-4 shadow-xl border border-yellow-300 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">🏆</span>
+                  <div>
+                    <h3 className="text-lg font-extrabold text-yellow-900 tracking-wide">
+                      VINCITORI TORNEO
+                    </h3>
+                    <p className="text-sm text-yellow-950/90">
+                      Inserisci i nomi dei campioni della finale.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2 w-full md:w-64">
+                  <input
+                    type="text"
+                    placeholder="Giocatore 1"
+                    className="px-3 py-2 rounded-xl text-sm font-semibold text-yellow-900 bg-yellow-50/90 border border-yellow-300 outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Giocatore 2"
+                    className="px-3 py-2 rounded-xl text-sm font-semibold text-yellow-900 bg-yellow-50/90 border border-yellow-300 outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Azioni */}
             <div className="flex flex-col sm:flex-row gap-4 mt-6 print:hidden">
               <button
                 onClick={() => setShowIscritti(!showIscritti)}
                 className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-xl text-lg"
               >
-                {showIscritti ? "👆 Nascondi Partecipanti" : "📋 Mostra Partecipanti"}
+                {showIscritti
+                  ? "👆 Nascondi Partecipanti"
+                  : "📋 Mostra Partecipanti"}
               </button>
               <div className="flex-1 flex gap-3">
-                <button className="flex-1 px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-2xl shadow-lg text-sm">💾 Salva Torneo</button>
+                <button className="flex-1 px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-2xl shadow-lg text-sm">
+                  💾 Salva Torneo
+                </button>
                 <button
                   onClick={esportaPDF}
                   className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-2xl shadow-lg text-sm flex items-center justify-center space-x-2"
@@ -334,18 +461,28 @@ export default function PadelBracket() {
 
             {/* Storico */}
             {history.length > 0 && (
-              <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-2xl border border-orange-200" data-print="storico">
-                <h3 className="font-bold text-lg text-orange-800 mb-2">📜 Ultime Modifiche ({history.length})</h3>
+              <div
+                className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-2xl border border-orange-200"
+                data-print="storico"
+              >
+                <h3 className="font-bold text-lg text-orange-800 mb-2">
+                  📜 Ultime Modifiche ({history.length})
+                </h3>
                 <div className="flex space-x-2 overflow-x-auto pb-2">
                   {history.slice(-5).map((h) => (
-                    <button key={h.timestamp} className="px-2 py-1 bg-orange-400 text-white text-xs font-bold rounded-full hover:bg-orange-500 whitespace-nowrap">
-                      {new Date(h.timestamp).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
+                    <button
+                      key={h.timestamp}
+                      className="px-2 py-1 bg-orange-400 text-white text-xs font-bold rounded-full hover:bg-orange-500 whitespace-nowrap"
+                    >
+                      {new Date(h.timestamp).toLocaleTimeString("it-IT", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </button>
                   ))}
                 </div>
               </div>
             )}
-
           </div>
         </div>
       </div>

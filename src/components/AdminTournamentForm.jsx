@@ -1,7 +1,7 @@
-// src/components/AdminTournamentForm.jsx - SEMPRE RIPESCAGGI!
+// src/components/AdminTournamentForm.jsx - SCELTA TIPI TORNEO ATTIVA!
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Calendar, Users, Award } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
 
@@ -17,14 +17,16 @@ export default function AdminTournamentForm() {
     name: "",
     data_inizio: "",
     max_players: "",
-    tournament_type: "ripescaggio", // ✅ SEMPRE ripescaggio!
+    tournament_type: "diretta", // ✅ Default: Diretta
     price: ""
   });
   const [loading, setLoading] = useState(false);
 
-  // ✅ SOLO RIPESCAGGI!
+  // ✅ SCELTA COMPLETA TIPI TORNEO!
   const tournamentTypes = [
-    { value: "ripescaggio", label: "🎯 RIPESCAGGI - TabelloneRipescaggi" }
+    { value: "diretta", label: "⚡ DIRETTA - Tabellone classico", icon: "🏆" },
+    { value: "ripescaggio", label: "🎯 RIPESCAGGI - TabelloneRipescaggi", icon: "🔄" },
+    { value: "doppio", label: "👥 DOPPIO - Coppie padel", icon: "🥉" }
   ];
 
   const handleSubmit = async (e) => {
@@ -38,17 +40,23 @@ export default function AdminTournamentForm() {
           ...formData,
           max_players: parseInt(formData.max_players),
           price: parseFloat(formData.price),
-          created_by: user.id  // ✅ created_by corretto
+          created_by: user.id
         }])
         .select()
         .single();
 
       if (error) throw error;
       
-      alert("✅ Torneo RIPESCAGGI creato!");
+      alert(`✅ Torneo ${formData.tournament_type.toUpperCase()} creato!`);
       
-      // 🚀 SEMPRE verso TabelloneRipescaggi!
-      navigate(`/ripescaggi/${data.id}`);
+      // 🚀 Redirect dinamico per tipo torneo
+      const redirectMap = {
+        diretta: `/torneo/${data.id}`,
+        ripescaggio: `/ripescaggi/${data.id}`,
+        doppio: `/doppio/${data.id}`
+      };
+      
+      navigate(redirectMap[formData.tournament_type] || `/admin-tournaments`);
       
     } catch (error) {
       alert("❌ Errore: " + error.message);
@@ -60,9 +68,18 @@ export default function AdminTournamentForm() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 py-12 px-4">
       <div className="max-w-md mx-auto p-8 bg-white rounded-2xl shadow-xl border">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-          🏆 RIPESCAGGI Tabellone
-        </h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">
+            🏆 Crea Torneo
+          </h1>
+          <button
+            onClick={() => navigate("/admin-tournaments")}
+            className="p-2 hover:bg-gray-100 rounded-xl transition-all"
+            title="Torna indietro"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -81,7 +98,7 @@ export default function AdminTournamentForm() {
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Data e Ora Inizio *
+              📅 Data e Ora Inizio *
             </label>
             <input
               type="datetime-local"
@@ -94,7 +111,7 @@ export default function AdminTournamentForm() {
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Max Iscrizioni *
+              👥 Max Iscrizioni *
             </label>
             <input
               type="number"
@@ -107,23 +124,28 @@ export default function AdminTournamentForm() {
             />
           </div>
 
+          {/* ✅ SCELTA TIPO TORNEO ATTIVA! */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Tipo Torneo
+              🎯 Tipo Torneo *
             </label>
             <select
+              required
               value={formData.tournament_type}
               onChange={(e) => setFormData({...formData, tournament_type: e.target.value})}
               className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-              disabled
             >
-              <option>🎯 RIPESCAGGI - TabelloneRipescaggi</option>
+              {tournamentTypes.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.icon} {type.label}
+                </option>
+              ))}
             </select>
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Prezzo (€) *
+              💰 Prezzo Iscrizione (€) *
             </label>
             <input
               type="number"
@@ -143,19 +165,15 @@ export default function AdminTournamentForm() {
             className="w-full bg-gradient-to-r from-emerald-600 to-green-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:from-emerald-700 hover:to-green-700 focus:ring-4 focus:ring-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {loading ? (
-              <span className="animate-pulse">🚀 Creazione...</span>
+              <span className="flex items-center justify-center gap-2">
+                <Plus className="w-5 h-5 animate-spin" />
+                Creazione...
+              </span>
             ) : (
-              "🎯 CREA RIPESCAGGI → TabelloneRipescaggi"
+              `🚀 CREA ${formData.tournament_type.toUpperCase()}`
             )}
           </button>
         </form>
-
-        <button
-          onClick={() => navigate("/admin-tournaments")}
-          className="w-full mt-6 bg-gray-100 text-gray-800 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-all border"
-        >
-          ← Torna alla Gestione Tornei
-        </button>
       </div>
     </div>
   );

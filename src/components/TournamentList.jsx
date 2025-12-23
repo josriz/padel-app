@@ -73,7 +73,7 @@ export default function TournamentList() {
           .select('tournament_id')
           .eq('user_id', user.id);
         const userRegs = {};
-        registrations?.forEach(r => userRegs[r.tournament_id] = true);
+        registrations?.forEach(r => { userRegs[r.tournament_id] = true; });
         setUserRegistrations(userRegs);
       }
 
@@ -128,7 +128,7 @@ export default function TournamentList() {
   }
 
   return (
-    <div className="min-h-[90vh] bg-gray-50 pt-4 pb-12">
+    <div className="min-h-[90vh] bg-gradient-to-b from-[#001F5B] via-[#003A8F] to-[#001F5B] pt-4 pb-12">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* ✅ BACK BUTTON INTELLIGENTE */}
         <button
@@ -138,13 +138,21 @@ export default function TournamentList() {
           ← Indietro
         </button>
 
-        <div className="text-center">
-          <div className="w-20 h-20 bg-yellow-100 rounded-xl mx-auto mb-4 flex items-center justify-center">
-            <Trophy className="w-9 h-9 text-yellow-600" />
+        {/* HEADER CON NUOVA COPPA */}
+        <div className="text-center text-white">
+          <div className="w-28 h-28 bg-white/10 border border-white/40 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.35)] overflow-hidden">
+            <img
+              src="/images/tornei-header.png"   // C:\padel-app\public\images\tornei-header.png
+              alt="Tornei Padel"
+              className="w-full h-full object-cover"
+            />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Tornei</h1>
-          <p className="text-lg text-gray-600">
-            ({tournaments.length}) tornei • {Object.values(participantsCounts).reduce((a, b) => a + b, 0)} iscritti totali
+          <h1 className="text-3xl font-extrabold tracking-wide mb-2 drop-shadow-sm">
+            TORNEI PADEL
+          </h1>
+          <p className="text-lg text-blue-100">
+            ({tournaments.length}) tornei •{" "}
+            {Object.values(participantsCounts).reduce((a, b) => a + b, 0)} iscritti totali
           </p>
         </div>
 
@@ -163,9 +171,14 @@ export default function TournamentList() {
               const namesList = playerNames[t.id] || [];
 
               return (
-                <div key={t.id} className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all hover:-translate-y-2 border border-gray-200 flex flex-col h-full">
-                  
-                  <Link to={`/tabellone/${t.id}`} className="block flex-1 p-6 border-b border-gray-100">
+                <div
+                  key={t.id}
+                  className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all hover:-translate-y-2 border border-gray-200 flex flex-col h-full"
+                >
+                  <Link
+                    to={`/tabellone/${t.id}`}
+                    className="block flex-1 p-6 border-b border-gray-100"
+                  >
                     <h2 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 leading-tight">
                       {t.name || '—'}
                     </h2>
@@ -176,11 +189,15 @@ export default function TournamentList() {
                           <Users className="w-4 h-4" />
                           <span>{iscritti}/{t.max_players || '—'} iscritti</span>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                          t.status === 'completato' ? 'bg-green-100 text-green-800'
-                          : t.status === 'in_corso' ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-blue-100 text-blue-800'
-                        }`}>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            t.status === 'completato'
+                              ? 'bg-green-100 text-green-800'
+                              : t.status === 'in_corso'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-blue-100 text-blue-800'
+                          }`}
+                        >
                           {t.status || 'aperto'}
                         </span>
                       </div>
@@ -193,8 +210,8 @@ export default function TournamentList() {
                           </p>
                           <div className="flex flex-wrap gap-1">
                             {namesList.slice(0, 5).map((name, i) => (
-                              <span 
-                                key={i} 
+                              <span
+                                key={i}
                                 className="text-xs bg-white px-2 py-1 rounded-full text-gray-800 border border-gray-200 shadow-sm"
                                 title={name}
                               >
@@ -211,16 +228,23 @@ export default function TournamentList() {
                       )}
 
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-gradient-to-r from-emerald-500 to-green-600 h-2 rounded-full transition-all" 
-                          style={{ width: `${Math.min((iscritti / (t.max_players || 16)) * 100, 100)}%` }} 
+                        <div
+                          className="bg-gradient-to-r from-emerald-500 to-green-600 h-2 rounded-full transition-all"
+                          style={{
+                            width: `${Math.min(
+                              (iscritti / (t.max_players || 16)) * 100,
+                              100
+                            )}%`,
+                          }}
                         />
                       </div>
                     </div>
 
                     <div className="text-sm text-gray-600">
                       💰 {t.price ? `€${t.price}` : 'Gratis'} • 📅{' '}
-                      {t.data_inizio ? new Date(t.data_inizio).toLocaleDateString('it-IT') : '—'}
+                      {t.data_inizio
+                        ? new Date(t.data_inizio).toLocaleDateString('it-IT')
+                        : '—'}
                     </div>
                   </Link>
 
