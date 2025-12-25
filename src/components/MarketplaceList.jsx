@@ -114,7 +114,7 @@ export default function Marketplace() {
   if (loading) {
     return (
       <div className="min-h-screen bg-cover bg-center bg-no-repeat pt-8 pb-20 px-4 flex items-center justify-center" 
-           style={{backgroundImage: "url('/images/sfondo-profilo.jpg')", backgroundColor: 'rgba(17,24,39,0.9)'}}>
+           style={{backgroundImage: "url('/images/Sfondo-Marketplace.jpg')", backgroundColor: 'rgba(17,24,39,0.9)'}}>
         <div className="text-center text-white">
           <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4" />
           <p className="text-xl">Caricamento...</p>
@@ -125,7 +125,7 @@ export default function Marketplace() {
 
   return (
     <div className="min-h-screen bg-cover bg-center bg-no-repeat pt-8 pb-20 px-4" 
-         style={{backgroundImage: "url('/images/sfondo-profilo.jpg')", backgroundColor: 'rgba(17,24,39,0.9)'}}>
+         style={{backgroundImage: "url('/images/Sfondo-Marketplace.jpg')", backgroundColor: 'rgba(17,24,39,0.9)'}}>
       <div className="max-w-6xl mx-auto">
         {/* 🛒 HEADER CON FOTO DIRECTOR ACCANTO A MARKETPLACE */}
         <div className="flex justify-between items-center mb-8">
