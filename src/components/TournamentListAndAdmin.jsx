@@ -1,210 +1,292 @@
-// src/components/TournamentListAndAdmin.jsx - COMPLETO STILE LOGIN
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
-import { useAuth } from '../context/AuthProvider';
-import TournamentLayout from './TournamentLayout';
-import { Trophy, Users, Loader2, UserPlus, CheckCircle, LinkIcon, Trash2, Crown } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthProvider";
+import { supabase } from "../supabaseClient";
+import { useNavigate } from "react-router-dom"; // ✅ AGGIUNTO
 
 export default function TournamentListAndAdmin() {
-  const { user, role } = useAuth();
-  const isAdmin = role === 'admin';
+  const { user, isAdmin } = useAuth();
+  const navigate = useNavigate(); // ✅ AGGIUNTO
+  
   const [tournaments, setTournaments] = useState([]);
-  const [participantsCounts, setParticipantsCounts] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [registering, setRegistering] = useState({});
-  const [deleting, setDeleting] = useState({});
-  const [registeredTournaments, setRegisteredTournaments] = useState(new Set());
-  const [showToast, setShowToast] = useState(false);
-
-  useEffect(() => {
-    fetchTournaments();
-    if (!isAdmin) checkRegistrations();
-  }, []);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   const fetchTournaments = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('tournaments')
-      .select('id, name, max_players, status, data_inizio');
-    
-    setTournaments(data || []);
-
-    const counts = {};
-    for (const t of data || []) {
-      const { count } = await supabase
-        .from('tournament_registrations')
-        .select('*', { count: 'exact', head: true })
-        .eq('tournament_id', t.id);
-      counts[t.id] = count || 0;
-    }
-    setParticipantsCounts(counts);
-    setLoading(false);
-  };
-
-  const checkRegistrations = async () => {
-    if (!user?.id) return;
-    const { data } = await supabase
-      .from('tournament_registrations')
-      .select('tournament_id')
-      .eq('user_id', user.id);
-    
-    const registered = new Set(data?.map(r => r.tournament_id) || []);
-    setRegisteredTournaments(registered);
-  };
-
-  const handleDeleteTournament = async (tournamentId) => {
-    if (!confirm('Eliminare torneo? Gli iscritti saranno rimossi.')) return;
-    
-    setDeleting(prev => ({ ...prev, [tournamentId]: true }));
-    
-    const { error: regError } = await supabase
-      .from('tournament_registrations')
-      .delete()
-      .eq('tournament_id', tournamentId);
-    
-    const { error: tourError } = await supabase
-      .from('tournaments')
-      .delete()
-      .eq('id', tournamentId);
-    
-    setDeleting(prev => ({ ...prev, [tournamentId]: false }));
-    
-    if (!regError && !tourError) {
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-      fetchTournaments();
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from('tournaments')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      console.log("✅ Tornei caricati:", data?.length || 0);
+      if (error) throw error;
+      setTournaments(data || []);
+    } catch (err) {
+      console.error("❌ Fetch error:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleRegister = async (tournamentId) => {
-    if (registeredTournaments.has(tournamentId)) return;
+  useEffect(() => {
+    fetchTournaments();
+  }, []);
 
-    setRegistering(prev => ({ ...prev, [tournamentId]: true }));
-    
-    const { error } = await supabase
-      .from('tournament_registrations')
-      .insert({
-        tournament_id: tournamentId,
-        user_id: user?.id || 'anonymous-user',
-        player_name: user?.email?.split('@')[0] || 'Giocatore'
-      });
-    
-    setRegistering(prev => ({ ...prev, [tournamentId]: false }));
-    
-    if (!error) {
-      setRegisteredTournaments(prev => new Set([...prev, tournamentId]));
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-      fetchTournaments();
+  const registerTournament = async (tournamentId) => {
+    if (!user) {
+      alert('Devi fare login per iscriverti!');
+      return;
+    }
+
+    try {
+      const playerName = user.email?.split('@')[0] || 'Giocatore';
+      
+      const { data: existing } = await supabase
+        .from('tournament_players')
+        .select('id')
+        .eq('tournament_id', tournamentId)
+        .eq('player_id', user.id)
+        .maybeSingle();
+
+      if (existing) {
+        alert('❌ Già iscritto!');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('tournament_players')
+        .insert([{
+          tournament_id: tournamentId,
+          player_id: user.id,
+          player_name: playerName,
+          rating: 1500
+        }]);
+
+      if (error) throw error;
+      alert('✅ Iscritto con successo!');
+    } catch (err) {
+      alert('❌ ' + err.message);
     }
   };
 
-  if (loading) {
-    return (
-      <TournamentLayout title="Caricamento..." subtitle="Tornei in caricamento">
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="w-16 h-16 text-blue-600 animate-spin" />
-        </div>
-      </TournamentLayout>
-    );
-  }
+  const createTournament = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const name = formData.get('name');
+    const type = formData.get('type');
+    const players = parseInt(formData.get('players')) || 16;
+
+    try {
+      const { data, error } = await supabase
+        .from('tournaments')
+        .insert([{ name, tournament_type: type, max_players: players, status: 'registration' }]) // ✅ tournament_type
+        .select()
+        .single();
+      
+      if (error) throw error;
+      setTournaments([data, ...tournaments]);
+      e.target.reset();
+      setShowCreateForm(false);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const deleteTournament = async (id) => {
+    if (!confirm('Eliminare torneo?')) return;
+    setDeletingId(id);
+    try {
+      await supabase.from('tournament_players').delete().eq('tournament_id', id);
+      await supabase.from('matches').delete().eq('tournament_id', id);
+      const { error } = await supabase.from('tournaments').delete().eq('id', id);
+      if (error) throw error;
+      setTournaments(tournaments.filter(t => t.id !== id));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  // ✅ NAVIGAZIONE TORNEO
+  const goToBracket = (tournament) => {
+    const params = new URLSearchParams({
+      type: tournament.tournament_type || 'diretta',
+      id: tournament.id,
+      num_campi: '4',
+      max_players: tournament.max_players || 16
+    });
+    navigate(`/bracket?${params}`);
+  };
+
+  if (loading) return <div className="text-center py-12 text-xl">⏳ Caricamento tornei...</div>;
+  if (error) return <div className="text-red-500 text-center py-12 bg-red-50 p-8 rounded-lg max-w-md mx-auto">❌ {error}</div>;
 
   return (
-    <>
-      {showToast && (
-        <div className="fixed top-4 right-4 z-[1000] bg-blue-600 text-white px-6 py-4 rounded-xl shadow-lg">
-          <div className="flex items-center gap-3">
-            <CheckCircle className="w-6 h-6" />
-            <span className="font-semibold">{isAdmin ? 'Torneo eliminato!' : 'Iscritto! 🎾'}</span>
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="bg-white border rounded-lg p-6 shadow-sm">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">🏆 Tornei Disponibili</h1>
+            <p className="text-gray-600 mb-1">
+              {user ? user.email : 'Non loggato'} 
+              {isAdmin && ' | 👨‍💼 Admin'}
+            </p>
+            <p className="text-lg font-semibold text-gray-900">{tournaments.length} tornei</p>
           </div>
+          {isAdmin && (
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
+            >
+              ➕ Crea Torneo
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Form Crea Torneo (solo admin) */}
+      {isAdmin && showCreateForm && (
+        <div className="bg-white border rounded-xl p-8 shadow-lg">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-900">📝 Crea Nuovo Torneo</h2>
+            <button
+              onClick={() => {
+                setShowCreateForm(false);
+                document.querySelector('form')?.reset();
+              }}
+              className="text-2xl text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
+          </div>
+          <form onSubmit={createTournament} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">🏆 Nome Torneo</label>
+              <input 
+                name="name" 
+                required 
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-3 focus:ring-blue-500 focus:border-blue-500 text-lg" 
+                placeholder="KING OF PADEL 2025" 
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">⚙️ Tipo</label>
+              <select name="type" required className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-3 focus:ring-blue-500 text-lg">
+                <option value="">Seleziona tipo...</option>
+                <option value="diretta">⚡ Diretta Eliminazione</option>
+                <option value="king">👑 KING OF PADEL</option> {/* ✅ KING */}
+                <option value="ripescaggio">🎯 Ripescaggi</option>
+                <option value="doppio">👥 Doppio</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">👥 Numero Giocatori</label>
+              <select name="players" required className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-3 focus:ring-blue-500 text-lg">
+                <option value="">Seleziona...</option>
+                <optgroup label="KING OF PADEL">
+                  <option value={8}>8 giocatori 👑</option>
+                </optgroup>
+                <optgroup label="Standard (Diretta/Ripescaggi)">
+                  <option value={16}>16 giocatori</option>
+                  <option value={32}>32 giocatori</option>
+                </optgroup>
+                <optgroup label="Piccoli">
+                  <option value={4}>4 giocatori</option>
+                  <option value={6}>6 giocatori</option>
+                </optgroup>
+              </select>
+            </div>
+            <div className="flex items-end lg:col-span-3">
+              <button 
+                type="submit" 
+                className="ml-auto px-10 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                ✅ CREA TORNEO
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
-      <TournamentLayout 
-        title={isAdmin ? "Gestione Tornei" : "Tornei Disponibili"} 
-        subtitle={isAdmin ? "👑 Modalità Admin" : `(${tournaments.length}) tornei attivi`}
-      >
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tournaments.map(t => {
-            const iscritti = participantsCounts[t.id] || 0;
-            const max = t.max_players || 16;
-            const pieno = iscritti >= max;
-            const giaIscritto = registeredTournaments.has(t.id);
-
-            return (
-              <div key={t.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-md hover:bg-gray-50 transition-all group">
-                
-                {isAdmin && (
-                  <div className="flex justify-end mb-4">
-                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold">
-                      ADMIN
-                    </span>
-                  </div>
-                )}
-
-                <h3 className="text-xl font-bold text-gray-900 mb-4 line-clamp-2">{t.name}</h3>
-                
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center gap-2 text-lg font-semibold text-emerald-700">
-                    {iscritti}/{max} iscritti
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-emerald-500 h-2 rounded-full transition-all"
-                      style={{ width: `${Math.min((iscritti/max)*100, 100)}%` }}
-                    />
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    📅 {t.data_inizio ? new Date(t.data_inizio).toLocaleDateString('it-IT') : '—'}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Link
-                    to={`/tournaments/${t.id}`}
-                    className="block w-full text-center border border-gray-200 bg-white text-blue-600 font-semibold p-3 rounded-xl hover:bg-gray-50 transition"
-                  >
-                    VEDI DETTAGLI
-                  </Link>
-
-                  {!isAdmin && (
-                    <button
-                      onClick={() => handleRegister(t.id)}
-                      disabled={pieno || giaIscritto || registering[t.id]}
-                      className={`w-full text-center p-3 rounded-xl font-semibold transition-all ${
-                        pieno || giaIscritto || registering[t.id]
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                          : 'bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600'
-                      }`}
-                    >
-                      {registering[t.id] ? '...' : giaIscritto ? 'ISCRITTO ✓' : pieno ? 'TORNEO PIENO' : 'ISCRIVITI'}
-                    </button>
-                  )}
-
-                  {isAdmin && (
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        onClick={() => handleDeleteTournament(t.id)}
-                        disabled={deleting[t.id]}
-                        className="bg-red-600 text-white p-3 rounded-xl font-semibold hover:bg-red-700 transition disabled:opacity-50"
-                      >
-                        {deleting[t.id] ? '...' : 'ELIMINA'}
-                      </button>
-                      <Link 
-                        to="/admin-tournaments" 
-                        className="bg-blue-600 text-white p-3 rounded-xl font-semibold text-center hover:bg-blue-700 transition flex items-center justify-center"
-                      >
-                        GESTIONE
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+      {/* Tabella Tornei */}
+      <div className="bg-white border rounded-xl shadow-lg overflow-hidden">
+        <div className="px-6 py-6 bg-gradient-to-r from-gray-50 to-gray-100 border-b">
+          <h3 className="text-xl font-bold text-gray-900">📋 Lista Tornei</h3>
         </div>
-      </TournamentLayout>
-    </>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nome Torneo</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tipo</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Iscritti</th> {/* ✅ CORRETTO */}
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Azioni</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {tournaments.map((tournament) => (
+                <tr key={tournament.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="font-semibold text-gray-900">{tournament.name}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      tournament.tournament_type === 'king' ? 'bg-yellow-100 text-yellow-800' :
+                      tournament.tournament_type === 'diretta' ? 'bg-blue-100 text-blue-800' :
+                      tournament.tournament_type === 'ripescaggio' ? 'bg-green-100 text-green-800' :
+                      'bg-purple-100 text-purple-800'
+                    }`}>
+                      {tournament.tournament_type?.toUpperCase()}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {tournament.max_players || '?'} posti
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {tournament.data_inizio ? new Date(tournament.data_inizio).toLocaleDateString('it-IT') : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => goToBracket(tournament)}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-all"
+                      >
+                        🎾 Bracket
+                      </button>
+                      {user && (
+                        <button
+                          onClick={() => registerTournament(tournament.id)}
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-all"
+                        >
+                          Iscriviti
+                        </button>
+                      )}
+                      {isAdmin && (
+                        <button
+                          onClick={() => deleteTournament(tournament.id)}
+                          disabled={deletingId === tournament.id}
+                          className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-all disabled:opacity-50"
+                        >
+                          {deletingId === tournament.id ? '🗑️' : '🗑️'}
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 }

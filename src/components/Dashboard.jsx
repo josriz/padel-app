@@ -1,4 +1,4 @@
-﻿// src/components/Dashboard.jsx - SFONDO BANNER COLORATO
+﻿// src/components/Dashboard.jsx - SFONDO BANNER tornei-header.png
 import React, { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
@@ -123,174 +123,139 @@ export default function Dashboard() {
   if (!safeUser) return <Navigate to="/" replace />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-blue-50">
-      {/* HEADER */}
-      <div className="pt-12 pb-6">
-        <div className="max-w-4xl mx-auto px-6 flex flex-col items-center">
-          <button
-            onClick={() => setMenuOpen(true)}
-            className="mb-6 p-3 rounded-xl hover:bg-white shadow-sm border self-end"
-          >
-            <Menu className="w-6 h-6 text-gray-700" />
-          </button>
-          <h1 className="text-4xl font-black text-gray-900 text-center mb-4">
-            Dashboard
-          </h1>
-          <p className="text-xl text-gray-600 text-center mb-8">
-            Benvenuto nella tua Dashboard Padel!
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen flex flex-col bg-cover bg-center bg-no-repeat px-2 sm:px-4 relative overflow-hidden" 
+         style={{ backgroundImage: "url('/images/tornei-header.png')" }}>
+      
+      {/* Overlay ultra-trasparente come LoginPage */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/8 to-black/25 z-0"></div>
+      
+      {/* Contenuti con z-index */}
+      <div className="relative z-10 flex-1 flex flex-col min-h-screen">
 
-      {/* BANNER */}
-      <div className="max-w-4xl mx-auto px-6 mb-12">
-        <div className="relative h-32 md:h-40 lg:h-48 rounded-2xl shadow-xl overflow-hidden border-4 border-white bg-gradient-to-r from-blue-600 via-emerald-500 to-teal-600">
-          {padelBanners.map((url, index) => (
-            <div
-              key={index}
-              className={`absolute inset-0 transition-opacity duration-1000 ${
-                index === currentBanner ? "opacity-100" : "opacity-0"
-              }`}
+        {/* HEADER */}
+        <div className="pt-12 pb-6">
+          <div className="max-w-4xl mx-auto px-6 flex flex-col items-center">
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="mb-6 p-3 rounded-xl hover:bg-white/80 backdrop-blur-sm shadow-sm border self-end bg-white/70"
             >
-              <img
-                src={url}
-                alt={`Banner ${index + 1}`}
-                className="w-full h-full object-contain"
-                loading="eager"
-              />
-            </div>
-          ))}
+              <Menu className="w-6 h-6 text-gray-700" />
+            </button>
+            <h1 className="text-4xl font-black text-white drop-shadow-2xl text-center mb-4 tracking-tight">
+              Dashboard
+            </h1>
+            <p className="text-xl text-white/90 drop-shadow-lg text-center mb-8 max-w-2xl">
+              Benvenuto nella tua Dashboard Padel!
+            </p>
+          </div>
+        </div>
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-2xl" />
+        {/* BANNER - Sostituito con tornei-header.png fisso */}
+        <div className="max-w-4xl mx-auto px-6 mb-12">
+          <div className="relative h-32 md:h-40 lg:h-48 rounded-3xl shadow-2xl overflow-hidden border-4 border-white/80 bg-white/20 backdrop-blur-sm">
+            <img
+              src="/images/tornei-header.png"
+              alt="Tornei Header"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent rounded-3xl" />
+          </div>
+        </div>
 
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-2">
-            {padelBanners.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentBanner(i)}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  i === currentBanner
-                    ? "bg-white w-4 h-4 scale-125 shadow-md"
-                    : "bg-white/70 hover:bg-white hover:w-3 hover:h-3"
-                }`}
-              />
-            ))}
+        {menuOpen && <HamburgerMenu />}
+
+        {/* CARDS - Adattate allo sfondo */}
+        <div className="max-w-4xl mx-auto px-6 pb-12 flex-1">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {/* Tornei - blu */}
+            <button
+              onClick={() => navigate("/tournaments")}
+              className="relative bg-white/90 backdrop-blur-md rounded-3xl p-6 shadow-2xl hover:shadow-3xl hover:-translate-y-3 transition-all border border-white/70 text-left hover:bg-white"
+            >
+              <div className="absolute inset-x-6 top-0 h-1 rounded-b-full bg-gradient-to-r from-blue-500 to-indigo-500" />
+              <div className="w-full h-44 sm:h-48 rounded-2xl overflow-hidden mb-4 border border-blue-200/50 shadow-lg">
+                <img
+                  src="/images/icon-tornei.jpg"
+                  alt="Tornei"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center tracking-wide">
+                Tornei
+              </h3>
+              <p className="text-lg text-gray-700 mb-2 text-center font-medium">
+                Scopri e iscriviti ai tornei
+              </p>
+            </button>
+
+            {/* Marketplace - verde */}
+            <button
+              onClick={() => navigate("/marketplace")}
+              className="relative bg-white/90 backdrop-blur-md rounded-3xl p-6 shadow-2xl hover:shadow-3xl hover:-translate-y-3 transition-all border border-white/70 text-left hover:bg-white"
+            >
+              <div className="absolute inset-x-6 top-0 h-1 rounded-b-full bg-gradient-to-r from-emerald-500 to-teal-500" />
+              <div className="w-full h-44 sm:h-48 rounded-2xl overflow-hidden mb-4 border border-emerald-200/50 shadow-lg">
+                <img
+                  src="/images/icon-marketplace.jpg"
+                  alt="Marketplace"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center tracking-wide">
+                Marketplace
+              </h3>
+              <p className="text-lg text-gray-700 mb-2 text-center font-medium">
+                Acquista attrezzature padel
+              </p>
+            </button>
+
+            {/* Profilo - viola */}
+            <button
+              onClick={() => navigate("/profile")}
+              className="relative bg-white/90 backdrop-blur-md rounded-3xl p-6 shadow-2xl hover:shadow-3xl hover:-translate-y-3 transition-all border border-white/70 text-left hover:bg-white"
+            >
+              <div className="absolute inset-x-6 top-0 h-1 rounded-b-full bg-gradient-to-r from-violet-500 to-purple-500" />
+              <div className="w-full h-44 sm:h-48 rounded-2xl overflow-hidden mb-4 border border-violet-200/50 shadow-lg">
+                <img
+                  src="/images/icon-profilo.jpg"
+                  alt="Profilo"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center tracking-wide">
+                Profilo
+              </h3>
+              <p className="text-lg text-gray-700 mb-2 text-center font-medium">
+                Gestisci il tuo account
+              </p>
+            </button>
           </div>
 
-          <button
-            onClick={() =>
-              setCurrentBanner(
-                (prev) => (prev - 1 + padelBanners.length) % padelBanners.length
-              )
-            }
-            className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 p-1.5 rounded-lg text-lg font-bold hover:scale-110 shadow-lg"
-          >
-            ‹
-          </button>
-          <button
-            onClick={() =>
-              setCurrentBanner((prev) => (prev + 1) % padelBanners.length)
-            }
-            className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 p-1.5 rounded-lg text-lg font-bold hover:scale-110 shadow-lg"
-          >
-            ›
-          </button>
-        </div>
-      </div>
-
-      {menuOpen && <HamburgerMenu />}
-
-      {/* CARDS CON LE NUOVE IMMAGINI + COLORI TABELLONE */}
-      <div className="max-w-4xl mx-auto px-6 pb-12">
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* Tornei - blu */}
-          <button
-            onClick={() => navigate("/tournaments")}
-            className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 rounded-3xl p-4 shadow-xl hover:shadow-2xl hover:-translate-y-2 transition-all border border-blue-500/70 text-left"
-          >
-            <div className="absolute inset-x-6 top-0 h-1 rounded-b-full bg-white/60" />
-            <div className="w-full h-48 rounded-2xl overflow-hidden mb-4 border border-white/30 shadow-inner">
-              <img
-                src="/images/icon-tornei.jpg"
-                alt="Tornei"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <h3 className="text-2xl font-bold text-white mb-2 text-center tracking-wide">
-              Tornei
-            </h3>
-            <p className="text-lg text-blue-100 mb-2 text-center">
-              Scopri e iscriviti ai tornei
-            </p>
-          </button>
-
-          {/* Marketplace - verde */}
-          <button
-            onClick={() => navigate("/marketplace")}
-            className="relative bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 rounded-3xl p-4 shadow-xl hover:shadow-2xl hover:-translate-y-2 transition-all border border-emerald-500/70 text-left"
-          >
-            <div className="absolute inset-x-6 top-0 h-1 rounded-b-full bg-white/60" />
-            <div className="w-full h-48 rounded-2xl overflow-hidden mb-4 border border-white/30 shadow-inner">
-              <img
-                src="/images/icon-marketplace.jpg"
-                alt="Marketplace"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <h3 className="text-2xl font-bold text-white mb-2 text-center tracking-wide">
-              Marketplace
-            </h3>
-            <p className="text-lg text-emerald-100 mb-2 text-center">
-              Acquista attrezzature padel
-            </p>
-          </button>
-
-          {/* Profilo - viola */}
-          <button
-            onClick={() => navigate("/profile")}
-            className="relative bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 rounded-3xl p-4 shadow-xl hover:shadow-2xl hover:-translate-y-2 transition-all border border-violet-500/70 text-left"
-          >
-            <div className="absolute inset-x-6 top-0 h-1 rounded-b-full bg-white/60" />
-            <div className="w-full h-48 rounded-2xl overflow-hidden mb-4 border border-white/30 shadow-inner">
-              <img
-                src="/images/icon-profilo.jpg"
-                alt="Profilo"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <h3 className="text-2xl font-bold text-white mb-2 text-center tracking-wide">
-              Profilo
-            </h3>
-            <p className="text-lg text-violet-100 mb-2 text-center">
-              Gestisci il tuo account
-            </p>
-          </button>
-        </div>
-
-        {isAdmin && (
-          <div className="mt-20">
-            <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">
-              👑 Area Admin
-            </h2>
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-3xl p-10 shadow-2xl hover:shadow-3xl hover:-translate-y-2 transition-all">
-                <Shield className="w-20 h-20 mx-auto mb-8" />
-                <h3 className="text-2xl font-bold mb-6 text-center">
-                  Gestione Tornei
-                </h3>
-                <p className="text-xl mb-10 text-center opacity-90">
-                  Crea e modifica tornei
-                </p>
-                <button
-                  onClick={() => navigate("/admin-tournaments")}
-                  className="w-full bg-white text-blue-600 py-5 px-10 rounded-2xl font-bold text-xl hover:bg-gray-100 shadow-2xl transition-all"
-                >
-                  GESTISCI TORNEI 👑
-                </button>
+          {isAdmin && (
+            <div className="mt-20">
+              <h2 className="text-3xl font-bold text-white drop-shadow-2xl mb-12 text-center tracking-tight">
+                👑 Area Admin
+              </h2>
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="bg-white/90 backdrop-blur-md text-gray-900 rounded-3xl p-10 shadow-3xl hover:shadow-4xl hover:-translate-y-3 transition-all border border-white/70">
+                  <Shield className="w-20 h-20 mx-auto mb-8 text-blue-600 shadow-lg" />
+                  <h3 className="text-2xl font-bold mb-6 text-center tracking-wide">
+                    Gestione Tornei
+                  </h3>
+                  <p className="text-xl mb-10 text-center text-gray-700 opacity-90 font-medium">
+                    Crea e modifica tornei
+                  </p>
+                  <button
+                    onClick={() => navigate("/admin-tournaments")}
+                    className="w-full bg-gradient-to-r from-emerald-500 to-blue-600 text-white py-5 px-10 rounded-2xl font-bold text-xl hover:from-emerald-600 hover:to-blue-700 shadow-2xl transition-all hover:shadow-3xl hover:scale-[1.02]"
+                  >
+                    GESTISCI TORNEI 👑
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

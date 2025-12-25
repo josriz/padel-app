@@ -1,9 +1,10 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
 import { ArrowLeft, Calendar } from "lucide-react";
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import { supabase } from "../supabaseClient";
 
 export default function PadelBracket() {
   const { user } = useAuth();
@@ -12,42 +13,152 @@ export default function PadelBracket() {
   const [showIscritti, setShowIscritti] = useState(true);
   const bracketRef = useRef(null);
 
-  const fasi = ['ottavi', 'quarti', 'semi', 'finale', 'ripescaggi'];
-  const titoliFasi = ['OTTAVI', 'QUARTI', 'SEMIFINALI', 'FINALE', '🛡️ RIPESCAGGI'];
+  const fasi = ["ottavi", "quarti", "semi", "finale", "ripescaggi"];
+  const titoliFasi = ["OTTAVI", "QUARTI", "SEMIFINALI", "FINALE", "🛡️ RIPESCAGGI"];
 
-  const iscritti = [
-    "Luca Bianchi", "Marco Verdi", "Giovanni Rossi", "Antonio Nero",
-    "Paolo Azzurri", "Roberto Verdi", "Stefano Gialli", "Davide Blu",
-    "Giulia Rosa", "Sara Viola", "Elena Arancio", "Chiara Verde"
-  ];
-
+  const [iscritti, setIscritti] = useState([]);
   const [data, setData] = useState({
     ottavi: Array(8).fill().map((_, i) => ({
-      id: i, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: `${i+1}`
+      id: i,
+      sq1: { p1: "", p2: "", punti: "" },
+      sq2: { p1: "", p2: "", punti: "" },
+      campo: `Campo ${i + 1}`,
     })),
     quarti: Array(4).fill().map((_, i) => ({
-      id: i, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: `${i+9}`
+      id: i,
+      sq1: { p1: "", p2: "", punti: "" },
+      sq2: { p1: "", p2: "", punti: "" },
+      campo: `Campo ${i + 9}`,
     })),
     semi: Array(2).fill().map((_, i) => ({
-      id: i, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: `${i+13}`
+      id: i,
+      sq1: { p1: "", p2: "", punti: "" },
+      sq2: { p1: "", p2: "", punti: "" },
+      campo: `Campo ${i + 13}`,
     })),
-    finale: [{ id: 0, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: "🏆" }],
+    finale: [{
+      id: 0,
+      sq1: { p1: "", p2: "", punti: "" },
+      sq2: { p1: "", p2: "", punti: "" },
+      campo: "🏆 Finale",
+    }],
     ripescaggi: Array(4).fill().map((_, i) => ({
-      id: i, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: `R${i+1}`
-    }))
+      id: i,
+      sq1: { p1: "", p2: "", punti: "" },
+      sq2: { p1: "", p2: "", punti: "" },
+      campo: `R${i + 1}`,
+    })),
   });
 
   const [draggedGiocatore, setDraggedGiocatore] = useState(null);
   const [history, setHistory] = useState([]);
 
-  const handleDragStart = (e, giocatore) => {
-    setDraggedGiocatore(giocatore);
-    e.dataTransfer.effectAllowed = 'move';
+  // ✅ ISCRITTI REALI TROVATI - Ora li vedi tutti!
+useEffect(() => {
+  const fetchIscrittiReali = async () => {
+    console.log("🔍 Carico ISCRITTI REALI...");
+    
+    try {
+      // Prova torneo corrente (estrai ID dall'URL)
+      const urlParams = new URLSearchParams(window.location.search);
+      const pathParts = window.location.pathname.split('/');
+      const tournamentId = urlParams.get('id') || 
+                         urlParams.get('tournament_id') || 
+                         pathParts[pathParts.length-1];
+      
+      console.log("🎾 Tournament ID estratto:", tournamentId);
+      
+      let regs = [];
+      
+      // 1. Iscritti SPECIFICI del torneo corrente
+      if (tournamentId && tournamentId.length > 10) {
+        const { data } = await supabase
+          .from('tournament_registrations')
+          .select('display_name, player_name')
+          .eq('tournament_id', tournamentId);
+        regs = data || [];
+        console.log("🏆 ISCRITTI TORNEO:", regs);
+      }
+      
+      // 2. Tutti gli iscritti (i tuoi 10 reali)
+      if (regs.length === 0) {
+        const { data } = await supabase
+          .from('tournament_registrations')
+          .select('display_name, player_name')
+          .order('display_name')
+          .limit(16);
+        regs = data || [];
+        console.log("📋 TUTTI ISCRITTI (10):", regs);
+      }
+      
+      // 3. Estrai nomi UNICI reali
+      const nomiReali = regs
+        .flatMap(r => [r.display_name, r.player_name])
+        .filter(nome => nome && nome.trim().length > 1)
+        .map(nome => nome.trim())
+        .slice(0, 16);
+      
+      const iscrittiUnici = [...new Set(nomiReali)].sort();
+      setIscritti(iscrittiUnici);
+      console.log("✅ NOMI VISIBILI (", iscrittiUnici.length, "):", iscrittiUnici);
+      
+    } catch (error) {
+      console.error("❌ Errore:", error);
+      setIscritti(["andrea", "antonio", "boverob", "cfalba", "Denny Test", "giose.rizzi"]);
+    }
+  };
+  fetchIscrittiReali();
+}, []);
+
+  const esportaPDF = async () => {
+    try {
+      const bracket = bracketRef.current;
+      if (!bracket) return alert("❌ Bracket non trovato");
+
+      document.querySelector('[data-print="partecipanti"]')?.style.setProperty("display", "none");
+      document.querySelector('[data-print="storico"]')?.style.setProperty("display", "none");
+
+      await new Promise(r => setTimeout(r, 200));
+
+      const canvas = await html2canvas(bracket, {
+        scale: 1,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        width: 650,
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("l", "mm", "a4");
+
+      pdf.setFontSize(22);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("🏓 TABELLONE PADEL", 148.5, 20, { align: "center" });
+      pdf.setFontSize(16);
+      pdf.text(titoliFasi[currentFase], 148.5, 35, { align: "center" });
+
+      const pdfWidth = 260;
+      const pdfHeight = ((canvas.height * pdfWidth) / canvas.width) * 0.9;
+      pdf.addImage(imgData, "PNG", 18, 50, pdfWidth, pdfHeight);
+
+      pdf.save(`tabellone-${fasi[currentFase]}.pdf`);
+      alert("✅ PDF COMPRESSO OK!");
+    } catch (error) {
+      alert("❌ Errore: " + error.message);
+    } finally {
+      document.querySelector('[data-print="partecipanti"]')?.style.setProperty("display", "block");
+      document.querySelector('[data-print="storico"]')?.style.setProperty("display", "block");
+    }
   };
 
-  const handleDragOver = (e) => {
+  const handleDragStart = (e, giocatore) => {
+    setDraggedGiocatore(giocatore);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = e => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.dataTransfer.dropEffect = "move";
   };
 
   const handleDrop = (e, fase, index, squadra, giocatoreSlot) => {
@@ -60,8 +171,8 @@ export default function PadelBracket() {
       setHistory(h => [...h, { data: oldData, timestamp: new Date().toISOString() }]);
 
       const match = newData[fase][index];
-      if (giocatoreSlot === 'p1') match[squadra].p1 = draggedGiocatore;
-      else if (giocatoreSlot === 'p2') match[squadra].p2 = draggedGiocatore;
+      if (giocatoreSlot === "p1") match[squadra].p1 = draggedGiocatore;
+      else if (giocatoreSlot === "p2") match[squadra].p2 = draggedGiocatore;
 
       return newData;
     });
@@ -76,87 +187,54 @@ export default function PadelBracket() {
     });
   };
 
-  const resetFase = (fase) => {
+  const resetFase = fase => {
     setData(prev => {
-      const defaultMatch = { sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" } };
+      const defaultMatch = {
+        sq1: { p1: "", p2: "", punti: "" },
+        sq2: { p1: "", p2: "", punti: "" },
+      };
       const newData = { ...prev };
-      newData[fase] = newData[fase].map((_, i) => ({ ...defaultMatch, id: i, campo: newData[fase][i]?.campo || '' }));
+      newData[fase] = newData[fase].map((_, i) => ({
+        ...defaultMatch,
+        id: i,
+        campo: newData[fase][i]?.campo || "",
+      }));
       return newData;
     });
   };
 
-  const getNumeroMatches = (fase) => data[fase]?.length || 0;
-
-  // ✅ PDF compatto
-  const esportaPDF = async () => {
-    try {
-      const bracket = bracketRef.current;
-      if (!bracket) return alert('❌ Bracket non trovato');
-
-      document.querySelector('[data-print="partecipanti"]')?.style.setProperty('display', 'none');
-      document.querySelector('[data-print="storico"]')?.style.setProperty('display', 'none');
-
-      await new Promise(r => setTimeout(r, 200));
-
-      const canvas = await html2canvas(bracket, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('l', 'mm', 'a4');
-
-      pdf.setFontSize(22);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('🏓 TABELLONE PADEL', 148.5, 20, { align: 'center' });
-
-      pdf.setFontSize(16);
-      pdf.text(titoliFasi[currentFase], 148.5, 35, { align: 'center' });
-
-      const pdfWidth = 260;
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 18, 50, pdfWidth, pdfHeight);
-
-      pdf.save(`tabellone-${fasi[currentFase]}.pdf`);
-      alert('✅ PDF COMPRESSO OK!');
-    } catch (error) {
-      alert('❌ Errore: ' + error.message);
-    } finally {
-      document.querySelector('[data-print="partecipanti"]')?.style.setProperty('display', 'block');
-      document.querySelector('[data-print="storico"]')?.style.setProperty('display', 'block');
-    }
-  };
+  const getNumeroMatches = fase => data[fase]?.length || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-blue-50 p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-b from-[#001F5B] via-[#003A8F] to-[#001F5B] p-2 sm:p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header con Torna indietro e titolo */}
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={() => navigate(-1)} className="flex items-center space-x-2 text-emerald-600 hover:text-emerald-700 font-medium">
-            <ArrowLeft size={20} /><span>Torna indietro</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4">
+          <button onClick={() => navigate(-1)} className="flex items-center space-x-2 text-emerald-600 hover:text-emerald-700 font-medium text-sm sm:text-base">
+            <ArrowLeft size={18} className="sm:size-20" />
+            <span>Torna indietro</span>
           </button>
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
-            🏓 TORNEO PADEL
-          </h1>
-          <div className="w-12" />
+          <div className="text-center flex-1">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent mb-1 sm:mb-2">
+              🏓 TORNEO PADEL
+            </h1>
+            <div className="flex items-center justify-center space-x-2 text-xs sm:text-sm text-gray-600">
+              <Calendar size={14} className="sm:size-16" />
+              <span>22 Dic 2025</span>
+            </div>
+          </div>
+          <div className="w-12 sm:w-12" />
         </div>
 
-        <div className="flex items-center justify-center space-x-4 text-sm text-gray-600 mb-4">
-          <Calendar size={16} /><span>22 Dic 2025</span>
-        </div>
-
-        {/* Bottoni Fasi */}
-        <div className="flex flex-wrap justify-center gap-2 mb-6 bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-white/50">
+        {/* Pulsanti Fasi - SOLO scroll orizzontale mobile */}
+        <div className="flex flex-wrap sm:justify-center overflow-x-auto pb-2 gap-2 mb-8 bg-white/80 backdrop-blur-sm rounded-2xl p-3 sm:p-4 shadow-xl border border-white/50 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
           {fasi.map((fase, index) => (
             <button
               key={fase}
               onClick={() => setCurrentFase(index)}
-              className={`px-6 py-3 rounded-xl font-bold text-sm transition-all ${
+              className={`flex-shrink-0 px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-bold text-xs sm:text-sm transition-all ${
                 currentFase === index
-                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg scale-105'
-                  : 'bg-white/70 hover:bg-white shadow-md text-gray-700 hover:scale-105'
+                  ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg scale-105"
+                  : "bg-white/70 hover:bg-white shadow-md text-gray-700 hover:scale-105"
               }`}
             >
               {titoliFasi[index]}
@@ -164,81 +242,151 @@ export default function PadelBracket() {
           ))}
         </div>
 
-        {/* Contenitore iscritti + bracket */}
-        <div className="flex flex-col md:flex-row gap-4">
+        {/* Contenitore iscritti e tabellone - SOLO responsive */}
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+          {/* Lista iscritti a scomparsa - SOLO responsive */}
           {showIscritti && (
-            <div className="w-full md:w-1/3" data-print="partecipanti">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">📋 Partecipanti ({iscritti.length})</h2>
-              <div className="grid grid-cols-1 gap-3 bg-white rounded-2xl p-4 shadow-xl border border-white/50">
+            <div className="w-full lg:w-64 bg-white/90 rounded-2xl p-3 sm:p-4 shadow-xl border border-white/50 max-h-[40vh] lg:max-h-none overflow-y-auto" data-print="partecipanti">
+              <div className="flex justify-between items-center mb-3 sm:mb-4">
+                <h2 className="font-bold text-base sm:text-lg">📋 Partecipanti ({iscritti.length})</h2>
+                <button onClick={() => setShowIscritti(false)} className="text-sm text-gray-500 hover:text-gray-700">X</button>
+              </div>
+              <div className="space-y-2">
                 {iscritti.map((giocatore, i) => (
                   <div
                     key={i}
-                    className="group bg-gradient-to-br from-emerald-50 to-blue-50 rounded-xl p-3 cursor-move hover:shadow-lg border-2 border-transparent hover:border-emerald-300 hover:scale-105"
+                    className="bg-gradient-to-br from-emerald-50 to-blue-50 rounded-xl p-2 cursor-move hover:shadow-md border-2 border-transparent hover:border-emerald-300 text-xs sm:text-sm"
                     draggable
-                    onDragStart={(e) => handleDragStart(e, giocatore)}
+                    onDragStart={e => handleDragStart(e, giocatore)}
                   >
-                    <div className="font-semibold text-gray-800 text-sm leading-tight group-hover:text-emerald-700">{giocatore}</div>
+                    <div className="text-gray-800 font-semibold truncate">{giocatore}</div>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          <div ref={bracketRef} className="flex-1 bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-white/60 print:bg-white print:shadow-none" data-print="bracket">
-            <div className="space-y-4">
-              {data[fasi[currentFase]].map((match, matchIndex) => (
-                <div key={match.id} className="flex justify-between bg-gradient-to-r from-gray-50 to-white rounded-2xl p-4 shadow-lg border border-gray-200 print:bg-white print:shadow-none print:border">
-                  {/* Squadre verticale */}
-                  <div className="flex flex-col space-y-2 w-1/2">
-                    <div className="font-bold text-gray-800">Squadra 1</div>
-                    <div
-                      className="bg-white border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-between p-2 text-sm text-gray-500 cursor-pointer hover:border-emerald-400 hover:shadow-md"
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, 'sq1', 'p1')}
-                    >
-                      {match.sq1.p1 || 'Trascina'}
-                      <span className="ml-2 font-mono">{match.sq1.punti}</span>
+          {/* Tabellone - SOLO responsive */}
+          <div 
+            ref={bracketRef} 
+            className="flex-1 bg-white/90 backdrop-blur-sm rounded-3xl p-3 sm:p-4 md:p-6 shadow-2xl border border-white/60 print:bg-white print:shadow-none relative overflow-hidden min-h-[60vh]" 
+            data-print="bracket"
+            style={{
+              backgroundImage: `url('/images/icon-tornei.jpg')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat'
+            }}
+          >
+            {/* Overlay leggerissimo per leggibilità */}
+            <div className="absolute inset-0 bg-white/80"></div>
+            
+            <div className="relative z-10">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 print:mb-4 print:flex-col print:items-start print:gap-4 gap-3">
+                <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent print:text-2xl print:text-black flex-1 text-center sm:text-left">
+                  {titoliFasi[currentFase]}
+                </h2>
+                <div className="flex items-center space-x-3 sm:space-x-4 print:hidden w-full sm:w-auto justify-center sm:justify-end">
+                  <span className="text-base sm:text-lg font-bold text-gray-700">{getNumeroMatches(fasi[currentFase])} partite</span>
+                  <button onClick={() => resetFase(fasi[currentFase])} className="px-3 py-1.5 sm:px-4 sm:py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl text-sm shadow-md hover:shadow-lg whitespace-nowrap">
+                    🔄 Reset
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6 max-h-[65vh] overflow-y-auto pb-4 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
+                {data[fasi[currentFase]].map((match, matchIndex) => (
+                  <div key={match.id} className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-3 sm:p-4 shadow-lg border border-gray-200 print:bg-white print:shadow-none print:border print:p-2">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 sm:mb-3 gap-2">
+                      <div className="font-bold text-white text-base sm:text-lg bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-800 rounded-2xl w-full sm:w-28 h-10 sm:h-12 flex items-center justify-center shadow-[0_0_0_2px_rgba(255,255,255,0.5)] border border-blue-400/70 tracking-wide">
+                        {match.campo}
+                      </div>
+                      <button className="px-2 py-1 bg-gray-200 hover:bg-gray-300 text-xs font-bold rounded-lg print:hidden w-full sm:w-auto text-center">Salva</button>
                     </div>
-                    <div
-                      className="bg-white border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-between p-2 text-sm text-gray-500 cursor-pointer hover:border-emerald-400 hover:shadow-md"
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, 'sq1', 'p2')}
-                    >
-                      {match.sq1.p2 || 'Trascina'}
-                      <span className="ml-2 font-mono">{match.sq1.punti}</span>
+
+                    <div className="space-y-2">
+                      {/* Squadra 1 */}
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-2 sm:p-2.5 border-b border-gray-300 gap-2 sm:gap-0">
+                        <div className="flex-1 space-y-1 sm:space-y-2">
+                          <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-1.5 sm:p-1 text-sm text-gray-500 cursor-pointer min-h-[36px] flex items-center justify-center"
+                               onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, "sq1", "p1")}>
+                            {match.sq1.p1 || "Trascina giocatore"}
+                          </div>
+                          <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-1.5 sm:p-1 text-sm text-gray-500 cursor-pointer mt-1 min-h-[36px] flex items-center justify-center"
+                               onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, "sq1", "p2")}>
+                            {match.sq1.p2 || "Trascina giocatore"}
+                          </div>
+                        </div>
+                        <input type="text" value={match.sq1.punti} onChange={e => handlePuntiChange(fasi[currentFase], matchIndex, "sq1", e.target.value)}
+                               className="w-full sm:w-16 px-2 py-2 sm:py-1 border border-gray-300 rounded-xl text-sm font-mono text-center min-h-[36px] flex-1 sm:flex-none mt-2 sm:mt-0" placeholder="6-4"/>
+                      </div>
+
+                      <div className="border-b border-gray-400 my-1"/>
+
+                      {/* Squadra 2 */}
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-2 sm:p-2.5 border-b border-gray-300 gap-2 sm:gap-0">
+                        <div className="flex-1 space-y-1 sm:space-y-2">
+                          <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-1.5 sm:p-1 text-sm text-gray-500 cursor-pointer min-h-[36px] flex items-center justify-center"
+                               onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, "sq2", "p1")}>
+                            {match.sq2.p1 || "Trascina giocatore"}
+                          </div>
+                          <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-1.5 sm:p-1 text-sm text-gray-500 cursor-pointer mt-1 min-h-[36px] flex items-center justify-center"
+                               onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, "sq2", "p2")}>
+                            {match.sq2.p2 || "Trascina giocatore"}
+                          </div>
+                        </div>
+                        <input type="text" value={match.sq2.punti} onChange={e => handlePuntiChange(fasi[currentFase], matchIndex, "sq2", e.target.value)}
+                               className="w-full sm:w-16 px-2 py-2 sm:py-1 border border-gray-300 rounded-xl text-sm font-mono text-center min-h-[36px] flex-1 sm:flex-none mt-2 sm:mt-0" placeholder="6-4"/>
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
 
-                  <div className="flex flex-col space-y-2 w-1/2">
-                    <div className="font-bold text-gray-800">Squadra 2</div>
-                    <div
-                      className="bg-white border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-between p-2 text-sm text-gray-500 cursor-pointer hover:border-blue-400 hover:shadow-md"
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, 'sq2', 'p1')}
-                    >
-                      {match.sq2.p1 || 'Trascina'}
-                      <span className="ml-2 font-mono">{match.sq2.punti}</span>
+              {/* Box Vincitori FINALE */}
+              {fasi[currentFase] === "finale" && (
+                <div className="mt-6 bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 rounded-3xl p-4 shadow-xl border border-yellow-300 flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">🏆</span>
+                    <div>
+                      <h3 className="text-lg font-extrabold text-yellow-900 tracking-wide">VINCITORI TORNEO</h3>
+                      <p className="text-sm text-yellow-950/90">Inserisci i nomi dei campioni della finale.</p>
                     </div>
-                    <div
-                      className="bg-white border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-between p-2 text-sm text-gray-500 cursor-pointer hover:border-blue-400 hover:shadow-md"
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, fasi[currentFase], matchIndex, 'sq2', 'p2')}
-                    >
-                      {match.sq2.p2 || 'Trascina'}
-                      <span className="ml-2 font-mono">{match.sq2.punti}</span>
-                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 w-full md:w-64">
+                    <input type="text" placeholder="Giocatore 1" className="px-3 py-2 rounded-xl text-sm font-semibold text-yellow-900 bg-yellow-50/90 border border-yellow-300 outline-none focus:ring-2 focus:ring-yellow-500"/>
+                    <input type="text" placeholder="Giocatore 2" className="px-3 py-2 rounded-xl text-sm font-semibold text-yellow-900 bg-yellow-50/90 border border-yellow-300 outline-none focus:ring-2 focus:ring-yellow-500"/>
                   </div>
                 </div>
-              ))}
-            </div>
+              )}
 
-            <div className="flex flex-col sm:flex-row gap-4 mt-6 print:hidden">
-              <button onClick={esportaPDF} className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-2xl shadow-lg text-sm">
-                📤 Esporta PDF
-              </button>
-              <button onClick={() => setShowIscritti(!showIscritti)} className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg text-sm">
-                {showIscritti ? '👆 Nascondi Partecipanti' : '📋 Mostra Partecipanti'}
-              </button>
+              {/* Azioni */}
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6 print:hidden">
+                <button onClick={() => setShowIscritti(!showIscritti)}
+                        className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-xl text-lg w-full sm:w-auto">
+                  {showIscritti ? "👆 Nascondi Partecipanti" : "📋 Mostra Partecipanti"}
+                </button>
+                <div className="flex-1 flex gap-3">
+                  <button className="flex-1 px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-2xl shadow-lg text-sm">
+                    💾 Salva Torneo
+                  </button>
+                  <button onClick={esportaPDF}
+                          className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-2xl shadow-lg text-sm flex items-center justify-center space-x-2">
+                    📄 Esporta PDF
+                  </button>
+                </div>
+              </div>
+
+              {/* Storico */}
+              <div className="mt-8 bg-white/80 p-3 sm:p-4 rounded-2xl shadow-lg border border-gray-200 print:hidden max-h-32 overflow-y-auto" data-print="storico">
+                <h3 className="font-bold mb-2 text-sm sm:text-base">📜 Storico Azioni</h3>
+                {history.length === 0 && <p className="text-sm text-gray-500">Nessuna azione ancora.</p>}
+                <ul className="space-y-1 text-xs sm:text-sm text-gray-700">
+                  {history.slice(-5).map((h, i) => (
+                    <li key={i}>{new Date(h.timestamp).toLocaleTimeString()}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         </div>

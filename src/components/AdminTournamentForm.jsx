@@ -1,7 +1,7 @@
 // src/components/AdminTournamentForm.jsx - SCELTA TIPI TORNEO ATTIVA!
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
-import { Plus, X, Calendar, Users, Award } from "lucide-react";
+import { Plus, X, Calendar, Users, Award, Crown } from "lucide-react"; // ✅ AGGIUNTO CROWN
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
 
@@ -22,10 +22,11 @@ export default function AdminTournamentForm() {
   });
   const [loading, setLoading] = useState(false);
 
-  // ✅ SCELTA COMPLETA TIPI TORNEO!
+  // ✅ SCELTA COMPLETA TIPI TORNEO CON KING!
   const tournamentTypes = [
     { value: "diretta", label: "⚡ DIRETTA - Tabellone classico", icon: "🏆" },
-    { value: "ripescaggio", label: "🎯 RIPESCAGGI - TabelloneRipescaggi", icon: "🔄" },
+    { value: "king", label: "👑 KING OF PADEL - Round Robin", icon: "👑" }, // ✅ KING AGGIUNTO!
+    { value: "ripescaggio", label: "🎯 RIPESCAGGI - Tabellone+Ripescaggi", icon: "🔄" },
     { value: "doppio", label: "👥 DOPPIO - Coppie padel", icon: "🥉" }
   ];
 
@@ -51,9 +52,10 @@ export default function AdminTournamentForm() {
       
       // 🚀 Redirect dinamico per tipo torneo
       const redirectMap = {
-        diretta: `/torneo/${data.id}`,
-        ripescaggio: `/ripescaggi/${data.id}`,
-        doppio: `/doppio/${data.id}`
+        diretta: `/bracket?type=diretta&id=${data.id}&num_campi=4&max_players=${formData.max_players}`,
+        king: `/bracket?type=king&id=${data.id}&num_campi=4&max_players=8`, // ✅ KING REDIRECT!
+        ripescaggio: `/bracket?type=ripescaggio&id=${data.id}&num_campi=4&max_players=${formData.max_players}`,
+        doppio: `/bracket?type=doppio&id=${data.id}&num_campi=4&max_players=${formData.max_players}`
       };
       
       navigate(redirectMap[formData.tournament_type] || `/admin-tournaments`);
@@ -92,7 +94,7 @@ export default function AdminTournamentForm() {
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
               className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-              placeholder="TEST RIPESCAGGI 2025"
+              placeholder="TEST KING OF PADEL 2025"
             />
           </div>
 
@@ -124,7 +126,7 @@ export default function AdminTournamentForm() {
             />
           </div>
 
-          {/* ✅ SCELTA TIPO TORNEO ATTIVA! */}
+          {/* ✅ SCELTA TIPO TORNEO CON KING ATTIVA! */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               🎯 Tipo Torneo *

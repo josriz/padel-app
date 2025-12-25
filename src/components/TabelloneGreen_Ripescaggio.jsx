@@ -1,232 +1,218 @@
-// ===== COPIA COMPLETO IN: C:\padel-app\src\components\TabelloneRipescaggi.jsx =====
-import React, { useState, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthProvider";
+import { ArrowLeft, Calendar } from "lucide-react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { supabase } from "../supabaseClient";
-import { ChevronLeft, Users, GripVertical } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
 
-export default function TabelloneRipescaggi() {
+export default function PadelBracket() {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const { tournamentId } = useParams();
+  const [currentFase, setCurrentFase] = useState(0);
+  const [showIscritti, setShowIscritti] = useState(true);
+  const bracketRef = useRef(null);
 
+  const fasi = ["gironi", "quarti", "semi", "finale", "ripescaggi"];
+  const titoliFasi = ["GIRONI", "QUARTI", "SEMIFINALI", "FINALE", "🛡️ RIPESCAGGI"];
+
+  const [iscritti, setIscritti] = useState([]);
   const [data, setData] = useState({
-    teams: ['Zagaria-Prisciandaro', 'Bove R.-Romita', 'Smaldino-Stanzione', 'Canonico-Cillo', 
-            'Marzano-Saracino', 'Avellino-Ferrari', 'Scavo-De Vito', 'Bove N.-Carbonara'],
-    gironeA: [], gironeB: [], gironeC: [], gironeD: [],
-    campo2: ['TBD', 'TBD'], campo3: ['TBD', 'TBD'], 
-    campo4: ['TBD', 'TBD'], campo5: ['TBD', 'TBD'],
-    punteggi: {
-      gironeA: [[0,0,0],[0,0,0],[0,0,0],[0,0,0]],
-      gironeB: [[0,0,0],[0,0,0],[0,0,0],[0,0,0]],
-      gironeC: [[0,0,0],[0,0,0],[0,0,0],[0,0,0]],
-      gironeD: [[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
-    }
+    gironi: [
+      {
+        nome: "Girone A",
+        matches: [
+          { id: 1, campo: "Campo 2", sq1: { p1: "Zagaria", p2: "Prisciandaro", punti: "" }, sq2: { p1: "Bove R.", p2: "Romita", punti: "" } },
+          { id: 2, campo: "Campo 3", sq1: { p1: "Smaldino", p2: "Stanzione", punti: "" }, sq2: { p1: "Canonico", p2: "Cillo", punti: "" } },
+          { id: 3, campo: "Campo 2", sq1: { p1: "Zagaria", p2: "Prisciandaro", punti: "" }, sq2: { p1: "Canonico", p2: "Cillo", punti: "" } },
+          { id: 4, campo: "Campo 3", sq1: { p1: "Smaldino", p2: "Stanzione", punti: "" }, sq2: { p1: "Bove R.", p2: "Romita", punti: "" } },
+          { id: 5, campo: "Campo 2", sq1: { p1: "Zagaria", p2: "Prisciandaro", punti: "" }, sq2: { p1: "Smaldino", p2: "Stanzione", punti: "" } },
+          { id: 6, campo: "Campo 3", sq1: { p1: "Canonico", p2: "Cillo", punti: "" }, sq2: { p1: "Bove R.", p2: "Romita", punti: "" } },
+        ]
+      },
+      {
+        nome: "Girone B",
+        matches: [
+          { id: 1, campo: "Campo 4", sq1: { p1: "Marzano", p2: "Saracino", punti: "" }, sq2: { p1: "Avellino", p2: "Ferrari", punti: "" } },
+          { id: 2, campo: "Campo 5", sq1: { p1: "Scavo", p2: "De Vito", punti: "" }, sq2: { p1: "Bove N.", p2: "Carbonara", punti: "" } },
+          { id: 3, campo: "Campo 4", sq1: { p1: "Scavo", p2: "De Vito", punti: "" }, sq2: { p1: "Avellino", p2: "Ferrari", punti: "" } },
+          { id: 4, campo: "Campo 5", sq1: { p1: "Marzano", p2: "Saracino", punti: "" }, sq2: { p1: "Bove N.", p2: "Carbonara", punti: "" } },
+          { id: 5, campo: "Campo 4", sq1: { p1: "Bove N.", p2: "Carbonara", punti: "" }, sq2: { p1: "Avellino", p2: "Ferrari", punti: "" } },
+          { id: 6, campo: "Campo 5", sq1: { p1: "Marzano", p2: "Saracino", punti: "" }, sq2: { p1: "Scavo", p2: "De Vito", punti: "" } },
+        ]
+      },
+      {
+        nome: "Girone C",
+        matches: [
+          { id: 1, campo: "Campo 12", sq1: { p1: "Romano", p2: "Corchia", punti: "" }, sq2: { p1: "Cassano", p2: "Caiati", punti: "" } },
+          { id: 2, campo: "Campo 13", sq1: { p1: "Francioso", p2: "Falba", punti: "" }, sq2: { p1: "Ricco", p2: "Indiveri", punti: "" } },
+          { id: 3, campo: "Campo 12", sq1: { p1: "Romano", p2: "Corchia", punti: "" }, sq2: { p1: "Francioso", p2: "Falba", punti: "" } },
+          { id: 4, campo: "Campo 13", sq1: { p1: "Ricco", p2: "Indiveri", punti: "" }, sq2: { p1: "Cassano", p2: "Caiati", punti: "" } },
+          { id: 5, campo: "Campo 12", sq1: { p1: "Romano", p2: "Corchia", punti: "" }, sq2: { p1: "Ricco", p2: "Indiveri", punti: "" } },
+          { id: 6, campo: "Campo 13", sq1: { p1: "Francioso", p2: "Falba", punti: "" }, sq2: { p1: "Cassano", p2: "Caiati", punti: "" } },
+        ]
+      },
+      {
+        nome: "Girone D",
+        matches: [
+          { id: 1, campo: "Campo 11", sq1: { p1: "Mastromauro", p2: "Pierno", punti: "" }, sq2: { p1: "Bove M.", p2: "Borracci", punti: "" } },
+          { id: 2, campo: "Campo 14", sq1: { p1: "Quaranta", p2: "Rizzi", punti: "" }, sq2: { p1: "Crisci", p2: "Santantonio", punti: "" } },
+          { id: 3, campo: "Campo 11", sq1: { p1: "Mastromauro", p2: "Pierno", punti: "" }, sq2: { p1: "Quaranta", p2: "Rizzi", punti: "" } },
+          { id: 4, campo: "Campo 14", sq1: { p1: "Crisci", p2: "Santantonio", punti: "" }, sq2: { p1: "Bove M.", p2: "Borracci", punti: "" } },
+          { id: 5, campo: "Campo 11", sq1: { p1: "Mastromauro", p2: "Pierno", punti: "" }, sq2: { p1: "Crisci", p2: "Santantonio", punti: "" } },
+          { id: 6, campo: "Campo 14", sq1: { p1: "Quaranta", p2: "Rizzi", punti: "" }, sq2: { p1: "Bove M.", p2: "Borracci", punti: "" } },
+        ]
+      }
+    ],
+    quarti: Array(8).fill().map((_, i) => ({ id: i, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: `Campo ${i + 1}` })),
+    semi: Array(4).fill().map((_, i) => ({ id: i, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: `Campo ${i + 9}` })),
+    finale: [{ id: 0, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: "🏆 Finale" }],
+    ripescaggi: Array(4).fill().map((_, i) => ({ id: i, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" }, campo: `R${i + 1}` })),
   });
 
-  const [draggedItem, setDraggedItem] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [draggedGiocatore, setDraggedGiocatore] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [vincitori, setVincitori] = useState({ p1: "", p2: "" });
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const esportaPDF = async () => {
+    if (!bracketRef.current) return;
+    document.querySelector('[data-print="partecipanti"]')?.style.setProperty("display", "none");
+    document.querySelector('[data-print="storico"]')?.style.setProperty("display", "none");
+    const canvas = await html2canvas(bracketRef.current, { scale: 0.15, useCORS: true, allowTaint: true, backgroundColor: "#fff" });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("l", "mm", "a4");
+    pdf.addImage(imgData, "PNG", 10, 30, 270, 170);
+    pdf.save(`tabellone-${fasi[currentFase]}.pdf`);
+    document.querySelector('[data-print="partecipanti"]')?.style.setProperty("display", "block");
+    document.querySelector('[data-print="storico"]')?.style.setProperty("display", "block");
+  };
 
-  const loadData = async () => {
+  const salvaTorneo = async () => {
+    const tournamentId = new URLSearchParams(window.location.search).get("id") || window.location.pathname.split("/").pop();
+    if (!tournamentId) return alert("❌ ID torneo non trovato!");
     try {
-      setLoading(true);
-      const { data } = await supabase.from('ripescaggi').select('*').single();
-      if (data) setData(prev => ({ ...prev, ...data }));
-    } catch (error) {
-      console.log('No dati salvati');
-    } finally {
-      setLoading(false);
+      const { error } = await supabase.from("tournament_brackets").upsert({
+        id: tournamentId,
+        data: data,
+        fase: fasi[currentFase],
+        updated_at: new Date().toISOString(),
+      });
+      if (error) throw error;
+      alert("✅ SALVATO!");
+    } catch (e) {
+      alert("❌ Errore: " + e.message);
     }
   };
 
-  const saveData = async () => {
-    await supabase.from('ripescaggi').upsert(data);
-    alert('✅ Salvato!');
+  useEffect(() => {
+    const finale = data.finale[0];
+    if (finale.sq1.p1 && finale.sq1.p2 && finale.sq2.p1 && finale.sq2.p2) {
+      const punti1 = parseInt(finale.sq1.punti) || 0;
+      const punti2 = parseInt(finale.sq2.punti) || 0;
+      setVincitori(punti1 > punti2 ? finale.sq1 : finale.sq2);
+    }
+  }, [data.finale]);
+
+  const handleDragStart = (e, giocatore) => {
+    setDraggedGiocatore(giocatore);
+    e.dataTransfer.effectAllowed = "move";
   };
 
-  // [TUTTE LE FUNZIONI - renderTeam, renderGironeMatch, renderCampo - COME SOPRA]
-  // ... resto del codice completo dalla risposta precedente
+  const handleDragOver = e => e.preventDefault();
 
-
-  const handleDragStart = (e, type, index) => {
-    setDraggedItem({ type, index, text: data[type][index] });
-  };
-
-  const handleDragOver = (e) => e.preventDefault();
-
-  const handleDrop = (e, targetType, targetIndex) => {
+  const handleDrop = (e, fase, matchIndex, squadra, slot) => {
     e.preventDefault();
-    if (!draggedItem) return;
+    if (!draggedGiocatore) return;
     setData(prev => {
-      const source = prev[draggedItem.type] || [];
-      const target = prev[targetType] || [];
-      const newSource = source.filter((_, i) => i !== draggedItem.index);
-      const newTarget = [...target];
-      newTarget.splice(targetIndex, 0, draggedItem.text);
-      return { ...prev, [draggedItem.type]: newSource, [targetType]: newTarget };
+      const newData = { ...prev };
+      const match = newData[fase][matchIndex];
+      match[squadra][slot] = draggedGiocatore;
+      setHistory(h => [...h, { data: JSON.parse(JSON.stringify(prev)), timestamp: new Date().toISOString() }]);
+      return newData;
     });
-    setDraggedItem(null);
+    setDraggedGiocatore(null);
   };
 
-  const updatePunteggio = (girone, index, partita, valore) => {
+  const handlePuntiChange = (fase, index, squadra, punti) => {
     setData(prev => {
-      const newPunteggi = { ...prev.punteggi };
-      newPunteggi[girone][index][partita] = parseInt(valore) || 0;
-      return { ...prev, punteggi: newPunteggi };
+      const newData = { ...prev };
+      newData[fase][index][squadra].punti = punti;
+      return newData;
     });
   };
 
-  const renderTeam = (team, index, type) => (
-    <div 
-      draggable 
-      onDragStart={(e) => handleDragStart(e, type, index)}
-      className="flex items-center justify-between p-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-grab"
-    >
-      <GripVertical className="w-4 h-4 mr-2" />
-      <span className="text-sm font-medium truncate flex-1">{team}</span>
-    </div>
-  );
-
-  const renderGironeMatch = (gironeKey, title) => {
-    const squadre = data[gironeKey] || [];
-    const punteggiGirone = data.punteggi[gironeKey] || [];
-    return (
-      <div className="flex flex-col p-4 bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 hover:shadow-xl">
-        <div className="text-sm font-semibold text-gray-700 mb-4 text-center">{title}</div>
-        <div className="space-y-3 mb-4">
-          {squadre.map((squadra, i) => renderTeam(squadra, i, gironeKey))}
-          <div onDrop={(e) => handleDrop(e, gironeKey, squadre.length)}
-               className="h-12 border-2 border-dashed border-emerald-400 rounded-lg flex items-center justify-center bg-emerald-50">
-            <span className="text-xs text-emerald-600">DROP QUI</span>
-          </div>
-        </div>
-        <table className="w-full text-xs bg-emerald-50 rounded overflow-hidden">
-          <thead className="bg-emerald-600 text-white">
-            <tr><th className="p-2">P1</th><th>P2</th><th>P3</th><th>TOT</th></tr>
-          </thead>
-          <tbody>
-            {Array(4).fill(0).map((_, i) => (
-              <tr key={i} className="border-t border-emerald-100">
-                {[0,1,2].map(p => (
-                  <td key={p} className="p-1 text-center">
-                    <input className="w-12 h-8 p-1 text-xs border border-emerald-300 rounded"
-                           type="number" value={punteggiGirone[i]?.[p] || ''}
-                           onChange={e => updatePunteggio(gironeKey, i, p, e.target.value)}/>
-                  </td>
-                ))}
-                <td className="p-1 text-center font-bold text-emerald-700">
-                  {punteggiGirone[i]?.reduce((a,b)=>a+b,0) || 0}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
+  const resetFase = fase => {
+    setData(prev => {
+      const newData = { ...prev };
+      newData[fase] = newData[fase].map(m => ({ ...m, sq1: { p1: "", p2: "", punti: "" }, sq2: { p1: "", p2: "", punti: "" } }));
+      return newData;
+    });
   };
-
-  const renderCampo = (campoKey, numero, ora = '9:30') => {
-    const partite = data[campoKey] || ['TBD', 'TBD'];
-    return (
-      <div className="flex flex-col p-6 bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 hover:shadow-2xl group">
-        <div className="flex items-center justify-between w-full mb-6 pb-4 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-lg">{numero}</span>
-            </div>
-            <div>
-              <h4 className="text-lg font-bold text-gray-900">Campo {numero}</h4>
-              <p className="text-sm text-gray-500">{ora}</p>
-            </div>
-          </div>
-        </div>
-        <div className="w-full space-y-4 mb-6">
-          {partite.map((partita, i) => (
-            <div key={i} draggable onDragStart={(e) => handleDragStart(e, campoKey, i)}
-                 className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-400 to-orange-500 text-white rounded-xl shadow-lg hover:shadow-xl cursor-grab">
-              <GripVertical className="w-5 h-5 mr-3" />
-              <span className="text-sm font-semibold truncate flex-1">{partita}</span>
-              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                <span className="text-xs font-bold">VS</span>
-              </div>
-            </div>
-          ))}
-          <div onDrop={(e) => handleDrop(e, campoKey, partite.length)}
-               className="h-16 border-2 border-dashed border-orange-400 rounded-xl flex items-center justify-center bg-gradient-to-r from-orange-50 to-orange-100">
-            <span className="text-sm text-orange-600 font-semibold">+ Aggiungi Partita</span>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
-          <p>Caricamento tabellone ripescaggi...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      <div className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-4">
-            <button onClick={() => navigate(-1)}
-                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all">
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-            <div className="text-center flex-1">
-              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                🏓 Tabellone Ripescaggi
-              </h1>
-              <p className="text-sm text-gray-600 mt-1 flex items-center justify-center">
-                <Users className="w-4 h-4 mr-1" />
-                {data.teams.length} squadre • {Object.values(data).filter(v => Array.isArray(v) && v.length > 0).length - 1}/20 posizionate
-              </p>
+    <div className="min-h-screen bg-gradient-to-b from-[#001F5B] via-[#003A8F] to-[#001F5B] p-2 sm:p-4 md:p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4">
+          <button onClick={() => navigate(-1)} className="flex items-center space-x-2 text-emerald-600 hover:text-emerald-700 font-medium text-sm sm:text-base">
+            <ArrowLeft size={18} />
+            <span>Torna indietro</span>
+          </button>
+          <div className="text-center flex-1">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent mb-1 sm:mb-2">
+              🏓 TORNEO PADEL
+            </h1>
+            <div className="flex items-center justify-center space-x-2 text-xs sm:text-sm text-gray-600">
+              <Calendar size={14} />
+              <span>22 Dic 2025</span>
             </div>
-            <button onClick={saveData}
-                    className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-semibold hover:bg-emerald-600 shadow-md hover:shadow-lg">
-              💾 Salva
-            </button>
           </div>
+          <div className="w-12 sm:w-12" />
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">Gironi Ripescaggi</h2>
-            <div className="grid grid-cols-2 gap-6 mb-12">
-              {renderGironeMatch('gironeA', 'GIRONE A')}
-              {renderGironeMatch('gironeB', 'GIRONE B')}
-              {renderGironeMatch('gironeC', 'GIRONE C')}
-              {renderGironeMatch('gironeD', 'GIRONE D')}
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-8 text-center">Programma Campi</h3>
-            <div className="grid grid-cols-2 gap-6">
-              {renderCampo('campo2', '2', '9:30')}
-              {renderCampo('campo3', '3', '10:00')}
-              {renderCampo('campo4', '4', '9:30')}
-              {renderCampo('campo5', '5', '10:00')}
-            </div>
-          </div>
-          <div className="lg:sticky lg:top-24 lg:h-fit">
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 shadow-xl">
-              <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-                <Users className="w-6 h-6 mr-3 text-emerald-600" />
-                Squadre Disponibili ({data.teams.length})
-              </h3>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {data.teams.map((team, index) => renderTeam(team, index, 'teams'))}
+        {/* Pulsanti Fasi */}
+        <div className="flex flex-wrap sm:justify-center overflow-x-auto pb-2 gap-2 mb-8 bg-white/80 backdrop-blur-sm rounded-2xl p-3 sm:p-4 shadow-xl border border-white/50 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
+          {fasi.map((fase, index) => (
+            <button
+              key={fase}
+              onClick={() => setCurrentFase(index)}
+              className={`flex-shrink-0 px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-bold text-xs sm:text-sm transition-all ${
+                currentFase === index
+                  ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg scale-105"
+                  : "bg-white/70 hover:bg-white shadow-md text-gray-700 hover:scale-105"
+              }`}
+            >
+              {titoliFasi[index]}
+            </button>
+          ))}
+        </div>
+
+        {/* Contenitore iscritti e tabellone */}
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+          {/* Lista iscritti */}
+          {showIscritti && (
+            <div className="w-full lg:w-64 bg-white/90 rounded-2xl p-3 sm:p-4 shadow-xl border border-white/50 max-h-[40vh] lg:max-h-none overflow-y-auto" data-print="partecipanti">
+              <div className="flex justify-between items-center mb-3 sm:mb-4">
+                <h2 className="font-bold text-base sm:text-lg">📋 Partecipanti ({iscritti.length})</h2>
+                <button onClick={() => setShowIscritti(false)} className="text-sm text-gray-500 hover:text-gray-700">X</button>
+              </div>
+              <div className="space-y-2">
+                {iscritti.map((giocatore, i) => (
+                  <div
+                    key={i}
+                    className="bg-gradient-to-br from-emerald-50 to-blue-50 rounded-xl p-2 cursor-move hover:shadow-md border-2 border-transparent hover:border-emerald-300 text-xs sm:text-sm"
+                    draggable
+                    onDragStart={e => handleDragStart(e, giocatore)}
+                  >
+                    <div className="text-gray-800 font-semibold truncate">{giocatore}</div>
+                  </div>
+                ))}
               </div>
             </div>
+          )}
+
+          {/* Tabellone */}
+          <div ref={bracketRef} className="flex-1 bg-white/90 backdrop-blur-sm rounded-3xl p-3 sm:p-4 md:p-6 shadow-2xl border border-white/60 print:bg-white print:shadow-none relative overflow-hidden min-h-[60vh]">
+            {/* QUI VAI A POPOLARE IL TABELLONE GIRONI E MATCHES COME NELLO STATO DATA */}
           </div>
         </div>
       </div>

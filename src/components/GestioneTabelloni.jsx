@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import TabelloneGreen_Ripescaggio from '../components/TabelloneGreen_Ripescaggio';
-import TabelloneGreen4 from '../components/TabelloneGreen4';
-import TabelloneGreen5 from '../components/TabelloneGreen5';
 
 const GestioneTabelloni = () => {
   const [tabAttivo, setTabAttivo] = useState('green4');

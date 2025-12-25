@@ -48,28 +48,38 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-b from-slate-50/95 via-blue-50/90 to-indigo-50/85 px-4">
-      <div className="w-full max-w-md">
-        {/* ✅ HEADER: LOGO SINISTRA + CIEFFE PADEL CLUB */}
-        <div className="flex items-center gap-4 mb-8 p-6 bg-white rounded-3xl shadow-xl border border-gray-100">
-          <div className="w-24 h-24 flex-shrink-0 rounded-2xl overflow-hidden shadow-lg border-2 border-gray-200">
+    <div className="min-h-screen flex flex-col justify-center items-center bg-cover bg-center bg-no-repeat px-2 sm:px-4 relative overflow-hidden" 
+         style={{ backgroundImage: "url('/images/sfondo-login.jpg')" }}>
+      
+      {/* Overlay ultra-trasparente responsive */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/8 to-black/25 z-0"></div>
+      
+      <div className="w-full max-w-sm sm:max-w-md relative z-10 px-3 sm:px-0">
+        {/* HEADER LOGO - Responsive */}
+        <div className="flex flex-col sm:flex-row items-center gap-4 mb-6 sm:mb-8 p-4 sm:p-6 bg-white/95 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-2xl border border-white/50 relative">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-2xl overflow-hidden shadow-lg border-2 border-gray-200">
             <img 
               src="/logo.png" 
               alt="Cieffe Padel Club"
-              className="w-full h-full object-contain p-2"
+              className="w-full h-full object-contain p-1 sm:p-2"
             />
           </div>
-          <div className="flex-1">
-            <h1 className="text-3xl md:text-4xl font-black tracking-tight text-gray-900 leading-tight">
+          <div className="text-center sm:text-left flex-1">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-gray-900 leading-tight">
               CIEFFE
             </h1>
-            <p className="text-xl md:text-2xl font-bold text-emerald-600 tracking-wide">
+            <p className="text-lg sm:text-xl md:text-2xl font-bold text-emerald-600 tracking-wide">
               PADEL CLUB
             </p>
           </div>
+          {/* ✅ BY CLAUDIO FALBA - In basso a destra del logo */}
+          <div className="absolute bottom-2 right-2 text-xs sm:text-sm font-bold text-gray-700 italic bg-white/80 px-2 py-1 rounded-full shadow-md">
+            by Claudio Falba
+          </div>
         </div>
 
-        <div className="w-full max-w-2xl h-28 md:h-32 rounded-2xl overflow-hidden shadow-lg mb-8 mx-auto">
+        {/* BANNER - Responsive */}
+        <div className="w-full h-20 sm:h-28 md:h-32 rounded-2xl overflow-hidden shadow-xl mb-6 sm:mb-8 mx-auto bg-white/90 backdrop-blur-sm">
           <img 
             src="/banner-home.jpg" 
             alt="Padel Banner Home"
@@ -77,45 +87,87 @@ export default function LoginPage() {
           />
         </div>
 
-        <h2 className="text-center text-3xl font-extrabold mb-2 text-gray-900">Accedi o registrati</h2>
-        <p className="text-center text-gray-500 mb-6">La tua partita inizia da qui</p>
+        {/* TITOLO - Responsive */}
+        <h2 className="text-center text-2xl sm:text-3xl font-extrabold mb-2 text-white drop-shadow-lg px-2">
+          Accedi o registrati
+        </h2>
+        <p className="text-center text-white/90 mb-6 text-base sm:text-lg drop-shadow-md px-4">
+          La tua partita inizia da qui
+        </p>
 
-        <div className="flex flex-col gap-3 mb-4">
-          <button onClick={() => handleOAuthLogin("apple")} className="flex items-center justify-center gap-2 w-full border border-gray-200 rounded-xl p-3 hover:bg-gray-50 transition">
-            <FaApple /> Continua con Apple
+        {/* BOTTONI OAUTH - Responsive */}
+        <div className="flex flex-col gap-2 sm:gap-3 mb-4">
+          <button onClick={() => handleOAuthLogin("apple")} 
+                  className="flex items-center justify-center gap-2 w-full border border-white/30 bg-white/10 backdrop-blur-sm rounded-xl p-3 sm:p-3 hover:bg-white/20 hover:border-white/50 transition-all duration-300 text-white font-medium shadow-xl text-sm sm:text-base">
+            <FaApple className="text-lg" /> Continua con Apple
           </button>
-          <button onClick={() => handleOAuthLogin("google")} className="flex items-center justify-center gap-2 w-full border border-gray-200 rounded-xl p-3 hover:bg-gray-50 transition">
-            <FcGoogle /> Continua con Google
+          <button onClick={() => handleOAuthLogin("google")} 
+                  className="flex items-center justify-center gap-2 w-full border border-white/30 bg-white/10 backdrop-blur-sm rounded-xl p-3 sm:p-3 hover:bg-white/20 hover:border-white/50 transition-all duration-300 text-white font-medium shadow-xl text-sm sm:text-base">
+            <FcGoogle className="text-xl sm:text-2xl" /> Continua con Google
           </button>
-          <button onClick={() => handleOAuthLogin("facebook")} className="flex items-center justify-center gap-2 w-full border border-gray-200 rounded-xl p-3 hover:bg-gray-50 transition">
-            <FaFacebookF className="text-blue-600" /> Continua con Facebook
+          <button onClick={() => handleOAuthLogin("facebook")} 
+                  className="flex items-center justify-center gap-2 w-full border border-white/30 bg-white/10 backdrop-blur-sm rounded-xl p-3 sm:p-3 hover:bg-white/20 hover:border-white/50 transition-all duration-300 text-white font-medium shadow-xl text-sm sm:text-base">
+            <FaFacebookF className="text-lg" /> Continua con Facebook
           </button>
         </div>
 
+        {/* SEPARATORE */}
         <div className="flex items-center my-4">
-          <hr className="flex-grow border-gray-300" />
-          <span className="px-3 text-gray-400">o</span>
-          <hr className="flex-grow border-gray-300" />
+          <hr className="flex-grow border-white/30" />
+          <span className="px-3 text-white/70 font-medium text-sm">o</span>
+          <hr className="flex-grow border-white/30" />
         </div>
 
-        <form onSubmit={handleEmailLogin} className="flex flex-col gap-4">
-          <input type="email" placeholder="Email" className="border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-400" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          <input type="password" placeholder="Password" className="border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-400" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          {message && <p className="text-sm text-red-500">{message}</p>}
-          <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white p-3 rounded-xl font-semibold hover:bg-blue-700 transition">
+        {/* FORM - Responsive */}
+        <form onSubmit={handleEmailLogin} className="flex flex-col gap-3 sm:gap-4 bg-white/10 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-white/20 shadow-2xl">
+          <input 
+            type="email" 
+            placeholder="Email" 
+            className="border border-white/30 bg-white/20 backdrop-blur-sm rounded-xl p-3.5 sm:p-4 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 text-white placeholder-white/70 transition-all text-base" 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)} 
+            required 
+          />
+          <input 
+            type="password" 
+            placeholder="Password" 
+            className="border border-white/30 bg-white/20 backdrop-blur-sm rounded-xl p-3.5 sm:p-4 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 text-white placeholder-white/70 transition-all text-base" 
+            value={password} 
+            onChange={(e) => setPassword(e.target.value)} 
+            required 
+          />
+          {message && (
+            <p className="text-sm text-red-300/90 p-3 bg-red-500/20 rounded-xl backdrop-blur-sm border border-red-400/50">
+              {message}
+            </p>
+          )}
+          <button 
+            type="submit" 
+            disabled={loading} 
+            className="w-full bg-gradient-to-r from-emerald-500 to-blue-600 text-white py-3.5 sm:p-4 rounded-xl font-bold text-base sm:text-lg hover:from-emerald-600 hover:to-blue-700 transition-all duration-300 shadow-2xl hover:shadow-3xl hover:scale-[1.02] active:scale-[0.98] border-2 border-white/20 backdrop-blur-sm"
+          >
             {loading ? "Caricamento..." : "Accedi"}
           </button>
         </form>
 
-        <div className="flex justify-between mt-4 text-sm">
-          <button onClick={handleRegister} className="text-blue-600 hover:underline">Registrati</button>
-          <button onClick={handleResetPassword} className="text-blue-600 hover:underline">Password dimenticata?</button>
+        {/* LINKS */}
+        <div className="flex flex-col sm:flex-row justify-between mt-6 sm:mt-8 text-sm gap-2 sm:gap-0">
+          <button onClick={handleRegister} className="text-white/90 hover:text-white hover:underline transition text-center sm:text-left">
+            Registrati
+          </button>
+          <button onClick={handleResetPassword} className="text-white/90 hover:text-white hover:underline transition text-center sm:text-right">
+            Password dimenticata?
+          </button>
         </div>
 
-        <p className="text-xs text-gray-400 mt-6 text-center">
-          Registrandoti accetti le nostre <span className="text-blue-600 underline">condizioni di uso</span> e la <span className="text-blue-600 underline">politica sulla privacy</span>
+        {/* FOOTER */}
+        <p className="text-xs text-white/70 mt-8 text-center backdrop-blur-sm px-2">
+          Registrandoti accetti le nostre{" "}
+          <span className="text-white underline hover:text-emerald-300 transition">condizioni di uso</span>{" "}
+          e la{" "}
+          <span className="text-white underline hover:text-emerald-300 transition">politica sulla privacy</span>
         </p>
-        <p className="text-xs italic text-center mt-1">@Josè Rizzi</p>
+        <p className="text-xs italic text-emerald-300/90 text-center mt-2 font-medium">@Josè Rizzi</p>
       </div>
     </div>
   );
