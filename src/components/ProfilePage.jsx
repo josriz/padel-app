@@ -1,4 +1,4 @@
-﻿// src/components/ProfilePage.jsx - COMPLETO CON DITTATURA "CIEFFE PADEL CLUB" ACCANTO LOGO
+﻿// src/components/ProfilePage.jsx - LOGO INGRANDITO + SENZA BORDI "INCOLLATI"
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { Menu, X, Home, Trophy, User, LogOut, Edit3, CheckCircle, Loader2 } from 'lucide-react';
@@ -119,20 +119,20 @@ export default function ProfilePage() {
          style={{ backgroundImage: "url('/images/sfondo-profilo.jpg')" }}>
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/5 to-black/15 z-0"></div>
 
-      {/* BANNER COMPATTO SOPRA IL FORM CON DITTATURA ACCANTO LOGO */}
+      {/* BANNER COMPATTO SOPRA IL FORM CON LOGO INGRANDITO + SENZA BORDI */}
       <div className="relative z-10 w-full max-w-md mx-auto mt-6">
-        <div className="relative w-full h-28 sm:h-32 md:h-36 rounded-2xl overflow-hidden shadow-xl bg-cover bg-center"
+        <div className="relative w-full h-32 sm:h-36 md:h-40 rounded-2xl overflow-hidden shadow-xl bg-cover bg-center"
              style={{ backgroundImage: "url('/images/sfondo-banner-logo.jpg')" }}>
           <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-black/10 to-black/30 backdrop-blur-sm"></div>
           <div className="relative z-10 flex items-center justify-between pl-4 pr-4 sm:pl-6 sm:pr-6 h-full">
-            {/* LOGO + DITTATURA ACCANTO */}
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="w-28 h-28 md:w-32 md:h-32 rounded-xl overflow-hidden shadow-lg border-3 border-white/80 bg-white/95">
-                <img src="/logo.png" alt="Cieffe Padel Club" className="w-full h-full object-contain p-1 sm:p-1"/>
+            {/* LOGO INGRANDITO + DITTATURA ACCANTO SENZA BORDI */}
+            <div className="flex items-center gap-4 flex-shrink-0">
+              <div className="w-32 h-32 md:w-36 md:h-36 rounded-2xl overflow-hidden shadow-2xl bg-white/5 backdrop-blur-lg">
+                <img src="/logo.png" alt="Cieffe Padel Club" className="w-full h-full object-contain p-2"/>
               </div>
-              <div className="text-white drop-shadow-2xl hidden sm:block">
-                <h1 className="text-xl md:text-2xl font-black tracking-tight leading-tight">CIEFFE</h1>
-                <p className="text-lg md:text-xl font-bold tracking-wide -mt-1">PADEL CLUB</p>
+              <div className="text-white drop-shadow-2xl hidden sm:block bg-white/5 backdrop-blur-lg px-4 py-3 rounded-2xl">
+                <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-tight">CIEFFE</h1>
+                <p className="text-xl md:text-2xl font-bold tracking-wide -mt-1">PADEL CLUB</p>
               </div>
             </div>
             {/* BOTTONE HAMBURGER */}

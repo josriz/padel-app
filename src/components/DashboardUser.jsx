@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import EventiTornei from "./EventiTornei";
 import MarketplaceUser from "./MarketplaceUser";
 import Profilo from "./Profilo";
+import SidebarMenu from "./SidebarMenu"; // assicurati di importarlo
 
 export default function DashboardUser() {
   const { user, logout } = useAuth();
@@ -32,13 +33,16 @@ export default function DashboardUser() {
       case "eventi":
         return <EventiTornei user={user} />;
       case "marketplace":
-        return <MarketplaceUser user={user} />; // 🔑 Passaggio corretto
+        return <MarketplaceUser user={user} />; // ✅ sempre visibile
       case "profilo":
         return <Profilo user={user} />;
       default:
         return <div>Sezione non trovata</div>;
     }
   };
+
+  // Determina il tipo utente
+  const userType = user?.user_metadata?.role || "user";
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -54,60 +58,7 @@ export default function DashboardUser() {
       </header>
 
       {/* MENU A SCOMPARSA */}
-      <div
-        className={`fixed top-0 right-0 h-full w-72 bg-white shadow-xl transform transition-transform duration-300 z-50 ${
-          isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
-        <div className="p-6 border-b">
-          <h2 className="text-lg font-semibold text-gray-700">Benvenuto {user?.email}</h2>
-        </div>
-
-        <nav className="p-4 flex flex-col space-y-3 text-gray-700">
-          <button
-            className="flex items-center space-x-3 p-3 rounded hover:bg-gray-200"
-            onClick={() => { setActiveSection("home"); setIsOpen(false); }}
-          >
-            <Home size={20} />
-            <span>Home</span>
-          </button>
-
-          <button
-            className="flex items-center space-x-3 p-3 rounded hover:bg-gray-200"
-            onClick={() => { setActiveSection("eventi"); setIsOpen(false); }}
-          >
-            <Trophy size={20} />
-            <span>Tornei & Eventi</span>
-          </button>
-
-          <button
-            className="flex items-center space-x-3 p-3 rounded hover:bg-gray-200"
-            onClick={() => { setActiveSection("marketplace"); setIsOpen(false); }}
-          >
-            <ShoppingBag size={20} />
-            <span>Marketplace</span>
-          </button>
-
-          <button
-            className="flex items-center space-x-3 p-3 rounded hover:bg-gray-200"
-            onClick={() => { setActiveSection("profilo"); setIsOpen(false); }}
-          >
-            <User size={20} />
-            <span>Profilo</span>
-          </button>
-        </nav>
-
-        {/* LOGOUT */}
-        <div className="absolute bottom-0 w-full p-4 border-t">
-          <button
-            onClick={handleLogout}
-            className="flex items-center space-x-3 text-red-600 font-semibold w-full p-3 hover:bg-red-100 rounded"
-          >
-            <LogOut size={20} />
-            <span>Logout</span>
-          </button>
-        </div>
-      </div>
+      <SidebarMenu isOpen={isOpen} onClose={() => setIsOpen(false)} userType={userType} />
 
       {/* CONTENUTO */}
       <main className="p-6 transition-all duration-300">

@@ -14,6 +14,8 @@ export default function SidebarMenu({ isOpen, onClose, userType }) {
         <nav className="space-y-2">
           <Link to="/" onClick={onClose}>🏠 Dashboard</Link>
           <Link to="/tornei" onClick={onClose}>🏆 Tornei</Link>
+
+          {/* Marketplace visibile a tutti */}
           <Link to="/marketplace" onClick={onClose}>🛒 Marketplace</Link>
 
           {userType === "admin" && (
