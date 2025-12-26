@@ -128,17 +128,27 @@ export default function Marketplace() {
          style={{backgroundImage: "url('/images/sfondo-marcketplace2.jpg')", backgroundColor: 'rgba(17,24,39,0.9)'}}>
       <div className="max-w-6xl mx-auto">
         {/* 🛒 HEADER CON FOTO DIRECTOR ACCANTO A MARKETPLACE */}
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-4">
-            <ShoppingCart className="w-12 h-12 text-emerald-400 drop-shadow-2xl" />
-            <div className="flex items-center gap-3">
-              <img src="/images/Raniero.jpeg" alt="Director" className="w-14 h-14 rounded-full object-cover shadow-2xl border-4 border-white/60 ring-4 ring-emerald-400/30" />
-              <div>
-                <h1 className="text-4xl font-black text-white drop-shadow-2xl leading-tight">MARKETPLACE</h1>
-                <p className="text-emerald-300 font-bold text-lg">Raniero Pierno</p>
-              </div>
-            </div>
-          </div>
+        <div className="max-w-6xl mx-auto">
+  {/* Pulsante Indietro allineato al form */}
+  <div className="flex items-center mb-4">
+    <button onClick={() => navigate(-1)} 
+            className="px-4 py-2 bg-white/20 backdrop-blur text-white rounded-xl font-bold hover:bg-white/30 transition-all flex items-center gap-2 text-base shadow-xl hover:shadow-2xl">
+      <ArrowLeft className="w-5 h-5" /> Indietro
+    </button>
+  </div>
+
+  {/* Header Marketplace come prima */}
+  <div className="flex items-center gap-4 mb-8">
+    <ShoppingCart className="w-12 h-12 text-emerald-400 drop-shadow-2xl" />
+    <div className="flex items-center gap-3">
+      <img src="/images/Raniero.jpeg" alt="Director" className="w-14 h-14 rounded-full object-cover shadow-2xl border-4 border-white/60 ring-4 ring-emerald-400/30" />
+      <div>
+        <h2 className="text-2xl font-extrabold text-white drop-shadow-2xl">Director Marketplace</h2>
+        <h1 className="text-4xl font-black text-white drop-shadow-2xl leading-tight">MARKETPLACE</h1>
+        <p className="text-emerald-300 font-bold text-lg">Raniero Pierno</p>
+      </div>
+    </div>
+  </div>
           
           <button onClick={() => navigate(-1)} 
                   className="px-6 py-3 bg-white/20 backdrop-blur text-white rounded-xl font-bold hover:bg-white/30 transition-all flex items-center gap-2 text-base shadow-xl hover:shadow-2xl">
@@ -254,29 +264,18 @@ export default function Marketplace() {
                 </div>
               </div>
               
-              <h3 className="font-black text-2xl text-gray-900 mb-4 leading-tight">{item.nome}</h3>
-              <div className={`text-3xl font-black mb-6 px-4 py-3 rounded-2xl shadow-xl ${item.venduto ? 'text-gray-500 bg-gray-100' : 'text-emerald-600 bg-emerald-50'}`}>
-                €{item.prezzo?.toFixed(2)}
-              </div>
+              <h3 className="font-black text-lg mb-1">{item.nome}</h3>
+              <p className="font-bold text-emerald-500 text-lg mb-2">€ {item.prezzo}</p>
 
-              <div className="space-y-3 mt-auto">
-                {!item.venduto ? (
-                  <button onClick={() => handleContact(item)} 
-                          className="w-full py-2 px-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2 text-sm">
-                    <MessageCircle className="w-4 h-4" /> Contatta
-                  </button>
-                ) : (
-                  <div className="w-full py-2 px-4 bg-gray-400 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-xl">
-                    <CheckCircle className="w-4 h-4" /> Venduto
-                  </div>
-                )}
-                
-                {user && (
-                  <button onClick={() => handleToggleSold(item.id, item.venduto)} 
-                          className="w-full py-2 px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2 text-sm">
-                    <CheckCircle className="w-4 h-4" /> {item.venduto ? 'Disponibile' : 'Venduto'}
-                  </button>
-                )}
+              <div className="mt-auto flex flex-col gap-3">
+                <button onClick={() => handleContact(item)} 
+                        className="w-full py-3 px-6 bg-green-500 hover:bg-green-600 text-white font-black rounded-xl text-lg shadow-2xl hover:shadow-3xl hover:scale-105 transition-all flex items-center justify-center gap-2">
+                  <MessageCircle className="w-5 h-5" /> WhatsApp
+                </button>
+                <button onClick={() => handleToggleSold(item.id, item.venduto)} 
+                        className={`w-full py-3 px-6 text-white font-black rounded-xl text-lg shadow-2xl hover:shadow-3xl hover:scale-105 transition-all flex items-center justify-center gap-2 ${item.venduto ? 'bg-gray-400 hover:bg-gray-500' : 'bg-emerald-500 hover:bg-emerald-600'}`}>
+                  {item.venduto ? (<><CheckCircle className="w-5 h-5" /> Venduto</>) : (<><X className="w-5 h-5" /> Disponibile</>)}
+                </button>
               </div>
             </div>
           ))}

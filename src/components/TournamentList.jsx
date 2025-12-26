@@ -1,4 +1,4 @@
-﻿// src/components/TournamentList.jsx - COMPLETO CON BACK SMART + NOMI + ICONE ORGANIZZATORI + NOMI
+﻿// src/components/TournamentList.jsx - COMPLETO CON BACK SMART + NOMI + ICONE ORGANIZZATORI + NOMI SPOSATE ACCANTO LOGO INGROSSATE
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { Trophy, Users, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
@@ -138,14 +138,41 @@ export default function TournamentList() {
           ← Indietro
         </button>
 
-        {/* HEADER CON NUOVA COPPA + ICONE ORGANIZZATORI */}
-        <div className="text-center text-white relative">
-          <div className="w-28 h-28 bg-white/10 border border-white/40 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.35)] overflow-hidden">
-            <img
-              src="/images/tornei-header.png"
-              alt="Tornei Padel"
-              className="w-full h-full object-cover"
-            />
+        {/* HEADER CON ICONE SPOSATE ACCANTO LOGO + INGROSSATE */}
+        <div className="text-center text-white flex flex-col items-center">
+          <div className="flex items-center gap-4 mb-6">
+            {/* LOGO COPPA */}
+            <div className="w-28 h-28 bg-white/10 border border-white/40 rounded-3xl flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.35)] overflow-hidden">
+              <img
+                src="/images/tornei-header.png"
+                alt="Tornei Padel"
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            {/* ✅ ICONE ORGANIZZATORI INGROSSATE ACCANTO LOGO */}
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex gap-1">
+                <div className="flex flex-col items-center">
+                  <img
+                    src="/images/icon-robertobove.jpg"
+                    alt="Roberto Bove"
+                    className="w-14 h-14 rounded-full object-cover border-3 border-white shadow-lg hover:scale-110 transition-transform"
+                  />
+                  <span className="text-sm font-bold italic text-white drop-shadow-md">Roberto Bove</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <img
+                    src="/images/icon-claudiofalba.jpg"
+                    className="w-14 h-14 rounded-full object-cover border-3 border-white shadow-lg hover:scale-110 transition-transform"
+                  />
+                  <span className="text-sm font-bold italic text-white drop-shadow-md">Claudio Falba</span>
+                </div>
+              </div>
+              <span className="text-xs font-semibold text-white drop-shadow-lg bg-blue-900/50 px-2 py-1 rounded-full">
+                Tournament Organizers
+              </span>
+            </div>
           </div>
 
           <h1 className="text-3xl font-extrabold tracking-wide mb-2 drop-shadow-sm">
@@ -155,31 +182,6 @@ export default function TournamentList() {
             ({tournaments.length}) tornei •{" "}
             {Object.values(participantsCounts).reduce((a, b) => a + b, 0)} iscritti totali
           </p>
-
-          {/* NUOVE ICONE ORGANIZZATORI + NOMI */}
-          <div className="absolute top-0 right-0 flex flex-col items-center gap-1 mt-2 mr-2">
-            <div className="flex gap-2">
-              <div className="flex flex-col items-center">
-                <img
-                  src="/images/icon-robertobove.jpg"
-                  alt="Roberto Bove"
-                  className="w-10 h-10 rounded-full object-cover border-2 border-white"
-                />
-                <span className="text-xs font-bold italic text-white">Roberto Bove</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <img
-                  src="/images/icon-claudiofalba.jpg"
-                  alt="Claudio Falba"
-                  className="w-10 h-10 rounded-full object-cover border-2 border-white"
-                />
-                <span className="text-xs font-bold italic text-white">Claudio Falba</span>
-              </div>
-            </div>
-            <span className="text-xs sm:text-sm font-semibold text-white drop-shadow-lg">
-              Tournament Organizers
-            </span>
-          </div>
         </div>
 
         {tournaments.length === 0 ? (
