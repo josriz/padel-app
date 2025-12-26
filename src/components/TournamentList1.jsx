@@ -1,4 +1,4 @@
-﻿// src/components/TournamentList.jsx - COMPLETO CON BACK SMART + NOMI + ICONE ORGANIZZATORI + NOMI
+﻿// src/components/TournamentList.jsx - COMPLETO CON BACK SMART + NOMI
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { Trophy, Users, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
@@ -138,48 +138,22 @@ export default function TournamentList() {
           ← Indietro
         </button>
 
-        {/* HEADER CON NUOVA COPPA + ICONE ORGANIZZATORI */}
-        <div className="text-center text-white relative">
+        {/* HEADER CON NUOVA COPPA */}
+        <div className="text-center text-white">
           <div className="w-28 h-28 bg-white/10 border border-white/40 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.35)] overflow-hidden">
             <img
-              src="/images/tornei-header.png"
+              src="/images/tornei-header.png"   // C:\padel-app\public\images\tornei-header.png
               alt="Tornei Padel"
               className="w-full h-full object-cover"
             />
           </div>
-
           <h1 className="text-3xl font-extrabold tracking-wide mb-2 drop-shadow-sm">
             TORNEI PADEL
           </h1>
-          <p className="text-lg text-blue-100 mb-4">
+          <p className="text-lg text-blue-100">
             ({tournaments.length}) tornei •{" "}
             {Object.values(participantsCounts).reduce((a, b) => a + b, 0)} iscritti totali
           </p>
-
-          {/* NUOVE ICONE ORGANIZZATORI + NOMI */}
-          <div className="absolute top-0 right-0 flex flex-col items-center gap-1 mt-2 mr-2">
-            <div className="flex gap-2">
-              <div className="flex flex-col items-center">
-                <img
-                  src="/images/icon-robertobove.jpg"
-                  alt="Roberto Bove"
-                  className="w-10 h-10 rounded-full object-cover border-2 border-white"
-                />
-                <span className="text-xs font-bold italic text-white">Roberto Bove</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <img
-                  src="/images/icon-claudiofalba.jpg"
-                  alt="Claudio Falba"
-                  className="w-10 h-10 rounded-full object-cover border-2 border-white"
-                />
-                <span className="text-xs font-bold italic text-white">Claudio Falba</span>
-              </div>
-            </div>
-            <span className="text-xs sm:text-sm font-semibold text-white drop-shadow-lg">
-              Tournament Organizers
-            </span>
-          </div>
         </div>
 
         {tournaments.length === 0 ? (

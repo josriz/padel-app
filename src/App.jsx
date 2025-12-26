@@ -1,3 +1,5 @@
+import ResetPasswordConfirm from "./components/ResetPasswordConfirm";
+
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import AuthProvider, { useAuth } from "./context/AuthProvider";
@@ -5,6 +7,7 @@ import AuthProvider, { useAuth } from "./context/AuthProvider";
 // PUBLIC
 import LoginPages from "./components/LoginPages";
 import RegistrationPage from "./components/RegistrationPage";
+import ResetPasswordFinal from "./components/ResetPasswordFinal";
 
 // DASHBOARD
 import Dashboard from "./components/Dashboard";
@@ -40,16 +43,11 @@ function LoadingSpinner() {
 }
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
-  const { user, role, loading } = useAuth();
+  const { user, loading } = useAuth();
 
-  if (loading || !user || !user.user_metadata) {
-    return <LoadingSpinner />;
-  }
-  
+  if (loading) return <LoadingSpinner />;
   if (!user) return <Navigate to="/" replace />;
-  if (adminOnly && user.user_metadata.role !== "admin") {
-    return <Navigate to="/dashboard" replace />;
-  }
+  if (adminOnly && user.user_metadata.role !== "admin") return <Navigate to="/dashboard" replace />;
 
   return children;
 };
@@ -59,15 +57,21 @@ export default function App() {
     <AuthProvider>
       <Router>
         <Routes>
+          {/* PUBLIC */}
           <Route path="/" element={<LoginPages />} />
           <Route path="/register" element={<RegistrationPage />} />
+          <Route path="/reset-password" element={<ResetPasswordFinal />} />
+
+          {/* DASHBOARD */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/marketplace" element={<ProtectedRoute><MarketplaceList /></ProtectedRoute>} />
           <Route path="/marketplace/simple" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
           <Route path="/marketplace/user" element={<ProtectedRoute><MarketplaceUser /></ProtectedRoute>} />
-          <Route path="/admin/marketplace" element={<ProtectedRoute adminOnly={true}><MarketplaceAdmin /></ProtectedRoute>} />
-          <Route path="/admin/marketplace-gestion" element={<ProtectedRoute adminOnly={true}><MarketplaceGestion /></ProtectedRoute>} />
+          <Route path="/admin/marketplace" element={<ProtectedRoute adminOnly><MarketplaceAdmin /></ProtectedRoute>} />
+          <Route path="/admin/marketplace-gestion" element={<ProtectedRoute adminOnly><MarketplaceGestion /></ProtectedRoute>} />
+
+          {/* TORNEI */}
           <Route path="/tournaments" element={<ProtectedRoute><TournamentList /></ProtectedRoute>} />
           <Route path="/eventi-tornei" element={<ProtectedRoute><EventiTornei /></ProtectedRoute>} />
           <Route path="/tournaments/:tournamentId" element={<ProtectedRoute><SingleTournament /></ProtectedRoute>} />
@@ -75,11 +79,13 @@ export default function App() {
           <Route path="/tabellone/:tournamentId" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
           <Route path="/bracket/:id" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
           <Route path="/tabellone-coppa" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
-          
           <Route path="/ripescaggi/:tournamentId" element={<TabelloneRipescaggi />} />
-          
-          <Route path="/admin-tournaments" element={<ProtectedRoute adminOnly={true}><TournamentAdminPanel /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute adminOnly={true}><TournamentListAndAdmin /></ProtectedRoute>} />
+
+          {/* ADMIN TORNEI */}
+          <Route path="/admin-tournaments" element={<ProtectedRoute adminOnly><TournamentAdminPanel /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute adminOnly><TournamentListAndAdmin /></ProtectedRoute>} />
+
+          {/* 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>

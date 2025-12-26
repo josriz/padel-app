@@ -26,13 +26,11 @@ export default function LoginPage() {
 
   const handleOAuthLogin = async (provider) => {
     setLoading(true);
-    // 🔹 Temporaneamente disabilitato se provider non abilitato
-    // const { error } = await supabase.auth.signInWithOAuth({
-    //   provider,
-    //   options: { redirectTo: window.location.origin + "/dashboard" },
-    // });
-    // if (error) setMessage(error.message);
-    setMessage("Provider disabilitato temporaneamente");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: window.location.origin + "/dashboard" },
+    });
+    if (error) setMessage(error.message);
     setLoading(false);
   };
 
@@ -53,7 +51,12 @@ export default function LoginPage() {
   };
 
   const handleResetPassword = async () => {
-    navigate("/reset-password");
+    if (!email) return setMessage("Inserisci la tua email per reimpostare la password");
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + "/reset-password",
+    });
+    if (error) setMessage(error.message);
+    else setMessage("Email di reset inviata!");
   };
 
   return (

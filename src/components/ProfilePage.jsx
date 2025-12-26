@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
-import { Menu, X, Home, Trophy, User, Settings, LogOut, Edit3, CheckCircle, Loader2, ArrowLeft } from 'lucide-react';
+import { Menu, X, Home, Trophy, User, LogOut, Edit3, CheckCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthProvider';
 
@@ -11,8 +11,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
-    nome: '',           // ✅ AGGIUNTO
-    cognome: '',        // ✅ AGGIUNTO
+    nome: '',           
+    cognome: '',        
     full_name: '',
     email: '',
     telefono: '',
@@ -44,8 +44,8 @@ export default function ProfilePage() {
       if (data) {
         setProfile(data);
         setFormData({
-          nome: data.nome || '',                    // ✅ AGGIUNTO
-          cognome: data.cognome || '',              // ✅ AGGIUNTO
+          nome: data.nome || '',                    
+          cognome: data.cognome || '',              
           full_name: data.full_name || '',
           email: user.email || '',
           telefono: data.telefono || '',
@@ -66,8 +66,8 @@ export default function ProfilePage() {
 
     try {
       const updates = {
-        nome: formData.nome,                      // ✅ AGGIUNTO
-        cognome: formData.cognome,                // ✅ AGGIUNTO
+        nome: formData.nome,                      
+        cognome: formData.cognome,                
         full_name: `${formData.nome} ${formData.cognome}`.trim(),
         telefono: formData.telefono,
         livello_padel: formData.livello_padel,
@@ -140,9 +140,14 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-cover bg-center bg-no-repeat px-2 sm:px-4 relative overflow-hidden" 
          style={{ backgroundImage: "url('/images/sfondo-profilo.jpg')" }}>
-      
-      {/* Overlay ultra-trasparente */}
+
+      {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/5 to-black/15 z-0"></div>
+
+      {/* Logo in alto al centro */}
+      <div className="flex justify-center pt-6 relative z-10">
+        <img src="/logo.png" alt="Logo" className="w-32 h-auto" />
+      </div>
 
       {/* HEADER */}
       <div className="fixed top-0 left-0 right-0 z-[9999] bg-white/80 backdrop-blur-md border-b border-white/50 px-6 py-4 flex items-center justify-center shadow-2xl drop-shadow-2xl">
@@ -159,27 +164,31 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* MENU */}
+      {/* MENU VERTICALE */}
       {menuOpen && (
         <div className="fixed inset-0 z-[10000] bg-black/60 flex justify-end backdrop-blur-sm" onClick={() => setMenuOpen(false)}>
-          <div className="w-80 bg-white/90 shadow-2xl h-full flex flex-col backdrop-blur-md border-l border-white/50 drop-shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900 drop-shadow-md">Menu</h2>
-              <button onClick={() => setMenuOpen(false)} className="p-2 rounded-xl hover:bg-gray-100 backdrop-blur-sm">
-                <X className="w-6 h-6 text-gray-600" />
+          <div className="w-56 bg-white/90 shadow-2xl h-full flex flex-col backdrop-blur-md border-l border-white/50 drop-shadow-2xl" onClick={e => e.stopPropagation()}>
+            
+            {/* Header menu */}
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900">Menu</h2>
+              <button onClick={() => setMenuOpen(false)} className="p-2 rounded-lg hover:bg-gray-100">
+                <X className="w-5 h-5 text-gray-600" />
               </button>
             </div>
-            <div className="flex-1 p-6 space-y-4 overflow-y-auto">
-              <Link to="/dashboard" className="flex items-center gap-3 p-4 rounded-xl hover:bg-gray-50 border border-gray-200 font-semibold backdrop-blur-sm shadow-sm" onClick={() => setMenuOpen(false)}>
+
+            {/* Link menu verticale */}
+            <div className="flex flex-col p-2 gap-2 overflow-y-auto flex-1">
+              <Link to="/dashboard" className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 font-semibold" onClick={() => setMenuOpen(false)}>
                 <Home className="w-5 h-5 text-blue-600" /> Dashboard
               </Link>
-              <Link to="/tournaments" className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border-emerald-200 font-semibold shadow-sm backdrop-blur-sm" onClick={() => setMenuOpen(false)}>
+              <Link to="/tournaments" className="flex items-center gap-2 p-3 rounded-lg bg-emerald-50 font-semibold" onClick={() => setMenuOpen(false)}>
                 <Trophy className="w-5 h-5 text-emerald-600" /> Tornei
               </Link>
-              <Link to="/profile" className="flex items-center gap-3 p-4 rounded-xl bg-blue-50 border-blue-200 font-bold shadow-sm backdrop-blur-sm" onClick={() => setMenuOpen(false)}>
+              <Link to="/profile" className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 font-bold" onClick={() => setMenuOpen(false)}>
                 <User className="w-5 h-5 text-blue-600" /> Profilo
               </Link>
-              <button className="w-full flex items-center gap-3 p-4 rounded-xl text-red-600 hover:bg-red-50 border border-red-200 font-semibold mt-6 shadow-sm backdrop-blur-sm" onClick={() => window.location.href = '/'}>
+              <button className="flex items-center gap-2 p-3 rounded-lg text-red-600 hover:bg-red-50 font-semibold mt-2" onClick={() => window.location.href = '/'}>
                 <LogOut className="w-5 h-5" /> Logout
               </button>
             </div>
@@ -187,109 +196,60 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* CONTENUTO */}
-      <div className="relative z-10 pt-20 px-6 py-8">
-        <div className="max-w-4xl mx-auto space-y-6">
+      {/* CONTENUTO FORM E AVATAR COMPATTO */}
+      <div className="relative z-10 pt-20 px-6 py-8 flex justify-center">
+        <div className="w-full max-w-md space-y-6">
           
-          {/* ✅ CARD DATI - CON NOME E COGNOME */}
-          <div className="bg-white/70 backdrop-blur-md border border-white/60 rounded-2xl p-8 shadow-2xl drop-shadow-xl hover:shadow-3xl hover:-translate-y-1 transition-all">
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-3xl font-bold text-gray-900 drop-shadow-2xl flex items-center gap-2">👤 I miei dati</h3>
-              <div className="flex gap-3">
+          {/* CARD DATI */}
+          <div className="bg-white/80 backdrop-blur-md border border-white/60 rounded-2xl p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-2xl font-bold text-gray-900">👤 I miei dati</h3>
+              <div className="flex gap-2">
                 {editing ? (
                   <>
-                    <button 
-                      onClick={handleSaveProfile} 
-                      disabled={saveLoading} 
-                      className="bg-emerald-600/90 text-white px-8 py-3 rounded-2xl font-bold text-lg shadow-xl flex items-center gap-2 hover:shadow-2xl transition-all backdrop-blur-sm border border-emerald-500/50 drop-shadow-lg"
-                    >
-                      {saveLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
+                    <button onClick={handleSaveProfile} disabled={saveLoading} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-1">
+                      {saveLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                       Salva
                     </button>
-                    <button 
-                      onClick={() => {setEditing(false); fetchProfile();}} 
-                      className="bg-gray-500/90 text-white px-8 py-3 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all backdrop-blur-sm border border-gray-400/50 drop-shadow-lg"
-                    >
+                    <button onClick={() => {setEditing(false); fetchProfile();}} className="bg-gray-500 text-white px-4 py-2 rounded-xl text-sm font-semibold">
                       Annulla
                     </button>
                   </>
                 ) : (
-                  <button 
-                    onClick={() => setEditing(true)} 
-                    className="bg-blue-600/90 text-white px-8 py-3 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all flex items-center gap-2 backdrop-blur-sm border border-blue-500/50 drop-shadow-lg"
-                  >
-                    <Edit3 className="w-5 h-5" />
-                    Modifica
+                  <button onClick={() => setEditing(true)} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-1">
+                    <Edit3 className="w-4 h-4" /> Modifica
                   </button>
                 )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* ✅ CAMPO NOME */}
+            <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="block text-lg font-bold text-gray-800 mb-3 drop-shadow-lg">Nome *</label>
-                <input 
-                  type="text" 
-                  value={formData.nome}
-                  onChange={(e) => setFormData({...formData, nome: e.target.value})}
-                  disabled={!editing}
-                  className={`w-full p-4 border-2 rounded-2xl text-xl font-bold shadow-lg backdrop-blur-sm transition-all ${
-                    editing 
-                      ? 'border-blue-300/70 bg-white/90 focus:ring-4 ring-blue-400/50 focus:border-blue-400/70' 
-                      : 'border-gray-200/50 bg-white/80 cursor-not-allowed'
-                  }`} 
+                <label className="block text-sm font-bold text-gray-800 mb-1">Nome *</label>
+                <input type="text" value={formData.nome} onChange={(e) => setFormData({...formData, nome: e.target.value})} disabled={!editing}
+                  className={`w-full p-2 border rounded-lg text-sm ${editing ? 'border-blue-300 bg-white focus:ring-1 focus:ring-blue-400' : 'border-gray-200 bg-white/80 cursor-not-allowed'}`} 
                 />
               </div>
-
-              {/* ✅ CAMPO COGNOME */}
               <div>
-                <label className="block text-lg font-bold text-gray-800 mb-3 drop-shadow-lg">Cognome *</label>
-                <input 
-                  type="text" 
-                  value={formData.cognome}
-                  onChange={(e) => setFormData({...formData, cognome: e.target.value})}
-                  disabled={!editing}
-                  className={`w-full p-4 border-2 rounded-2xl text-xl font-bold shadow-lg backdrop-blur-sm transition-all ${
-                    editing 
-                      ? 'border-blue-300/70 bg-white/90 focus:ring-4 ring-blue-400/50 focus:border-blue-400/70' 
-                      : 'border-gray-200/50 bg-white/80 cursor-not-allowed'
-                  }`} 
+                <label className="block text-sm font-bold text-gray-800 mb-1">Cognome *</label>
+                <input type="text" value={formData.cognome} onChange={(e) => setFormData({...formData, cognome: e.target.value})} disabled={!editing}
+                  className={`w-full p-2 border rounded-lg text-sm ${editing ? 'border-blue-300 bg-white focus:ring-1 focus:ring-blue-400' : 'border-gray-200 bg-white/80 cursor-not-allowed'}`} 
                 />
               </div>
-
               <div>
-                <label className="block text-lg font-bold text-gray-800 mb-3 drop-shadow-lg">Email</label>
-                <div className="bg-white/80 p-4 border border-white/70 rounded-2xl text-lg font-mono drop-shadow-md backdrop-blur-sm">{formData.email}</div>
+                <label className="block text-sm font-bold text-gray-800 mb-1">Email</label>
+                <div className="bg-white/80 p-2 border border-gray-200 rounded-lg text-sm font-mono">{formData.email}</div>
               </div>
-              
               <div>
-                <label className="block text-lg font-bold text-gray-800 mb-3 drop-shadow-lg">Telefono</label>
-                <input 
-                  type="tel" 
-                  value={formData.telefono} 
-                  onChange={(e) => setFormData({...formData, telefono: e.target.value})}
-                  disabled={!editing}
-                  className={`w-full p-4 border-2 rounded-2xl text-xl shadow-lg backdrop-blur-sm transition-all ${
-                    editing 
-                      ? 'border-emerald-300/70 bg-white/90 focus:ring-4 ring-emerald-400/50 focus:border-emerald-400/70' 
-                      : 'border-gray-200/50 bg-white/80 cursor-not-allowed'
-                  }`} 
+                <label className="block text-sm font-bold text-gray-800 mb-1">Telefono</label>
+                <input type="tel" value={formData.telefono} onChange={(e) => setFormData({...formData, telefono: e.target.value})} disabled={!editing}
+                  className={`w-full p-2 border rounded-lg text-sm ${editing ? 'border-emerald-300 bg-white focus:ring-1 focus:ring-emerald-400' : 'border-gray-200 bg-white/80 cursor-not-allowed'}`} 
                 />
               </div>
-              
               <div>
-                <label className="block text-lg font-bold text-gray-800 mb-3 drop-shadow-lg">Livello Padel</label>
-                <select 
-                  value={formData.livello_padel} 
-                  onChange={(e) => setFormData({...formData, livello_padel: e.target.value})}
-                  disabled={!editing}
-                  className={`w-full p-4 border-2 rounded-2xl text-xl font-bold shadow-lg backdrop-blur-sm transition-all ${
-                    editing 
-                      ? 'border-purple-300/70 bg-white/90 focus:ring-4 ring-purple-400/50 focus:border-purple-400/70' 
-                      : 'border-gray-200/50 bg-white/80 cursor-not-allowed'
-                  }`}
-                >
+                <label className="block text-sm font-bold text-gray-800 mb-1">Livello Padel</label>
+                <select value={formData.livello_padel} onChange={(e) => setFormData({...formData, livello_padel: e.target.value})} disabled={!editing}
+                  className={`w-full p-2 border rounded-lg text-sm ${editing ? 'border-purple-300 bg-white focus:ring-1 focus:ring-purple-400' : 'border-gray-200 bg-white/80 cursor-not-allowed'}`}>
                   <option value="">Seleziona</option>
                   <option value="Principiante">🥚 Principiante</option>
                   <option value="Intermedio">🥉 Intermedio</option>
@@ -298,51 +258,29 @@ export default function ProfilePage() {
                   <option value="Pro">⚡ Pro</option>
                 </select>
               </div>
-              
-              <div className="md:col-span-2">
-                <label className="block text-lg font-bold text-gray-800 mb-3 drop-shadow-lg">Bio</label>
-                <textarea 
-                  rows="3" 
-                  value={formData.bio} 
-                  onChange={(e) => setFormData({...formData, bio: e.target.value})}
-                  disabled={!editing}
-                  className={`w-full p-4 border-2 rounded-2xl text-lg shadow-lg backdrop-blur-sm transition-all resize-vertical ${
-                    editing 
-                      ? 'border-indigo-300/70 bg-white/90 focus:ring-4 ring-indigo-400/50 focus:border-indigo-400/70' 
-                      : 'border-gray-200/50 bg-white/80 cursor-not-allowed'
-                  }`} 
-                  placeholder="Descriviti brevemente..."
-                />
+              <div>
+                <label className="block text-sm font-bold text-gray-800 mb-1">Bio</label>
+                <textarea rows="2" value={formData.bio} onChange={(e) => setFormData({...formData, bio: e.target.value})} disabled={!editing}
+                  className={`w-full p-2 border rounded-lg text-sm resize-none ${editing ? 'border-indigo-300 bg-white focus:ring-1 focus:ring-indigo-400' : 'border-gray-200 bg-white/80 cursor-not-allowed'}`} 
+                  placeholder="Descriviti brevemente..." />
               </div>
             </div>
           </div>
 
           {/* CARD AVATAR */}
-          <div className="bg-white/70 backdrop-blur-md border border-white/60 rounded-2xl p-8 shadow-2xl drop-shadow-xl hover:shadow-3xl hover:-translate-y-1 transition-all">
-            <h3 className="text-3xl font-bold text-gray-900 mb-8 drop-shadow-2xl flex items-center gap-2">
-              🖼️ Avatar - {formData.nome} {formData.cognome}
-            </h3>
-            <div className="flex items-center gap-8">
-              <div className="relative w-32 h-32 bg-gradient-to-br from-blue-400/80 to-emerald-500/80 rounded-full flex items-center justify-center text-3xl font-bold text-white shadow-2xl overflow-hidden border-8 border-white/70 backdrop-blur-sm drop-shadow-2xl">
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover rounded-full" />
-                ) : (
-                  profile?.full_name?.charAt(0)?.toUpperCase() || '👤'
-                )}
-              </div>
-              {editing && (
-                <label className="bg-emerald-600/90 text-white p-4 rounded-2xl shadow-xl cursor-pointer hover:shadow-2xl flex items-center gap-3 text-lg font-bold transition-all backdrop-blur-sm border border-emerald-500/50 drop-shadow-lg hover:-translate-y-1">
-                  📸 Cambia foto
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={handleFileUpload}
-                    className="hidden" 
-                  />
-                </label>
-              )}
+          <div className="bg-white/80 backdrop-blur-md border border-white/60 rounded-2xl p-6 shadow-lg flex flex-col items-center">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">🖼️ Avatar - {formData.nome} {formData.cognome}</h3>
+            <div className="relative w-24 h-24 bg-gradient-to-br from-blue-400 to-emerald-500 rounded-full flex items-center justify-center text-xl text-white shadow-md overflow-hidden border-4 border-white">
+              {profile?.avatar_url ? <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover rounded-full" /> : profile?.full_name?.charAt(0)?.toUpperCase() || '👤'}
             </div>
+            {editing && (
+              <label className="mt-4 bg-emerald-600 text-white px-4 py-2 rounded-xl cursor-pointer text-sm flex items-center gap-2">
+                📸 Cambia foto
+                <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+              </label>
+            )}
           </div>
+
         </div>
       </div>
     </div>

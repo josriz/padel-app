@@ -1,51 +1,61 @@
-// src/context/AuthProvider.jsx - ✅ CORRETTO: FIX SUPABASE + EXPORT SICURO
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 
 const AuthContext = createContext();
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
 
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Funzione helper per impostare ruolo in base all’email
-  const determineRole = (sessionUser) => {
-    if (!sessionUser) return null;
-    if (sessionUser.email === "giose.rizzi@gmail.com") return "admin";
-    return "user";
-  };
-
   useEffect(() => {
-    let isMounted = true; // sicurezza per cleanup async
-
-    const fetchSession = async () => {
+    const checkSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error("Auth getSession error:", error);
+        // Se l'URL contiene PKCE OAuth code
+        if (window.location.search.includes("code=")) {
+          const { data, error } = await supabase.auth.exchangeCodeForSession();
+          if (error && error.message !== "No code in URL") {
+            console.error("Errore OAuth:", error.message);
+          }
+          if (data?.session) {
+            setUser(data.session.user);
+            setRole(data.session.user.user_metadata?.role || null);
+          }
+        } else {
+          // Carica sessione corrente
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            setUser(session.user);
+            setRole(session.user.user_metadata?.role || null);
+          }
         }
-        if (!isMounted) return;
-
-        setUser(session?.user ?? null);
-        setRole(determineRole(session?.user));
       } catch (err) {
-        console.error("getSession failed:", err);
+        console.error("Errore generico AuthProvider:", err);
       } finally {
-        if (isMounted) setLoading(false);
+        setLoading(false);
       }
     };
 
-    fetchSession();
+    checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setRole(determineRole(session?.user));
+    // Listener per cambiamenti di sessione
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        setRole(session.user.user_metadata?.role || null);
+      } else {
+        setUser(null);
+        setRole(null);
+      }
     });
 
+    // Cleanup sicuro
     return () => {
-      isMounted = false;
-      subscription.unsubscribe();
+      if (subscription?.unsubscribe) subscription.unsubscribe();
     };
   }, []);
 
@@ -56,16 +66,4 @@ export default function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-// ✅ Esportazione del Context per App.jsx (compatibile con struttura esistente)
-AuthProvider.AuthContext = AuthContext;
-
-// ✅ Esportazione del hook (per altri componenti)
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth deve essere usato dentro AuthProvider");
-  }
-  return context;
 }
