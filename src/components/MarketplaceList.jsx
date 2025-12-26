@@ -125,7 +125,7 @@ export default function Marketplace() {
 
   return (
     <div className="min-h-screen bg-cover bg-center bg-no-repeat pt-8 pb-20 px-4" 
-         style={{backgroundImage: "url('/images/Sfondo-Marketplace.jpg')", backgroundColor: 'rgba(17,24,39,0.9)'}}>
+         style={{backgroundImage: "url('/images/sfondo-marcketplace2.jpg')", backgroundColor: 'rgba(17,24,39,0.9)'}}>
       <div className="max-w-6xl mx-auto">
         {/* 🛒 HEADER CON FOTO DIRECTOR ACCANTO A MARKETPLACE */}
         <div className="flex justify-between items-center mb-8">

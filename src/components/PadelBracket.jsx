@@ -1,3 +1,4 @@
+// src/components/PadelBracket.jsx - FILE COMPLETO CORRETTO (ERRORI VS CODE RISOLTI)
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
@@ -7,7 +8,8 @@ import jsPDF from "jspdf";
 import { supabase } from "../supabaseClient";
 
 export default function PadelBracket() {
-  const { user } = useAuth();
+  const { user, role } = useAuth(); // ✅ UNA SOLA DICHIARAZIONE
+  const isAdmin = user?.role === 'admin' || role === 'admin'; // ✅ UNA SOLA DICHIARAZIONE
   const navigate = useNavigate();
   const [currentFase, setCurrentFase] = useState(0);
   const [showIscritti, setShowIscritti] = useState(true);
@@ -54,61 +56,61 @@ export default function PadelBracket() {
   const [history, setHistory] = useState([]);
 
   // ✅ ISCRITTI REALI TROVATI - Ora li vedi tutti!
-useEffect(() => {
-  const fetchIscrittiReali = async () => {
-    console.log("🔍 Carico ISCRITTI REALI...");
-    
-    try {
-      // Prova torneo corrente (estrai ID dall'URL)
-      const urlParams = new URLSearchParams(window.location.search);
-      const pathParts = window.location.pathname.split('/');
-      const tournamentId = urlParams.get('id') || 
-                         urlParams.get('tournament_id') || 
-                         pathParts[pathParts.length-1];
+  useEffect(() => {
+    const fetchIscrittiReali = async () => {
+      console.log("🔍 Carico ISCRITTI REALI...");
       
-      console.log("🎾 Tournament ID estratto:", tournamentId);
-      
-      let regs = [];
-      
-      // 1. Iscritti SPECIFICI del torneo corrente
-      if (tournamentId && tournamentId.length > 10) {
-        const { data } = await supabase
-          .from('tournament_registrations')
-          .select('display_name, player_name')
-          .eq('tournament_id', tournamentId);
-        regs = data || [];
-        console.log("🏆 ISCRITTI TORNEO:", regs);
+      try {
+        // Prova torneo corrente (estrai ID dall'URL)
+        const urlParams = new URLSearchParams(window.location.search);
+        const pathParts = window.location.pathname.split('/');
+        const tournamentId = urlParams.get('id') || 
+                           urlParams.get('tournament_id') || 
+                           pathParts[pathParts.length-1];
+        
+        console.log("🎾 Tournament ID estratto:", tournamentId);
+        
+        let regs = [];
+        
+        // 1. Iscritti SPECIFICI del torneo corrente
+        if (tournamentId && tournamentId.length > 10) {
+          const { data } = await supabase
+            .from('tournament_registrations')
+            .select('display_name, player_name')
+            .eq('tournament_id', tournamentId);
+          regs = data || [];
+          console.log("🏆 ISCRITTI TORNEO:", regs);
+        }
+        
+        // 2. Tutti gli iscritti (i tuoi 10 reali)
+        if (regs.length === 0) {
+          const { data } = await supabase
+            .from('tournament_registrations')
+            .select('display_name, player_name')
+            .order('display_name')
+            .limit(16);
+          regs = data || [];
+          console.log("📋 TUTTI ISCRITTI (10):", regs);
+        }
+        
+        // 3. Estrai nomi UNICI reali
+        const nomiReali = regs
+          .flatMap(r => [r.display_name, r.player_name])
+          .filter(nome => nome && nome.trim().length > 1)
+          .map(nome => nome.trim())
+          .slice(0, 16);
+        
+        const iscrittiUnici = [...new Set(nomiReali)].sort();
+        setIscritti(iscrittiUnici);
+        console.log("✅ NOMI VISIBILI (", iscrittiUnici.length, "):", iscrittiUnici);
+        
+      } catch (error) {
+        console.error("❌ Errore:", error);
+        setIscritti(["andrea", "antonio", "boverob", "cfalba", "Denny Test", "giose.rizzi"]);
       }
-      
-      // 2. Tutti gli iscritti (i tuoi 10 reali)
-      if (regs.length === 0) {
-        const { data } = await supabase
-          .from('tournament_registrations')
-          .select('display_name, player_name')
-          .order('display_name')
-          .limit(16);
-        regs = data || [];
-        console.log("📋 TUTTI ISCRITTI (10):", regs);
-      }
-      
-      // 3. Estrai nomi UNICI reali
-      const nomiReali = regs
-        .flatMap(r => [r.display_name, r.player_name])
-        .filter(nome => nome && nome.trim().length > 1)
-        .map(nome => nome.trim())
-        .slice(0, 16);
-      
-      const iscrittiUnici = [...new Set(nomiReali)].sort();
-      setIscritti(iscrittiUnici);
-      console.log("✅ NOMI VISIBILI (", iscrittiUnici.length, "):", iscrittiUnici);
-      
-    } catch (error) {
-      console.error("❌ Errore:", error);
-      setIscritti(["andrea", "antonio", "boverob", "cfalba", "Denny Test", "giose.rizzi"]);
-    }
-  };
-  fetchIscrittiReali();
-}, []);
+    };
+    fetchIscrittiReali();
+  }, []);
 
   const esportaPDF = async () => {
     try {
@@ -242,16 +244,16 @@ useEffect(() => {
           ))}
         </div>
 
-        {/* Contenitore iscritti e tabellone */}
-        <div className="flex gap-6">
-          {/* Lista iscritti a scomparsa */}
-          {showIscritti && (
-            <div className="w-64 bg-white/90 rounded-2xl p-4 shadow-xl border border-white/50" data-print="partecipanti">
+        {/* ✅ IMPLEMENTAZIONE 1: LISTA ISCRITTI SOLO ADMIN + MOBILE HIDDEN */}
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Lista iscritti - SOLO ADMIN E DESKTOP */}
+          {isAdmin && showIscritti && (
+            <div className="w-64 bg-white/90 rounded-2xl p-4 shadow-xl border border-white/50 hidden lg:block" data-print="partecipanti">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="font-bold text-lg">📋 Partecipanti ({iscritti.length})</h2>
                 <button onClick={() => setShowIscritti(false)} className="text-sm text-gray-500 hover:text-gray-700">X</button>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-96 overflow-y-auto">
                 {iscritti.map((giocatore, i) => (
                   <div
                     key={i}
@@ -266,20 +268,14 @@ useEffect(() => {
             </div>
           )}
 
-          {/* Tabellone - SOLO QUI lo sfondo trasparente */}
+          {/* ✅ IMPLEMENTAZIONE 2: TABELLONE GRIGIO ELEGANTE */}
           <div 
             ref={bracketRef} 
-            className="flex-1 bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-white/60 print:bg-white print:shadow-none relative overflow-hidden" 
+            className="flex-1 w-full lg:w-auto bg-gradient-to-br from-slate-100 via-gray-100 to-slate-200 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-white/60 print:bg-white print:shadow-none relative overflow-hidden" 
             data-print="bracket"
-            style={{
-              backgroundImage: `url('/images/icon-tornei.jpg')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat'
-            }}
           >
-            {/* Overlay leggerissimo per leggibilità */}
-            <div className="absolute inset-0 bg-white/80"></div>
+            {/* Overlay grigio elegante */}
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-50/90 via-white/95 to-gray-50/90"></div>
             
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-6 print:mb-4 print:flex-col print:items-start print:gap-4">
@@ -362,10 +358,12 @@ useEffect(() => {
 
               {/* Azioni */}
               <div className="flex flex-col sm:flex-row gap-4 mt-6 print:hidden">
-                <button onClick={() => setShowIscritti(!showIscritti)}
-                        className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-xl text-lg">
-                  {showIscritti ? "👆 Nascondi Partecipanti" : "📋 Mostra Partecipanti"}
-                </button>
+                {isAdmin && (
+                  <button onClick={() => setShowIscritti(!showIscritti)}
+                          className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-xl text-lg">
+                    {showIscritti ? "👆 Nascondi Partecipanti" : "📋 Mostra Partecipanti"}
+                  </button>
+                )}
                 <div className="flex-1 flex gap-3">
                   <button className="flex-1 px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-2xl shadow-lg text-sm">
                     💾 Salva Torneo
