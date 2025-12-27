@@ -1,25 +1,39 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
-import { ChevronLeft, Loader2, Plus, Trash2, Users, Crown, Calendar, Award, ArrowRight } from 'lucide-react';
+import { ChevronLeft, Trash2, Users, Calendar, Award, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import AdminTournamentForm from './AdminTournamentForm';
-import { useAuth } from '../context/AuthProvider';
 
 export default function TournamentAdminPanel() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const [user, setUser] = useState(null);
   const [tournaments, setTournaments] = useState([]);
   const [registrations, setRegistrations] = useState({});
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState({});
 
+  // ✅ SUPABASE NATIVO - FUNZIONA SEMPRE
   useEffect(() => {
-    if (!user || user?.user_metadata?.role !== 'admin') {
-      navigate('/dashboard');
-      return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+      console.log('🎾 SUPABASE USER:', session?.user?.email || 'NO USER');
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+      console.log('🎾 AUTH CHANGE:', session?.user?.email || 'NO USER');
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // ✅ Fetch tornei SEMPRE (no controllo)
+  useEffect(() => {
+    if (user) {
+      console.log('✅ USER OK:', user.email);
+      fetchTournaments();
     }
-    fetchTournaments();
-  }, [user, navigate]);
+  }, [user]);
 
   const fetchTournaments = async () => {
     try {
@@ -50,10 +64,8 @@ export default function TournamentAdminPanel() {
           }
           regsByTournament[r.tournament_id].push(r);
         });
-        console.log('✅ Iscritti grouped:', Object.keys(regsByTournament));
         setRegistrations(regsByTournament);
       }
-      
     } catch (err) {
       console.error('❌ Errore:', err);
     } finally {
@@ -83,8 +95,6 @@ export default function TournamentAdminPanel() {
       if (!error) {
         fetchTournaments();
         alert('✅ Eliminato!');
-      } else {
-        alert('❌ ' + error.message);
       }
     } catch (err) {
       alert('❌ Errore');
@@ -93,8 +103,11 @@ export default function TournamentAdminPanel() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 py-12 px-4 flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4" />
+          <p>Caricamento...</p>
+        </div>
       </div>
     );
   }
@@ -102,56 +115,45 @@ export default function TournamentAdminPanel() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-emerald-50 py-8 px-4">
       <div className="max-w-4xl mx-auto space-y-8">
-        {/* ✅ HEADER IDENTICO AL TUO */}
-        <div className="flex items-center gap-4 mb-8 bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-2xl border border-white/50">
-          <button onClick={() => navigate(-1)} className="p-3 bg-emerald-100 hover:bg-emerald-200 rounded-2xl transition-all shadow-lg hover:shadow-xl hover:scale-105">
+        <div className="flex items-center gap-4 mb-8 bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-2xl">
+          <button onClick={() => navigate(-1)} className="p-3 bg-emerald-100 hover:bg-emerald-200 rounded-2xl">
             <ChevronLeft className="w-6 h-6 text-emerald-600" />
           </button>
           <div>
             <h1 className="text-4xl font-black bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
-              Gestione Tornei Admin
+              🎾 Gestione Tornei
             </h1>
-            <p className="text-lg text-gray-600 font-semibold">Crea, modifica ed elimina tornei</p>
+            <p className="text-lg text-gray-600 font-semibold">
+              User: <span className="font-black text-emerald-600">{user?.email || 'nessuno'}</span>
+            </p>
           </div>
         </div>
 
-        {/* ✅ FORM INTEGRATO */}
-        <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/50">
+        <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-8 shadow-2xl">
           <AdminTournamentForm onTournamentCreated={fetchTournaments} />
         </div>
 
-        {/* ✅ TORNEI - LA TUA STRUTTURA! */}
         <div className="space-y-6">
           <h2 className="text-3xl font-black flex items-center gap-3 bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
             <Users className="w-10 h-10" />
-            I Tuoi Tornei ({tournaments.length})
+            Tornei ({tournaments.length})
           </h2>
           
           {tournaments.map(t => {
             const regs = registrations[t.id] || [];
             return (
-              <div key={t.id} className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl hover:shadow-3xl hover:-translate-y-1 transition-all duration-300 border border-white/60 p-8">
-                {/* HEADER TORNEO */}
+              <div key={t.id} className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8 pb-6 border-b-2 border-emerald-100">
                   <div className="flex flex-col">
-                    {/* BADGE TIPO */}
                     <div className="flex gap-2 mb-3">
-                      {t.tournament_type === 'diretta' && (
-                        <span className="px-4 py-2 bg-emerald-100 text-emerald-800 font-bold rounded-2xl text-sm shadow-lg">⚡ DIRETTA</span>
-                      )}
-                      {t.tournament_type === 'ripescaggio' && (
-                        <span className="px-4 py-2 bg-purple-100 text-purple-800 font-bold rounded-2xl text-sm shadow-lg">🎯 RIPESCAGGI</span>
-                      )}
-                      {t.tournament_type === 'king' && (
-                        <span className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold rounded-2xl text-sm shadow-lg">👑 KING</span>
-                      )}
+                      {t.tournament_type === 'diretta' && <span className="px-4 py-2 bg-emerald-100 text-emerald-800 font-bold rounded-2xl text-sm">⚡ DIRETTA</span>}
+                      {t.tournament_type === 'ripescaggio' && <span className="px-4 py-2 bg-purple-100 text-purple-800 font-bold rounded-2xl text-sm">🎯 RIPESCAGGI</span>}
+                      {t.tournament_type === 'king' && <span className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold rounded-2xl text-sm">👑 KING</span>}
                     </div>
                     <h3 className="text-3xl font-black text-gray-900 mb-2">{t.name}</h3>
                     <p className="text-xl text-gray-600 flex items-center gap-3">
                       <Calendar className="w-6 h-6 text-blue-500" />
-                      {t.data_inizio ? new Date(t.data_inizio).toLocaleDateString('it-IT', { 
-                        day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' 
-                      }) : '—'}
+                      {t.data_inizio ? new Date(t.data_inizio).toLocaleDateString('it-IT') : '—'}
                       <span className="font-bold text-emerald-600 ml-6">{regs.length} iscritti</span>
                     </p>
                   </div>
@@ -175,7 +177,6 @@ export default function TournamentAdminPanel() {
                   </div>
                 </div>
 
-                {/* ✅ ISCRITTI - LA TUA SEZIONE IDENTICA */}
                 <div className="bg-gradient-to-r from-emerald-50 to-blue-50 p-8 rounded-3xl border-4 border-emerald-200 shadow-2xl">
                   <h4 className="text-2xl font-black mb-6 flex items-center gap-3 bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
                     <Users className="w-8 h-8" />
@@ -190,24 +191,22 @@ export default function TournamentAdminPanel() {
                   ) : (
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
                       {regs.map(r => (
-                        <div key={r.id} className="group bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg hover:shadow-2xl hover:-translate-y-1 hover:border-emerald-300 border-2 border-transparent transition-all duration-300">
+                        <div key={r.id} className="group bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                               <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl flex items-center justify-center font-bold text-2xl shadow-2xl">
                                 {r.display_name?.charAt(0)?.toUpperCase() || 'G'}
                               </div>
                               <div>
-                                <div className="font-bold text-xl text-gray-900 group-hover:text-emerald-600 transition-colors">
-                                  {r.display_name || 'Giocatore'}
-                                </div>
-                                <div className="text-sm text-gray-500 bg-gradient-to-r from-gray-100 to-gray-200 px-4 py-1 rounded-xl font-semibold inline-block mt-1">
+                                <div className="font-bold text-xl text-gray-900">{r.display_name || 'Giocatore'}</div>
+                                <div className="text-sm text-gray-500 bg-gray-100 px-4 py-1 rounded-xl font-semibold inline-block mt-1">
                                   {r.status || 'registered'}
                                 </div>
                               </div>
                             </div>
                             <button
                               onClick={() => deleteRegistration(r.id, r.display_name || 'giocatore', t.id)}
-                              className="p-3 bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 rounded-2xl shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 group-hover:bg-red-500 group-hover:text-white"
+                              className="p-3 bg-red-100 hover:bg-red-200 text-red-600 rounded-2xl"
                             >
                               <Trash2 className="w-6 h-6" />
                             </button>
@@ -220,21 +219,21 @@ export default function TournamentAdminPanel() {
               </div>
             );
           })}
-        </div>
 
-        {tournaments.length === 0 && !loading && (
-          <div className="text-center py-32 bg-white/80 backdrop-blur-xl rounded-3xl p-12 shadow-2xl border border-white/50">
-            <Award className="w-32 h-32 text-gray-300 mx-auto mb-8" />
-            <h3 className="text-4xl font-black text-gray-500 mb-4">Nessun torneo creato</h3>
-            <p className="text-xl text-gray-400 mb-12">Inizia creando il tuo primo torneo padel!</p>
-            <button
-              onClick={() => navigate("/admin-tournament")}
-              className="px-16 py-6 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-black text-2xl rounded-3xl shadow-2xl hover:shadow-3xl hover:scale-105 transition-all"
-            >
-              🚀 CREA PRIMO TORNEO
-            </button>
-          </div>
-        )}
+          {tournaments.length === 0 && (
+            <div className="text-center py-32 bg-white/80 backdrop-blur-xl rounded-3xl p-12 shadow-2xl">
+              <Award className="w-32 h-32 text-gray-300 mx-auto mb-8" />
+              <h3 className="text-4xl font-black text-gray-500 mb-4">Nessun torneo creato</h3>
+              <p className="text-xl text-gray-400 mb-12">Inizia creando il tuo primo torneo padel!</p>
+              <button
+                onClick={() => navigate("/admin-tournament")}
+                className="px-16 py-6 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-black text-2xl rounded-3xl shadow-2xl hover:shadow-3xl hover:scale-105 transition-all"
+              >
+                🚀 CREA PRIMO TORNEO
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

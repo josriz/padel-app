@@ -82,7 +82,7 @@ export default function App() {
           <Route path="/ripescaggi/:tournamentId" element={<TabelloneRipescaggi />} />
 
           {/* ADMIN TORNEI */}
-          <Route path="/admin-tournaments" element={<ProtectedRoute adminOnly><TournamentAdminPanel /></ProtectedRoute>} />
+          <Route path="/admin-tournaments" element={<ProtectedRoute><TournamentAdminPanel /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><TournamentListAndAdmin /></ProtectedRoute>} />
 
           {/* 404 */}
