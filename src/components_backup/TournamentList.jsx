@@ -1,4 +1,4 @@
-ï»¿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthProvider';
 import { supabase } from '../supabaseClient';
@@ -58,17 +58,17 @@ export default function TournamentList() {
                 className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all hover:-translate-y-1 border border-gray-200 block h-full"
               >
                 <div className="p-6 border-b border-gray-100">
-                  <h2 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 leading-tight">{t.nome || 'â€”'}</h2>
+                  <h2 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 leading-tight">{t.nome || '—'}</h2>
                   <div className="flex items-center justify-between text-sm mb-4">
                     <div className="flex items-center gap-2 text-gray-600">
                       <Users className="w-4 h-4" />
-                      <span>{t.max_players || 'â€”'} max</span>
+                      <span>{t.max_players || '—'} max</span>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                       t.status === 'completato' ? 'bg-green-100 text-green-800' :
                       t.status === 'in_corso' ? 'bg-yellow-100 text-yellow-800' : 
                       'bg-blue-100 text-blue-800'
-                    }`}>{t.status || 'â€”'}</span>
+                    }`}>{t.status || '—'}</span>
                   </div>
                 </div>
                 <div className="p-6 pt-0">

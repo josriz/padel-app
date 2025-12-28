@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthProvider';
 import BackButton from './BackButton';
@@ -27,7 +27,7 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots }
       if (data) {
         setResults(data.results || {});
         if (data.bracket_slots) setLocalSlots(data.bracket_slots);
-        console.log('✅ Caricati:', data.results);
+        console.log('? Caricati:', data.results);
       }
     } catch (err) {
       console.log('No data');
@@ -40,7 +40,7 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots }
       const current = prev[matchKey] || { score: ['', ''] };
       const newScore = [...current.score];
       newScore[teamIndex] = score;
-      console.log(`📝 Campo ${campoNum}: ${newScore.join('-')}`);
+      console.log(`?? Campo ${campoNum}: ${newScore.join('-')}`);
       return { ...prev, [matchKey]: { ...current, score: newScore } };
     });
   };
@@ -52,31 +52,31 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots }
     if (results.campo1?.winner === 0 && ott1[0] && ott1[1]) {
       newSlots[8] = ott1[0];
       newSlots[9] = ott1[1];
-      console.log('✅ AUTO-PASS CAMPO 3:', ott1[0].nome, '+', ott1[1].nome);
+      console.log('? AUTO-PASS CAMPO 3:', ott1[0].nome, '+', ott1[1].nome);
     }
     if (results.campo1?.winner === 1 && ott1[2] && ott1[3]) {
       newSlots[8] = ott1[2];
       newSlots[9] = ott1[3];
-      console.log('✅ AUTO-PASS CAMPO 3:', ott1[2].nome, '+', ott1[3].nome);
+      console.log('? AUTO-PASS CAMPO 3:', ott1[2].nome, '+', ott1[3].nome);
     }
     
     const ott2 = localSlots.slice(4, 8);
     if (results.campo2?.winner === 0 && ott2[0] && ott2[1]) {
       newSlots[12] = ott2[0];
       newSlots[13] = ott2[1];
-      console.log('✅ AUTO-PASS CAMPO 4:', ott2[0].nome, '+', ott2[1].nome);
+      console.log('? AUTO-PASS CAMPO 4:', ott2[0].nome, '+', ott2[1].nome);
     }
     if (results.campo2?.winner === 1 && ott2[2] && ott2[3]) {
       newSlots[12] = ott2[2];
       newSlots[13] = ott2[3];
-      console.log('✅ AUTO-PASS CAMPO 4:', ott2[2].nome, '+', ott2[3].nome);
+      console.log('? AUTO-PASS CAMPO 4:', ott2[2].nome, '+', ott2[3].nome);
     }
     
     setLocalSlots(newSlots);
   };
 
   const setWinner = (campoNum, winningTeam) => {
-    console.log('🏆 CAMPO', campoNum, '→ Squadra', winningTeam + 1, 'VINCE!');
+    console.log('?? CAMPO', campoNum, '? Squadra', winningTeam + 1, 'VINCE!');
     const matchKey = `campo${campoNum}`;
     const newResults = {
       ...results,
@@ -89,22 +89,22 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots }
     
     setResults(newResults);
     passWinners();
-    console.log('✅ WINNER SALVATO:', newResults[matchKey]);
+    console.log('? WINNER SALVATO:', newResults[matchKey]);
   };
 
   const saveResults = async () => {
     setLoading(true);
-    console.log('💾 SALVANDO:', results);
+    console.log('?? SALVANDO:', results);
     try {
       await supabase.from('tournament_results').upsert({
         tournament_id: tournamentId,
         results: results,
         bracket_slots: localSlots
       });
-      alert('✅ SALVATO CON AUTO-PASS!');
-      console.log('✅ SALVATO IN SUPABASE');
+      alert('? SALVATO CON AUTO-PASS!');
+      console.log('? SALVATO IN SUPABASE');
     } catch (err) {
-      alert('❌ ' + err.message);
+      alert('? ' + err.message);
     }
     setLoading(false);
   };
@@ -182,13 +182,13 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots }
               onClick={() => setWinner(campoNum, 0)}
               className="flex-1 py-4 bg-black hover:bg-gray-900 text-white font-bold text-xl rounded-lg shadow-xl transition-all border-4 border-black hover:shadow-2xl"
             >
-              🥇 Squadra 1
+              ?? Squadra 1
             </button>
             <button 
               onClick={() => setWinner(campoNum, 1)}
               className="flex-1 py-4 bg-black hover:bg-gray-900 text-white font-bold text-xl rounded-lg shadow-xl transition-all border-4 border-black hover:shadow-2xl"
             >
-              🥈 Squadra 2
+              ?? Squadra 2
             </button>
           </div>
         </div>

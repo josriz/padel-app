@@ -1,5 +1,6 @@
+// App.jsx - CORRETTO CON UPDATE-PASSWORD
 import ResetPasswordConfirm from "./components/ResetPasswordConfirm";
-
+import UpdatePassword from "./components/UpdatePassword";  // ✅ AGGIUNTO
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import AuthProvider, { useAuth } from "./context/AuthProvider";
@@ -12,8 +13,8 @@ import ResetPasswordFinal from "./components/ResetPasswordFinal";
 // DASHBOARD
 import Dashboard from "./components/Dashboard";
 import ProfilePage from "./components/ProfilePage";
-import Marketplace from "./components/Marketplace";
-import MarketplaceList from "./components/MarketplaceList";
+import MarketplaceList from "./components/MarketplaceList";     
+import Marketplace from "./components/Marketplace";            
 
 // TORNEI
 import TournamentList from "./components/TournamentList";
@@ -57,21 +58,27 @@ export default function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* PUBLIC */}
+          {/* ✅ PUBLIC ROUTES - RESET PASSWORD */}
           <Route path="/" element={<LoginPages />} />
           <Route path="/register" element={<RegistrationPage />} />
           <Route path="/reset-password" element={<ResetPasswordFinal />} />
+          <Route path="/update-password" element={<UpdatePassword />} />  {/* ✅ FIX 404 */}
 
-          {/* DASHBOARD */}
+          {/* DASHBOARD ROUTES */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          
+          {/* ✅ MARKETPLACE ROUTES */}
           <Route path="/marketplace" element={<ProtectedRoute><MarketplaceList /></ProtectedRoute>} />
-          <Route path="/marketplace/simple" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+          <Route path="/marketplace/main" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
           <Route path="/marketplace/user" element={<ProtectedRoute><MarketplaceUser /></ProtectedRoute>} />
+          
+          {/* ✅ ADMIN MARKETPLACE */}
+          <Route path="/marketplace-admin" element={<ProtectedRoute adminOnly><MarketplaceAdmin /></ProtectedRoute>} />
           <Route path="/admin/marketplace" element={<ProtectedRoute adminOnly><MarketplaceAdmin /></ProtectedRoute>} />
           <Route path="/admin/marketplace-gestion" element={<ProtectedRoute adminOnly><MarketplaceGestion /></ProtectedRoute>} />
 
-          {/* TORNEI */}
+          {/* TORNEI ROUTES */}
           <Route path="/tournaments" element={<ProtectedRoute><TournamentList /></ProtectedRoute>} />
           <Route path="/eventi-tornei" element={<ProtectedRoute><EventiTornei /></ProtectedRoute>} />
           <Route path="/tournaments/:tournamentId" element={<ProtectedRoute><SingleTournament /></ProtectedRoute>} />
@@ -79,7 +86,7 @@ export default function App() {
           <Route path="/tabellone/:tournamentId" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
           <Route path="/bracket/:id" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
           <Route path="/tabellone-coppa" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
-          <Route path="/ripescaggi/:tournamentId" element={<TabelloneRipescaggi />} />
+          <Route path="/ripescaggi/:tournamentId" element={<ProtectedRoute><TabelloneRipescaggi /></ProtectedRoute>} />
 
           {/* ADMIN TORNEI */}
           <Route path="/admin-tournaments" element={<ProtectedRoute><TournamentAdminPanel /></ProtectedRoute>} />

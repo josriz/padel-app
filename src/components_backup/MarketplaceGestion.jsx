@@ -1,4 +1,4 @@
-﻿// src/components/MarketplaceList.jsx
+// src/components/MarketplaceList.jsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthProvider';
@@ -44,7 +44,7 @@ export default function MarketplaceList() {
   };
 
   const contactSeller = (item) => {
-    const message = `Ciao! Interessato ${item.nome} (€${item.prezzo})`;
+    const message = `Ciao! Interessato ${item.nome} (�${item.prezzo})`;
     window.open(`https://wa.me/393331234567?text=${encodeURIComponent(message)}`);
   };
 
@@ -105,9 +105,9 @@ export default function MarketplaceList() {
             onChange={(e) => setSortOption(e.target.value)}
             className="px-4 py-3 border border-gray-200 rounded-xl"
           >
-            <option value="recent">Più recenti</option>
-            <option value="priceAsc">Prezzo ↑</option>
-            <option value="priceDesc">Prezzo ↓</option>
+            <option value="recent">Pi� recenti</option>
+            <option value="priceAsc">Prezzo ?</option>
+            <option value="priceDesc">Prezzo ?</option>
           </select>
         </div>
       </div>
@@ -134,7 +134,7 @@ export default function MarketplaceList() {
             <h3 className="text-xl font-bold text-gray-900 mb-2">{item.nome}</h3>
 
             <div className="flex justify-between items-baseline mb-3">
-              <span className="text-2xl font-black text-emerald-600">€{item.prezzo}</span>
+              <span className="text-2xl font-black text-emerald-600">�{item.prezzo}</span>
               <span className={`px-3 py-1 rounded-full text-sm font-bold ${item.venduto ? 'bg-gray-200 text-gray-700' : 'bg-emerald-100 text-emerald-800'}`}>
                 {item.venduto ? 'VENDUTO' : 'DISPONIBILE'}
               </span>

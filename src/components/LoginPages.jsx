@@ -65,7 +65,7 @@ export default function LoginPage() {
           <div className="relative z-10 flex items-center gap-4 pl-4 sm:pl-6 pr-4 pb-4 pt-2 sm:pt-4 h-full">
             {/* ✅ LOGO PIU’ NITIDO */}
             <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 flex-shrink-0 rounded-xl overflow-hidden shadow-lg border-3 sm:border-2 border-white/80 bg-white/95">
-              <img src="/logo.png" alt="Cieffe Padel Club" className="w-full h-full object-contain p-1 sm:p-1"/>
+              <img src="/logo.jpg" alt="Cieffe Padel Club" className="w-full h-full object-contain p-1 sm:p-1"/>
             </div>
             <div className="text-white drop-shadow-2xl">
               <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight leading-tight">CIEFFE</h1>

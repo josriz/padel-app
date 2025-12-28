@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { Menu, X, LogOut, User, Home, Trophy, ShoppingBag, Plus } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useAuth } from "../context/AuthProvider";
 import { useNavigate } from "react-router-dom";
 
 import EventiTornei from "./EventiTornei";
 import MarketplaceUser from "./MarketplaceUser";
 import Profilo from "./Profilo";
-import SidebarMenu from "./SidebarMenu"; // assicurati di importarlo
+import SidebarMenu from "./SidebarMenu";
 
 export default function DashboardUser() {
   const { user, logout } = useAuth();
@@ -41,12 +41,11 @@ export default function DashboardUser() {
     }
   };
 
-  // Determina il tipo utente
   const userType = user?.user_metadata?.role || "user";
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* HEADER con bottone hamburger */}
+      {/* HEADER */}
       <header className="w-full bg-white shadow flex items-center justify-between px-5 py-3">
         <h1 className="text-lg font-semibold text-gray-800">Dashboard</h1>
         <button
@@ -58,7 +57,12 @@ export default function DashboardUser() {
       </header>
 
       {/* MENU A SCOMPARSA */}
-      <SidebarMenu isOpen={isOpen} onClose={() => setIsOpen(false)} userType={userType} />
+      <SidebarMenu
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        userType={userType}
+        onSelectSection={setActiveSection} // ✅ collegamento per aprire la sezione corretta
+      />
 
       {/* CONTENUTO */}
       <main className="p-6 transition-all duration-300">

@@ -125,7 +125,7 @@ const LoginPages = () => {
         {/* ✅ LOGO SUPER GRANDE */}
         <div className="text-center mb-8 pt-8">
           <img
-            src="/logo.png"
+            src="/logo.jpg"
             alt="CIEFFE Padel"
             className="mx-auto w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 lg:w-36 lg:h-36 xl:w-40 xl:h-40 mb-6 shadow-xl rounded-2xl hover:scale-110 transition-all duration-300"
           />

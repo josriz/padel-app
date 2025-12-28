@@ -1,4 +1,4 @@
-﻿// src/components/EventiTornei.jsx
+// src/components/EventiTornei.jsx
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthProvider';
 import { supabase } from '../supabaseClient';
@@ -39,15 +39,15 @@ export default function EventiTornei({ torneoId }) {
     else fetchParticipants();
   };
 
-  if (loading) return <div>⏳ Caricamento torneo...</div>;
+  if (loading) return <div>? Caricamento torneo...</div>;
 
   return (
     <PageContainer title="Eventi e Tornei">
       <div className="p-8">
         <h1 className="text-3xl font-bold mb-4">{torneo?.name}</h1>
-        <p>📅 Data inizio: {torneo?.data_inizio}</p>
-        <p>💰 Prezzo: €{torneo?.prezzo}</p>
-        <p>👥 Max giocatori: {torneo?.max_players}</p>
+        <p>?? Data inizio: {torneo?.data_inizio}</p>
+        <p>?? Prezzo: �{torneo?.prezzo}</p>
+        <p>?? Max giocatori: {torneo?.max_players}</p>
         <p>Status: {torneo?.status}</p>
 
         {torneo?.status === 'pianificato' && user && !participants.find(p => p.user_id === user.id) && (

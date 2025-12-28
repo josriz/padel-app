@@ -1,4 +1,4 @@
-﻿// src/components/TournamentBracketEditable.jsx
+// src/components/TournamentBracketEditable.jsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthProvider';
@@ -102,14 +102,14 @@ export default function TournamentBracketEditable({ torneoId, bracketSlots }) {
         results: results,
         bracket_slots: localSlots
       });
-      alert('✅ SALVATO!');
+      alert('? SALVATO!');
     } catch (err) {
-      alert('❌ ' + err.message);
+      alert('? ' + err.message);
     }
     setSaving(false);
   };
 
-  if (loading) return <PageContainer title="Caricamento..."><div>⏳ Caricamento torneo...</div></PageContainer>;
+  if (loading) return <PageContainer title="Caricamento..."><div>? Caricamento torneo...</div></PageContainer>;
 
   // Slot slices
   const ottaviSlot1 = localSlots.slice(0, 4);
@@ -158,9 +158,9 @@ export default function TournamentBracketEditable({ torneoId, bracketSlots }) {
     <PageContainer title={torneo?.name}>
       <div className="p-8">
         <h2 className="text-xl font-bold mb-4">Dettagli Torneo</h2>
-        <p>📅 Data inizio: {torneo?.data_inizio}</p>
-        <p>💰 Prezzo: €{torneo?.prezzo}</p>
-        <p>👥 Max giocatori: {torneo?.max_players}</p>
+        <p>?? Data inizio: {torneo?.data_inizio}</p>
+        <p>?? Prezzo: �{torneo?.prezzo}</p>
+        <p>?? Max giocatori: {torneo?.max_players}</p>
         <p>Status: {torneo?.status}</p>
 
         {torneo?.status === 'pianificato' && user && !participants.find(p => p.user_id === user.id) && (

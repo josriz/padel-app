@@ -1,4 +1,4 @@
-﻿// src/components/Dashboard.jsx
+// src/components/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthProvider';
 import { useNavigate } from 'react-router-dom';
@@ -37,7 +37,7 @@ export default function Dashboard() {
     }
   }, [user]);
 
-  // ✅ Fetch banner dinamico dal marketplace
+  // ? Fetch banner dinamico dal marketplace
   useEffect(() => {
     const fetchBanner = async () => {
       try {
@@ -95,10 +95,10 @@ export default function Dashboard() {
   const handleLogout = async () => {
   try {
     await signOut();
-    window.location.href = '/';  // ✅ FORZA reload completo
+    window.location.href = '/';  // ? FORZA reload completo
   } catch (error) {
     console.error('Logout error:', error);
-    window.location.href = '/';  // ✅ FORZA reload completo
+    window.location.href = '/';  // ? FORZA reload completo
   }
 };
 
@@ -149,7 +149,7 @@ export default function Dashboard() {
 
   const HomeOverview = () => (
     <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
-      {/* ✅ Banner dinamico */}
+      {/* ? Banner dinamico */}
       <div className="relative h-64 md:h-80 rounded-3xl overflow-hidden shadow-2xl">
         {bannerImages.length > 0 && (
           <img
@@ -169,7 +169,7 @@ export default function Dashboard() {
             onClick={() => setActiveSection('marketplace')}
             className="px-8 py-3 md:px-10 md:py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg md:text-xl rounded-2xl shadow-2xl hover:shadow-3xl hover:-translate-y-1 transition-all"
           >
-            🛒 Scopri Offerte
+            ?? Scopri Offerte
           </button>
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
             {bannerImages.map((_, i) => (
@@ -226,12 +226,12 @@ export default function Dashboard() {
       <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl p-8 md:p-12 shadow-md mx-auto max-w-sm border border-red-200">
         <Shield className="w-20 h-20 md:w-24 md:h-24 text-red-400 mx-auto mb-6" />
         <h2 className="text-2xl md:text-3xl font-bold text-red-600 mb-4">Accesso Negato</h2>
-        <p className="text-base md:text-lg text-red-500 mb-8">Questa sezione è riservata agli amministratori.</p>
+        <p className="text-base md:text-lg text-red-500 mb-8">Questa sezione � riservata agli amministratori.</p>
         <button
           onClick={() => setActiveSection('home')}
           className="px-6 py-2.5 md:px-8 md:py-3 bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white font-bold rounded-xl shadow transition-all text-sm md:text-base"
         >
-          ← Torna alla Dashboard
+          ? Torna alla Dashboard
         </button>
       </div>
     </div>

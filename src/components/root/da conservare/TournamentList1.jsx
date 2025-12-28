@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthProvider';
 import { supabase } from '../supabaseClient';
 import { Trophy, Users, Loader2 } from 'lucide-react';
@@ -23,10 +23,10 @@ export default function TournamentList() {
         if (error) throw error;
 
         const tournamentsData = data || [];
-        console.log('🔍 DEBUG Tournaments:', tournamentsData);
+        console.log('?? DEBUG Tournaments:', tournamentsData);
 
         const validTournaments = tournamentsData.filter(t => t && t.id);
-        console.log('✅ Tornei validi:', validTournaments.length);
+        console.log('? Tornei validi:', validTournaments.length);
 
         const counts = {};
         for (const tournament of validTournaments) {
@@ -67,7 +67,7 @@ export default function TournamentList() {
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Tornei</h1>
           <p className="text-lg text-gray-600">
-            ({tournaments.length}) tornei • {Object.values(participantsCounts).reduce((a, b) => a + b, 0)} iscritti totali
+            ({tournaments.length}) tornei � {Object.values(participantsCounts).reduce((a, b) => a + b, 0)} iscritti totali
           </p>
         </div>
 
@@ -90,14 +90,14 @@ export default function TournamentList() {
                 >
                   <div className="p-6 border-b border-gray-100">
                     <h2 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 leading-tight">
-                      {t.name || '—'}
+                      {t.name || '�'}
                     </h2>
 
                     <div className="mb-4">
                       <div className="flex items-center justify-between text-sm mb-2">
                         <div className="flex items-center gap-2 text-gray-600">
                           <Users className="w-4 h-4" />
-                          <span>{iscritti}/{t.max_players || '—'} iscritti</span>
+                          <span>{iscritti}/{t.max_players || '�'} iscritti</span>
                         </div>
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-bold ${
@@ -120,7 +120,7 @@ export default function TournamentList() {
                     </div>
 
                     <div className="text-sm text-gray-600 mb-4">
-                      💰 {t.price ? `€${t.price}` : 'Gratis'} • 📅{' '}
+                      ?? {t.price ? `�${t.price}` : 'Gratis'} � ??{' '}
                       {new Date(t.created_at).toLocaleDateString('it-IT')}
                     </div>
                   </div>
@@ -130,7 +130,7 @@ export default function TournamentList() {
                       {isAdmin
                         ? <>ADMIN: Tabellone Completo</>
                         : iscritti >= (t.max_players || 16)
-                        ? '🏆 Completo'
+                        ? '?? Completo'
                         : 'Iscriviti Ora'}
                     </div>
                   </div>

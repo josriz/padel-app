@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
@@ -12,7 +12,7 @@ export default function MarketplaceGestion() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
   
-  // ✅ FORM UTENTE STANDARD
+  // ? FORM UTENTE STANDARD
   const [showForm, setShowForm] = useState(false);
   const [newItem, setNewItem] = useState({ nome: '', descrizione: '', prezzo: '' });
   const [uploading, setUploading] = useState(false);
@@ -41,12 +41,12 @@ export default function MarketplaceGestion() {
     fetchItems();
   }, []);
 
-  // ✅ INSERIMENTO ARTICOLO UTENTE STANDARD
+  // ? INSERIMENTO ARTICOLO UTENTE STANDARD
   const handleAddItem = async (e) => {
     e.preventDefault();
     
     if (!newItem.nome.trim() || !newItem.prezzo) {
-      alert('❌ Nome e prezzo obbligatori!');
+      alert('? Nome e prezzo obbligatori!');
       return;
     }
 
@@ -67,9 +67,9 @@ export default function MarketplaceGestion() {
       setItems([data, ...items]);
       setNewItem({ nome: '', descrizione: '', prezzo: '' });
       setShowForm(false);
-      alert('✅ Articolo pubblicato!');
+      alert('? Articolo pubblicato!');
     } catch (error) {
-      alert('❌ Errore: ' + error.message);
+      alert('? Errore: ' + error.message);
     }
   };
 
@@ -77,7 +77,7 @@ export default function MarketplaceGestion() {
     if (!confirm('Eliminare annuncio?')) return;
     
     if (user?.user_metadata?.role !== 'admin') {
-      alert('❌ Solo admin può eliminare!');
+      alert('? Solo admin pu� eliminare!');
       return;
     }
 
@@ -90,9 +90,9 @@ export default function MarketplaceGestion() {
       
       if (error) throw error;
       setItems(items.filter(item => item.id !== id));
-      alert('✅ Eliminato!');
+      alert('? Eliminato!');
     } catch (error) {
-      alert('❌ Errore: ' + error.message);
+      alert('? Errore: ' + error.message);
       fetchItems();
     } finally {
       setDeletingId(null);
@@ -113,12 +113,12 @@ export default function MarketplaceGestion() {
         className="mb-6 px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
         onClick={() => navigate(-1)}
       >
-        ← Indietro
+        ? Indietro
       </button>
 
-      <h2 className="text-3xl font-bold mb-8 text-center">🛒 Gestione Marketplace</h2>
+      <h2 className="text-3xl font-bold mb-8 text-center">?? Gestione Marketplace</h2>
       
-      {/* ✅ BUTTON INSERIMENTO PER UTENTI STANDARD */}
+      {/* ? BUTTON INSERIMENTO PER UTENTI STANDARD */}
       {user && (
         <div className="text-center mb-8">
           <button 
@@ -126,12 +126,12 @@ export default function MarketplaceGestion() {
             className="px-12 py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white text-xl font-bold rounded-3xl hover:from-emerald-700 hover:to-emerald-800 shadow-2xl hover:shadow-3xl transition-all flex items-center gap-3 mx-auto"
           >
             <Plus className="w-6 h-6" />
-            {showForm ? '❌ Chiudi Form' : '➕ PUBBLICA ARTICOLO'}
+            {showForm ? '? Chiudi Form' : '? PUBBLICA ARTICOLO'}
           </button>
         </div>
       )}
 
-      {/* ✅ FORM INSERIMENTO UTENTE STANDARD */}
+      {/* ? FORM INSERIMENTO UTENTE STANDARD */}
       {showForm && user && (
         <div className="bg-gradient-to-r from-emerald-50 to-blue-50 p-8 rounded-3xl mb-12 shadow-2xl border-4 border-emerald-200">
           <h3 className="text-2xl font-bold mb-8 text-center text-emerald-800 flex items-center gap-3 justify-center">
@@ -141,7 +141,7 @@ export default function MarketplaceGestion() {
           
           <form onSubmit={handleAddItem} className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <div>
-              <label className="block font-bold text-xl mb-4">📝 Nome articolo *</label>
+              <label className="block font-bold text-xl mb-4">?? Nome articolo *</label>
               <input
                 required
                 value={newItem.nome}
@@ -152,7 +152,7 @@ export default function MarketplaceGestion() {
             </div>
             
             <div>
-              <label className="block font-bold text-xl mb-4">💰 Prezzo (€) *</label>
+              <label className="block font-bold text-xl mb-4">?? Prezzo (�) *</label>
               <input
                 required
                 type="number"
@@ -166,7 +166,7 @@ export default function MarketplaceGestion() {
             </div>
             
             <div className="md:col-span-2">
-              <label className="block font-bold text-xl mb-4">📄 Descrizione</label>
+              <label className="block font-bold text-xl mb-4">?? Descrizione</label>
               <textarea
                 value={newItem.descrizione}
                 onChange={(e) => setNewItem({ ...newItem, descrizione: e.target.value })}
@@ -182,18 +182,18 @@ export default function MarketplaceGestion() {
                 disabled={!newItem.nome || !newItem.prezzo}
                 className="px-16 py-6 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white text-2xl font-black rounded-3xl hover:from-emerald-700 hover:to-emerald-800 shadow-3xl hover:shadow-4xl transition-all disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed"
               >
-                🚀 PUBBLICA ARTICOLO
+                ?? PUBBLICA ARTICOLO
               </button>
             </div>
           </form>
           
           <p className="text-center mt-6 text-lg text-gray-700 font-semibold">
-            📧 Venditori ti contatteranno: <span className="font-mono bg-gray-100 px-3 py-1 rounded-xl">{user.email}</span>
+            ?? Venditori ti contatteranno: <span className="font-mono bg-gray-100 px-3 py-1 rounded-xl">{user.email}</span>
           </p>
         </div>
       )}
 
-      {/* ✅ STATS */}
+      {/* ? STATS */}
       <div className="bg-white p-6 rounded-3xl border shadow-xl mb-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
           <div>
@@ -232,7 +232,7 @@ export default function MarketplaceGestion() {
             
             {isNewItem(item.created_at) && (
               <span className="absolute top-4 left-4 bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm px-3 py-2 rounded-full font-bold shadow-lg">
-                ✨ NUOVO
+                ? NUOVO
               </span>
             )}
             
@@ -248,7 +248,7 @@ export default function MarketplaceGestion() {
             
             <h3 className="text-2xl font-bold mb-3 leading-tight">{item.nome || item.name}</h3>
             <p className="text-gray-600 mb-4 text-lg leading-relaxed">{truncateText(item.descrizione || item.description, 100)}</p>
-            <p className="text-3xl font-black text-emerald-600 mb-6 drop-shadow-lg">€{formatPrice(item.prezzo || item.price)}</p>
+            <p className="text-3xl font-black text-emerald-600 mb-6 drop-shadow-lg">�{formatPrice(item.prezzo || item.price)}</p>
             
             {item.profiles?.full_name && (
               <div className="flex items-center gap-3 mb-6 p-4 bg-gradient-to-r from-blue-50 to-emerald-50 rounded-2xl shadow-sm">
@@ -270,7 +270,7 @@ export default function MarketplaceGestion() {
           <Camera className="w-24 h-24 mx-auto mb-8 text-gray-400" />
           <h3 className="text-4xl font-bold mb-4 text-gray-600">Nessun annuncio disponibile</h3>
           {user && (
-            <p className="text-2xl mb-8 font-semibold">Clicca "➕ PUBBLICA ARTICOLO" per iniziare!</p>
+            <p className="text-2xl mb-8 font-semibold">Clicca "? PUBBLICA ARTICOLO" per iniziare!</p>
           )}
         </div>
       )}

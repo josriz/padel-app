@@ -1,0 +1,33 @@
+[33m3137973[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{0}: reset: moving to HEAD~1
+[33me26c268[m HEAD@{1}: reset: moving to HEAD~5
+[33m9a84cfe[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{2}: pull: Fast-forward
+[33mf9e1037[m HEAD@{3}: reset: moving to HEAD~1
+[33m9a84cfe[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{4}: pull origin main: Fast-forward
+[33mf9e1037[m HEAD@{5}: reset: moving to HEAD~1
+[33m9a84cfe[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{6}: reset: moving to HEAD
+[33m9a84cfe[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{7}: reset: moving to HEAD
+[33m9a84cfe[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{8}: commit: FIX AdminTournaments: Supabase nativo + rimuovi adminOnly
+[33mf9e1037[m HEAD@{9}: commit: ProfilePage: logo ingrandito + trasparenze + TournamentList: icone organizzatori + tutte integrazioni UI
+[33mfc736b8[m HEAD@{10}: commit: TournamentList + ProfilePage: icone organizzatori accanto logo + testo accanto logo
+[33m1c1e31d[m HEAD@{11}: commit: Integrazione lavori: nuove pagine, aggiornamenti componenti e immagini
+[33mbf5805e[m HEAD@{12}: commit: LoginPage completa con carousel 5 foto + Supabase
+[33me26c268[m HEAD@{13}: commit: Fix icona Dashboard
+[33m3137973[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{14}: commit: Marketplace completo: foto cliccabili, bottoni compatti, header con director
+[33mcbb93c3[m HEAD@{15}: commit: feat: ProfilePage con nome/cognome separati + transparency glassmorphism
+[33mfa34d92[m HEAD@{16}: Branch: renamed refs/heads/main to refs/heads/main
+[33mfa34d92[m HEAD@{18}: commit: Initial commit: Padel App completa con Marketplace, Profilo, Dashboard
+[33me64e1c4[m[33m ([m[1;33mtag: [m[1;33mv2.1.0-migrazione-locale[m[33m)[m HEAD@{19}: commit: Migrazione completa progetto padel-app locale
+[33m7666ab9[m HEAD@{20}: commit: MIGRAZIONE TOTALE PADEL APP 23/12/2025
+[33mc719eac[m[33m ([m[1;33mtag: [m[1;33mv2.0.0-ui-migrazione[m[33m)[m HEAD@{21}: reset: moving to origin/main
+[33mc719eac[m[33m ([m[1;33mtag: [m[1;33mv2.0.0-ui-migrazione[m[33m)[m HEAD@{22}: reset: moving to origin/main
+[33mc719eac[m[33m ([m[1;33mtag: [m[1;33mv2.0.0-ui-migrazione[m[33m)[m HEAD@{23}: reset: moving to HEAD
+[33mc719eac[m[33m ([m[1;33mtag: [m[1;33mv2.0.0-ui-migrazione[m[33m)[m HEAD@{24}: commit: Migrazione completa progetto Padel (componenti, immagini, layout, tabelloni)
+[33m65645e9[m HEAD@{25}: commit: Aggiornato PadelBracket con tutte le implementazioni recenti
+[33mf8de0f1[m HEAD@{26}: commit: feat: PadelBracket completo con tabellone dinamico e admin mode
+[33m712efd1[m HEAD@{27}: commit: Tabellone con ripescaggi funzionante
+[33m268c2b7[m HEAD@{28}: commit: Dashboard banner foto + LoginPage + Marketplace + Bracket + immagini
+[33mce24ce0[m HEAD@{29}: commit: PADEL COMPLETO: profilo marketplace tornei tabellone
+[33me01614b[m HEAD@{30}: commit: backup prima unificazione tabellone
+[33m10bd92d[m HEAD@{31}: commit: Initial commit: Padel App completa con 16 iscritti torneo
+[33ma42ad53[m HEAD@{32}: commit: Migrazione dei file lavorati dal PC locale
+[33me1fbc61[m HEAD@{33}: clone: from https://github.com/josriz/Padel_Falba.git

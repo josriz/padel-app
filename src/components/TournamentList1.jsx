@@ -1,4 +1,4 @@
-﻿// src/components/TournamentList.jsx - COMPLETO CON BACK SMART + NOMI
+// src/components/TournamentList.jsx - COMPLETO CON BACK SMART + NOMI
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { Trophy, Users, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
@@ -15,11 +15,11 @@ export default function TournamentList() {
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState({});
 
-  // ✅ BACK BUTTON INTELLIGENTE
+  // ? BACK BUTTON INTELLIGENTE
   const goBackSmart = () => {
     const currentPath = window.location.pathname;
     if (currentPath === '/tournaments') {
-      navigate('/dashboard'); // Da lista tornei → dashboard
+      navigate('/dashboard'); // Da lista tornei ? dashboard
     } else {
       navigate(-1); // Altrimenti pagina precedente
     }
@@ -89,7 +89,7 @@ export default function TournamentList() {
 
   const handleRegister = async (tournamentId) => {
     if (!user) {
-      alert('❌ Effettua login per iscriverti!');
+      alert('? Effettua login per iscriverti!');
       return;
     }
 
@@ -107,12 +107,12 @@ export default function TournamentList() {
 
     if (error) {
       if (error.message.includes('already exists')) {
-        alert('✅ Già iscritto a questo torneo!');
+        alert('? Gi� iscritto a questo torneo!');
       } else {
-        alert('❌ Errore: ' + error.message);
+        alert('? Errore: ' + error.message);
       }
     } else {
-      alert('🎾 ISCRIZIONE EFFETTUATA! Adesione in attesa approvazione admin');
+      alert('?? ISCRIZIONE EFFETTUATA! Adesione in attesa approvazione admin');
       fetchData();
     }
 
@@ -130,19 +130,19 @@ export default function TournamentList() {
   return (
     <div className="min-h-[90vh] bg-gradient-to-b from-[#001F5B] via-[#003A8F] to-[#001F5B] pt-4 pb-12">
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* ✅ BACK BUTTON INTELLIGENTE */}
+        {/* ? BACK BUTTON INTELLIGENTE */}
         <button
           onClick={goBackSmart}
           className="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-300 text-sm bg-white hover:bg-gray-50"
         >
-          ← Indietro
+          ? Indietro
         </button>
 
         {/* HEADER CON NUOVA COPPA */}
         <div className="text-center text-white">
           <div className="w-28 h-28 bg-white/10 border border-white/40 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.35)] overflow-hidden">
             <img
-              src="/images/tornei-header.png"   // C:\padel-app\public\images\tornei-header.png
+              src="/images/tornei-header.jpg"   // C:\padel-app\public\images\tornei-header.jpg
               alt="Tornei Padel"
               className="w-full h-full object-cover"
             />
@@ -151,7 +151,7 @@ export default function TournamentList() {
             TORNEI PADEL
           </h1>
           <p className="text-lg text-blue-100">
-            ({tournaments.length}) tornei •{" "}
+            ({tournaments.length}) tornei �{" "}
             {Object.values(participantsCounts).reduce((a, b) => a + b, 0)} iscritti totali
           </p>
         </div>
@@ -180,14 +180,14 @@ export default function TournamentList() {
                     className="block flex-1 p-6 border-b border-gray-100"
                   >
                     <h2 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 leading-tight">
-                      {t.name || '—'}
+                      {t.name || '�'}
                     </h2>
 
                     <div className="mb-4">
                       <div className="flex items-center justify-between text-sm mb-3">
                         <div className="flex items-center gap-2 text-gray-600">
                           <Users className="w-4 h-4" />
-                          <span>{iscritti}/{t.max_players || '—'} iscritti</span>
+                          <span>{iscritti}/{t.max_players || '�'} iscritti</span>
                         </div>
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-bold ${
@@ -202,11 +202,11 @@ export default function TournamentList() {
                         </span>
                       </div>
 
-                      {/* ✅ NOMI GIOCATORI AVANZATI */}
+                      {/* ? NOMI GIOCATORI AVANZATI */}
                       {namesList.length > 0 && (
                         <div className="mb-3 p-3 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-100">
                           <p className="text-xs font-semibold text-emerald-800 mb-2 flex items-center gap-1">
-                            👥 Iscritti:
+                            ?? Iscritti:
                           </p>
                           <div className="flex flex-wrap gap-1">
                             {namesList.slice(0, 5).map((name, i) => (
@@ -241,10 +241,10 @@ export default function TournamentList() {
                     </div>
 
                     <div className="text-sm text-gray-600">
-                      💰 {t.price ? `€${t.price}` : 'Gratis'} • 📅{' '}
+                      ?? {t.price ? `�${t.price}` : 'Gratis'} � ??{' '}
                       {t.data_inizio
                         ? new Date(t.data_inizio).toLocaleDateString('it-IT')
-                        : '—'}
+                        : '�'}
                     </div>
                   </Link>
 
@@ -257,7 +257,7 @@ export default function TournamentList() {
                     ) : isRegistered ? (
                       <div className="w-full bg-emerald-100 text-emerald-800 py-3 px-4 rounded-xl font-bold text-sm border-2 border-emerald-200 flex items-center justify-center gap-2">
                         <CheckCircle className="w-4 h-4" />
-                        ISCRITTO ✅
+                        ISCRITTO ?
                       </div>
                     ) : (
                       <button
@@ -271,7 +271,7 @@ export default function TournamentList() {
                             ISCRIZIONE...
                           </>
                         ) : (
-                          '🎾 ISCRIVITI ORA'
+                          '?? ISCRIVITI ORA'
                         )}
                       </button>
                     )}

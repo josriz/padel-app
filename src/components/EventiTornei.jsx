@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import GestioneTabelloni from "../components/GestioneTabelloni";
 
 export default function EventiTornei() {

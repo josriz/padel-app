@@ -1,4 +1,4 @@
-﻿// src/components/TournamentDetailPage.jsx - ✅ 100% FUNZIONANTE!
+// src/components/TournamentDetailPage.jsx - ? 100% FUNZIONANTE!
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
@@ -16,28 +16,28 @@ const TournamentDetailPage = () => {
       setLoading(true);
       
       try {
-        // ✅ 1. Torneo (colonna CORRETTA: players)
+        // ? 1. Torneo (colonna CORRETTA: players)
         const { data: tournamentData } = await supabase
           .from('tournaments')
           .select('id, name, type, players, status, created_at')
           .eq('id', id)
           .single();
         
-        console.log("✅ Torneo:", tournamentData);
+        console.log("? Torneo:", tournamentData);
         setTournament(tournamentData);
 
-        // ✅ 2. FIX: tournament_players + player_name (NO JOIN!)
+        // ? 2. FIX: tournament_players + player_name (NO JOIN!)
         const { data, count, error } = await supabase
           .from('tournament_players')
           .select('id, player_name, rating, created_at', { count: 'exact' })
           .eq('tournament_id', id);
 
         if (error) {
-          console.error('❌ tournament_players:', error);
+          console.error('? tournament_players:', error);
         } else {
-          console.log(`✅ ISCRITTI: ${data?.length || 0} giocatori trovati`);
+          console.log(`? ISCRITTI: ${data?.length || 0} giocatori trovati`);
           
-          // ✅ Usa player_name diretto (NO profiles!)
+          // ? Usa player_name diretto (NO profiles!)
           const playersWithNames = data?.map(reg => ({
             id: reg.id,
             full_name: reg.player_name || 'Giocatore Anonimo',
@@ -47,11 +47,11 @@ const TournamentDetailPage = () => {
           
           setPlayers(playersWithNames);
           setParticipantsCount(count || data?.length || 0);
-          console.log('✅ Giocatori caricati:', playersWithNames.slice(0, 3));
+          console.log('? Giocatori caricati:', playersWithNames.slice(0, 3));
         }
         
       } catch (err) {
-        console.error('❌ fetchData:', err);
+        console.error('? fetchData:', err);
       } finally {
         setLoading(false);
       }
@@ -72,11 +72,11 @@ const TournamentDetailPage = () => {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
       <div className="text-center max-w-md">
         <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-          <span className="text-3xl">🏆</span>
+          <span className="text-3xl">??</span>
         </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-4">Torneo non trovato</h1>
         <Link to="/tournaments" className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all">
-          ← Torna ai Tornei
+          ? Torna ai Tornei
         </Link>
       </div>
     </div>
@@ -96,7 +96,7 @@ const TournamentDetailPage = () => {
               to="/tournaments" 
               className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold mb-4 text-sm bg-blue-100 px-3 py-1 rounded-full hover:bg-blue-200 transition-all"
             >
-              ← Torna ai tornei
+              ? Torna ai tornei
             </Link>
             <h1 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-gray-900 via-gray-800 to-slate-900 bg-clip-text text-transparent mb-2">
               {tournament.name}
@@ -115,7 +115,7 @@ const TournamentDetailPage = () => {
               <span className={`px-4 py-2 rounded-full font-semibold text-xs ${
                 tournament.status === 'registration' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
               }`}>
-                {tournament.status === 'registration' ? '📝 ISCRIZIONI' : tournament.status}
+                {tournament.status === 'registration' ? '?? ISCRIZIONI' : tournament.status}
               </span>
             </div>
           </div>
@@ -124,7 +124,7 @@ const TournamentDetailPage = () => {
             onClick={() => setShowPlayersMenu(!showPlayersMenu)}
             className="px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl hover:from-blue-600 hover:to-blue-700 transition-all flex items-center gap-3 whitespace-nowrap group hover:-translate-y-1"
           >
-            <span className="text-2xl group-hover:scale-110 transition-transform">👥</span>
+            <span className="text-2xl group-hover:scale-110 transition-transform">??</span>
             <span>{participantsCount} Iscritti</span>
           </button>
         </div>
@@ -135,7 +135,7 @@ const TournamentDetailPage = () => {
         {showPlayersMenu && (
           <div className="lg:col-span-1 bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-xl border border-white/50 sticky top-24 h-fit max-h-[70vh] overflow-y-auto">
             <h2 className="font-black text-xl mb-6 flex items-center gap-3 text-blue-800 border-b pb-4 border-blue-100">
-              👥 Lista Iscritti
+              ?? Lista Iscritti
               <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full">
                 {players.length}
               </span>
@@ -144,7 +144,7 @@ const TournamentDetailPage = () => {
             {players.length === 0 ? (
               <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-2xl bg-gradient-to-r from-gray-50 to-gray-100">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded-2xl flex items-center justify-center">
-                  <span className="text-2xl">👤</span>
+                  <span className="text-2xl">??</span>
                 </div>
                 <p className="text-lg font-semibold text-gray-700 mb-1">Nessun iscritto</p>
                 <p className="text-sm text-gray-500">Sii il primo giocatore!</p>
@@ -179,7 +179,7 @@ const TournamentDetailPage = () => {
         {/* MAIN CONTENT */}
         <div className="lg:col-span-3 bg-white/80 backdrop-blur-md p-8 rounded-3xl shadow-2xl border border-white/50">
           <h2 className="text-3xl font-black mb-8 flex items-center gap-4 text-gray-900 bg-gradient-to-r from-gray-900 to-slate-900 bg-clip-text text-transparent">
-            🏆 Tabellone {tournament.name}
+            ?? Tabellone {tournament.name}
           </h2>
           
           {/* SLOTS TABELLONE */}
@@ -206,7 +206,7 @@ const TournamentDetailPage = () => {
               className="group p-8 bg-white/80 rounded-2xl border-2 border-blue-200 hover:border-blue-400 hover:shadow-2xl hover:-translate-y-2 transition-all backdrop-blur-md flex flex-col items-center justify-center gap-3 font-bold text-blue-800 hover:text-blue-900"
             >
               <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all">
-                <span className="text-white text-xl">👥</span>
+                <span className="text-white text-xl">??</span>
               </div>
               <span className="text-lg">Gestione Iscritti</span>
               <span className="text-sm text-blue-600 bg-blue-100 px-3 py-1 rounded-full group-hover:bg-blue-200">
@@ -219,7 +219,7 @@ const TournamentDetailPage = () => {
               className="group p-8 bg-white/80 rounded-2xl border-2 border-green-200 hover:border-green-400 hover:shadow-2xl hover:-translate-y-2 transition-all backdrop-blur-md flex flex-col items-center justify-center gap-3 font-bold text-green-800 hover:text-green-900"
             >
               <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all">
-                <span className="text-white text-xl">🏆</span>
+                <span className="text-white text-xl">??</span>
               </div>
               <span className="text-lg">Genera Bracket</span>
               <span className="text-sm text-green-600 bg-green-100 px-3 py-1 rounded-full group-hover:bg-green-200">
@@ -232,7 +232,7 @@ const TournamentDetailPage = () => {
               className="group p-8 bg-white/80 rounded-2xl border-2 border-purple-200 hover:border-purple-400 hover:shadow-2xl hover:-translate-y-2 transition-all backdrop-blur-md flex flex-col items-center justify-center gap-3 font-bold text-purple-800 hover:text-purple-900"
             >
               <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all">
-                <span className="text-white text-xl">🎾</span>
+                <span className="text-white text-xl">??</span>
               </div>
               <span className="text-lg">Tabellone Admin</span>
               <span className="text-sm text-purple-600 bg-purple-100 px-3 py-1 rounded-full group-hover:bg-purple-200">

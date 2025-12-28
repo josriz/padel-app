@@ -76,7 +76,7 @@ const Auth = () => {
       <div className="bg-white p-6 sm:p-10 rounded-2xl max-w-md w-full shadow-md">
         {/* LOGO + By Claudio Falba */}
         <div className="flex flex-col items-center mb-6">
-          <img src="/logo.png" alt="Logo Padel Club" className="h-16 mb-2" />
+          <img src="/logo.jpg" alt="Logo Padel Club" className="h-16 mb-2" />
           <p className="italic text-sm text-gray-400 mb-4">by Claudio Falba</p>
           <h1 className="text-2xl font-bold text-indigo-700 mb-1 text-center">
             {isSignUp ? "Crea il tuo Account" : "Accedi a Padel Tracker"}

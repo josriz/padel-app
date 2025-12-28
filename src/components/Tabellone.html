@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tabellone 8 squadre</title>
+<style>
+/* Stampa A4 orizzontale */
+@page { size: A4 landscape; margin: 12mm; }
+
+body { font-family: Arial, sans-serif; background: #f7f7f7; }
+
+.vb-bracket {
+  display: flex;
+  flex-direction: column;
+  gap: 80px;
+  position: relative;
+}
+
+/* Copia il layout dei blocchi React */
+.vb-pair {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 260px;
+}
+
+.vb-match {
+  background: #fff;
+  border-radius: 14px;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  min-height: 90px;
+}
+
+.vb-winner {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 320px;
+  width: 240px;
+  border: 2px solid #222;
+}
+
+.vb-campo {
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.vb-team-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px dashed #e2e2e2;
+}
+
+.vb-team { font-size: 14px; }
+.vb-score { width: 40px; text-align: right; font-weight: 700; }
+
+.vb-trophy {
+  text-align: center;
+  font-size: 32px;
+  margin-top: 40px;
+}
+
+</style>
+</head>
+<body>
+
+<div class="vb-bracket">
+
+  <!-- Quarti -->
+  <div class="vb-pair">
+    <div class="vb-match">
+      <div class="vb-campo">Campo 1</div>
+      <div class="vb-team-row"><div class="vb-team">Squadra 1</div><div class="vb-score">6-4</div></div>
+      <div class="vb-team-row"><div class="vb-team">Squadra 2</div><div class="vb-score">4-6</div></div>
+    </div>
+    <div class="vb-match">
+      <div class="vb-campo">Campo 2</div>
+      <div class="vb-team-row"><div class="vb-team">Squadra 3</div><div class="vb-score">6-2</div></div>
+      <div class="vb-team-row"><div class="vb-team">Squadra 4</div><div class="vb-score">2-6</div></div>
+    </div>
+    <div class="vb-match vb-winner">
+      <div class="vb-campo">Semifinale 1</div>
+      <div class="vb-team-row"><div class="vb-team">Vincitore Q1</div><div class="vb-score">6-4</div></div>
+      <div class="vb-team-row"><div class="vb-team">Vincitore Q2</div><div class="vb-score">4-6</div></div>
+    </div>
+  </div>
+
+  <div class="vb-pair">
+    <div class="vb-match">
+      <div class="vb-campo">Campo 3</div>
+      <div class="vb-team-row"><div class="vb-team">Squadra 5</div><div class="vb-score">6-3</div></div>
+      <div class="vb-team-row"><div class="vb-team">Squadra 6</div><div class="vb-score">3-6</div></div>
+    </div>
+    <div class="vb-match">
+      <div class="vb-campo">Campo 4</div>
+      <div class="vb-team-row"><div class="vb-team">Squadra 7</div><div class="vb-score">6-1</div></div>
+      <div class="vb-team-row"><div class="vb-team">Squadra 8</div><div class="vb-score">1-6</div></div>
+    </div>
+    <div class="vb-match vb-winner">
+      <div class="vb-campo">Semifinale 2</div>
+      <div class="vb-team-row"><div class="vb-team">Vincitore Q3</div><div class="vb-score">6-4</div></div>
+      <div class="vb-team-row"><div class="vb-team">Vincitore Q4</div><div class="vb-score">4-6</div></div>
+    </div>
+  </div>
+
+  <!-- Finale -->
+  <div class="vb-pair">
+    <div class="vb-match vb-winner">
+      <div class="vb-campo">🏆 Finale</div>
+      <div class="vb-team-row"><div class="vb-team">Vincitore S1</div><div class="vb-score">6-4</div></div>
+      <div class="vb-team-row"><div class="vb-team">Vincitore S2</div><div class="vb-score">4-6</div></div>
+    </div>
+  </div>
+
+  <div class="vb-trophy">🏆 Coppa</div>
+
+</div>
+
+</body>
+</html>

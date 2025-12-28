@@ -1,4 +1,4 @@
-﻿// src/components/TournamentBracketEditable.jsx
+// src/components/TournamentBracketEditable.jsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthProvider';
@@ -28,7 +28,7 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots }
       if (data) {
         setResults(data.results || {});
         if (data.bracket_slots) setLocalSlots(data.bracket_slots);
-        console.log('✅ TournamentBracketEditable: risultati caricati');
+        console.log('? TournamentBracketEditable: risultati caricati');
       }
     } catch (err) {
       console.log('No data');
@@ -41,7 +41,7 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots }
       const current = prev[matchKey] || { score: ['', ''] };
       const newScore = [...current.score];
       newScore[teamIndex] = score;
-      console.log(`📝 Campo ${campoNum}: ${newScore.join('-')}`);
+      console.log(`?? Campo ${campoNum}: ${newScore.join('-')}`);
       return { ...prev, [matchKey]: { ...current, score: newScore } };
     });
   };
@@ -51,25 +51,25 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots }
     const ott1 = localSlots.slice(0, 4);
     if (results.campo1?.winner === 0 && ott1[0] && ott1[1]) {
       newSlots[8] = ott1[0]; newSlots[9] = ott1[1];
-      console.log('✅ AUTO-PASS CAMPO 3:', getPlayerName(ott1[0]));
+      console.log('? AUTO-PASS CAMPO 3:', getPlayerName(ott1[0]));
     }
     if (results.campo1?.winner === 1 && ott1[2] && ott1[3]) {
       newSlots[8] = ott1[2]; newSlots[9] = ott1[3];
-      console.log('✅ AUTO-PASS CAMPO 3:', getPlayerName(ott1[2]));
+      console.log('? AUTO-PASS CAMPO 3:', getPlayerName(ott1[2]));
     }
     const ott2 = localSlots.slice(4, 8);
     if (results.campo2?.winner === 0 && ott2[0] && ott2[1]) {
       newSlots[12] = ott2[0]; newSlots[13] = ott2[1];
-      console.log('✅ AUTO-PASS CAMPO 4:', getPlayerName(ott2[0]));
+      console.log('? AUTO-PASS CAMPO 4:', getPlayerName(ott2[0]));
     }
     if (results.campo2?.winner === 1 && ott2[2] && ott2[3]) {
       newSlots[12] = ott2[2]; newSlots[13] = ott2[3];
-      console.log('✅ AUTO-PASS CAMPO 4:', getPlayerName(ott2[2]));
+      console.log('? AUTO-PASS CAMPO 4:', getPlayerName(ott2[2]));
     }
     setLocalSlots(newSlots);
   };
 
-  // ✅ FUNZIONE FLESSIBILE PER NOMI MULTI-TABELLA
+  // ? FUNZIONE FLESSIBILE PER NOMI MULTI-TABELLA
   const getPlayerName = (slot) => {
     if (!slot) return '';
     const nome = slot.nome || slot.name || slot.player_name || slot.full_name || 'N/D';
@@ -85,7 +85,7 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots }
   };
 
   const setWinner = (campoNum, winningTeam) => {
-    console.log('🏆 CAMPO', campoNum, '→ Squadra', winningTeam + 1, 'VINCE!');
+    console.log('?? CAMPO', campoNum, '? Squadra', winningTeam + 1, 'VINCE!');
     const matchKey = `campo${campoNum}`;
     const newResults = {
       ...results,
@@ -101,17 +101,17 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots }
 
   const saveResults = async () => {
     setLoading(true);
-    console.log('💾 SALVANDO:', results);
+    console.log('?? SALVANDO:', results);
     try {
       await supabase.from('tournament_results').upsert({
         tournament_id: tournamentId,
         results: results,
         bracket_slots: localSlots
       });
-      alert('✅ SALVATO CON AUTO-PASS!');
-      console.log('✅ SALVATO IN SUPABASE');
+      alert('? SALVATO CON AUTO-PASS!');
+      console.log('? SALVATO IN SUPABASE');
     } catch (err) {
-      alert('❌ ' + err.message);
+      alert('? ' + err.message);
     }
     setLoading(false);
   };
@@ -198,13 +198,13 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots }
               onClick={() => setWinner(campoNum, 0)}
               className="flex-1 py-4 px-6 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-black rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all text-lg"
             >
-              🥇 Squadra 1
+              ?? Squadra 1
             </button>
             <button
               onClick={() => setWinner(campoNum, 1)}
               className="flex-1 py-4 px-6 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-black rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all text-lg"
             >
-              🥈 Squadra 2
+              ?? Squadra 2
             </button>
           </div>
         </div>
@@ -222,36 +222,36 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots }
 
       <div className="text-center mb-12">
         <h1 className="text-5xl font-black mb-6 bg-gradient-to-r from-purple-800 via-pink-800 to-emerald-800 bg-clip-text text-transparent">
-          🎾 COPPA PADEL 2vs2
+          ?? COPPA PADEL 2vs2
         </h1>
         <button
           onClick={saveResults}
           disabled={loading}
           className="px-12 py-6 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-black text-xl rounded-3xl shadow-2xl hover:shadow-3xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? '⏳ SALVANDO...' : '💾 SALVA RISULTATI'}
+          {loading ? '? SALVANDO...' : '?? SALVA RISULTATI'}
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-        {renderMatch(ottaviSlot1, '⚔️ OTTAVI CAMPO 1', 1)}
-        {renderMatch(ottaviSlot2, '⚔️ OTTAVI CAMPO 2', 2)}
+        {renderMatch(ottaviSlot1, '?? OTTAVI CAMPO 1', 1)}
+        {renderMatch(ottaviSlot2, '?? OTTAVI CAMPO 2', 2)}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-        {renderMatch(quartiSlot1, '🥉 QUARTI CAMPO 3', 3)}
-        {renderMatch(quartiSlot2, '🥉 QUARTI CAMPO 4', 4)}
+        {renderMatch(quartiSlot1, '?? QUARTI CAMPO 3', 3)}
+        {renderMatch(quartiSlot2, '?? QUARTI CAMPO 4', 4)}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {renderMatch(semiSlot1, '🥈 SEMIFINALE CAMPO 5', 5)}
-            {renderMatch(semiSlot2, '🥈 SEMIFINALE CAMPO 6', 6)}
+            {renderMatch(semiSlot1, '?? SEMIFINALE CAMPO 5', 5)}
+            {renderMatch(semiSlot2, '?? SEMIFINALE CAMPO 6', 6)}
           </div>
         </div>
         <div>
-          {renderMatch(finaleSlot, '🏆 GRAN FINALE CAMPO 7', 7)}
+          {renderMatch(finaleSlot, '?? GRAN FINALE CAMPO 7', 7)}
         </div>
       </div>
     </div>

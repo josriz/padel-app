@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
@@ -13,7 +13,7 @@ const TournamentDetailPage = () => {
     const fetchData = async () => {
       setLoading(true);
       
-      // ✅ Torneo OK
+      // ? Torneo OK
       const { data: tournamentData } = await supabase
         .from('tournaments')
         .select('*')
@@ -21,9 +21,9 @@ const TournamentDetailPage = () => {
         .single();
       setTournament(tournamentData);
 
-      // ✅ RIGA 22 CORRETTA - TABELL REAL
+      // ? RIGA 22 CORRETTA - TABELL REAL
       const { data: registrations } = await supabase
-        .from('registrations')  // ✅ FIX - Tabella corretta
+        .from('registrations')  // ? FIX - Tabella corretta
         .select('player_name, player_surname, player_email, team_name')
         .eq('tournament_id', id);
       setPlayers(registrations || []);
@@ -49,7 +49,7 @@ const TournamentDetailPage = () => {
             onClick={() => setShowPlayersMenu(!showPlayersMenu)}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
           >
-            👥 {players.length} Iscritti
+            ?? {players.length} Iscritti
           </button>
         </div>
       </header>
@@ -86,9 +86,9 @@ const TournamentDetailPage = () => {
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
             <h3 className="font-semibold mb-2">Prossimi passi:</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-              <Link to={`/tournaments/${id}/players`} className="p-3 bg-white rounded-lg border hover:shadow-md">👥 Gestione Iscritti</Link>
-              <Link to={`/tournaments/${id}/bracket`} className="p-3 bg-white rounded-lg border hover:shadow-md">🏆 Bracket</Link>
-              <Link to={`/tournaments/${id}/board`} className="p-3 bg-white rounded-lg border hover:shadow-md">📊 Tabellone Admin</Link>
+              <Link to={`/tournaments/${id}/players`} className="p-3 bg-white rounded-lg border hover:shadow-md">?? Gestione Iscritti</Link>
+              <Link to={`/tournaments/${id}/bracket`} className="p-3 bg-white rounded-lg border hover:shadow-md">?? Bracket</Link>
+              <Link to={`/tournaments/${id}/board`} className="p-3 bg-white rounded-lg border hover:shadow-md">?? Tabellone Admin</Link>
             </div>
           </div>
         </div>

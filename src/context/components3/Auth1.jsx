@@ -98,7 +98,7 @@ const Auth = ({ onLogin }) => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="bg-white p-6 sm:p-10 rounded-2xl max-w-md w-full shadow-md">
         <div className="flex flex-col items-center mb-6">
-          <img src="/logo.png" alt="Logo Padel Club" className="h-16 mb-2" />
+          <img src="/logo.jpg" alt="Logo Padel Club" className="h-16 mb-2" />
           <p className="italic text-sm text-gray-400 mb-4">by Claudio Falba</p>
           <h1 className="text-2xl font-bold text-indigo-700 mb-1 text-center">Accedi a Padel Tracker</h1>
           <p className="text-sm text-gray-500 mb-4 text-center">

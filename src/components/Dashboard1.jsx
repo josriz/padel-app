@@ -1,4 +1,4 @@
-﻿// src/components/Dashboard.jsx - COPIA ESATTAMENTE QUESTO
+// src/components/Dashboard.jsx - COPIA ESATTAMENTE QUESTO
 import React, { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
@@ -177,7 +177,7 @@ export default function Dashboard() {
         {isAdmin && (
           <div className="max-w-4xl mx-auto px-6 lg:px-12 mt-24 lg:mt-32">
             <h2 className="text-4xl lg:text-6xl font-black text-white drop-shadow-2xl mb-16 text-center">
-              👑 Area Admin
+              ?? Area Admin
             </h2>
             <div className="bg-white/85 backdrop-blur-2xl rounded-3xl p-10 lg:p-16 shadow-3xl hover:shadow-4xl border-2 border-white/70 hover:-translate-y-2 transition-all duration-500 text-center">
               <Shield className="w-24 h-24 lg:w-28 lg:h-28 mx-auto mb-10 lg:mb-16 text-blue-600 shadow-2xl" />
@@ -189,7 +189,7 @@ export default function Dashboard() {
                 onClick={() => navigate("/admin-tournaments")}
                 className="w-full max-w-lg mx-auto bg-gradient-to-r from-emerald-500 via-emerald-600 to-blue-600 text-white py-8 px-16 rounded-3xl font-black text-2xl shadow-3xl hover:shadow-4xl hover:scale-105 transition-all duration-500 hover:from-emerald-600 hover:to-blue-700"
               >
-                GESTISCI TORNEI 👑
+                GESTISCI TORNEI ??
               </button>
             </div>
           </div>

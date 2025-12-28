@@ -1,4 +1,4 @@
-﻿// src/components/MarketplaceList.jsx
+// src/components/MarketplaceList.jsx
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { Loader2, ShoppingCart } from "lucide-react";
@@ -55,7 +55,7 @@ export default function MarketplaceList() {
               className="w-full h-full object-cover"
             />
             <div className="absolute top-2 right-2 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-bold">
-              {item.prezzo ? `${item.prezzo} €` : "Gratuito"}
+              {item.prezzo ? `${item.prezzo} �` : "Gratuito"}
             </div>
           </div>
           <div className="p-4 flex flex-col flex-1 justify-between">

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthProvider';
 import BackButton from './BackButton';
@@ -25,7 +25,7 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots, 
       if (data) {
         setResults(data.results || {});
         if (data.bracket_slots && setBracketSlots) setBracketSlots(data.bracket_slots);
-        console.log('✅ Caricati:', data.results);
+        console.log('? Caricati:', data.results);
       }
     } catch (err) {
       console.log('No data');
@@ -46,29 +46,29 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots, 
       const current = prev[matchKey] || { score: ['', ''] };
       const newScore = [...current.score];
       newScore[teamIndex] = score;
-      console.log(`📝 Campo ${campoNum} Team ${teamIndex}: ${score}`);
+      console.log(`?? Campo ${campoNum} Team ${teamIndex}: ${score}`);
       return { ...prev, [matchKey]: { ...current, score: newScore } };
     });
   };
 
   const passWinnersWithNewResults = (currentResults) => {
-    console.log('🚀 AUTO-PASS START:', currentResults);
+    console.log('?? AUTO-PASS START:', currentResults);
     const newSlots = [...bracketSlots];
     
-    // Campo 1 → Campo 3
+    // Campo 1 ? Campo 3
     const ott1 = bracketSlots.slice(0, 4);
     if (currentResults.campo1?.winner === 0 && ott1[0] && ott1[1]) {
       newSlots[8] = ott1[0];
       newSlots[9] = ott1[1];
-      console.log('✅ CAMPO 3:', ott1[0].nome, '+', ott1[1].nome);
+      console.log('? CAMPO 3:', ott1[0].nome, '+', ott1[1].nome);
     }
     if (currentResults.campo1?.winner === 1 && ott1[2] && ott1[3]) {
       newSlots[8] = ott1[2];
       newSlots[9] = ott1[3];
-      console.log('✅ CAMPO 3:', ott1[2].nome, '+', ott1[3].nome);
+      console.log('? CAMPO 3:', ott1[2].nome, '+', ott1[3].nome);
     }
     
-    // Campo 2 → Campo 4
+    // Campo 2 ? Campo 4
     const ott2 = bracketSlots.slice(4, 8);
     if (currentResults.campo2?.winner === 0 && ott2[0] && ott2[1]) {
       newSlots[12] = ott2[0];
@@ -80,7 +80,7 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots, 
     }
     
     setBracketSlots(newSlots);
-    console.log('✅ AUTO-PASS COMPLETATO');
+    console.log('? AUTO-PASS COMPLETATO');
   };
 
   const setWinner = (campoNum, winningTeam) => {
@@ -94,8 +94,8 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots, 
       }
     };
     
-    console.log(`🏆 CAMPO ${campoNum} → Squadra ${winningTeam + 1} VINCE!`);
-    console.log('🔥 NEW RESULTS:', newResults);
+    console.log(`?? CAMPO ${campoNum} ? Squadra ${winningTeam + 1} VINCE!`);
+    console.log('?? NEW RESULTS:', newResults);
     
     setResults(newResults);
     passWinnersWithNewResults(newResults);
@@ -103,7 +103,7 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots, 
 
   const saveResults = async () => {
     setLoading(true);
-    console.log('💾 SALVANDO:', results);
+    console.log('?? SALVANDO:', results);
     
     try {
       const { error } = await supabase.from('tournament_results').upsert({
@@ -113,11 +113,11 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots, 
       });
       
       if (error) throw error;
-      console.log('✅ SALVATO!', results);
-      alert('✅ SALVATO CON VINCITORI!');
+      console.log('? SALVATO!', results);
+      alert('? SALVATO CON VINCITORI!');
     } catch (err) {
-      console.error('❌', err);
-      alert('❌ ' + err.message);
+      console.error('?', err);
+      alert('? ' + err.message);
     }
     setLoading(false);
   };
@@ -132,7 +132,7 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots, 
       <div className="p-6 bg-white border-4 border-gray-200 rounded-2xl shadow-xl hover:shadow-2xl">
         <div className="text-center mb-4">
           <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-xl font-bold text-lg shadow-lg inline-block">
-            🏓 CAMPO {campoNum}
+            ?? CAMPO {campoNum}
           </div>
           <h3 className="font-bold text-xl mt-2">{title}</h3>
         </div>
@@ -189,14 +189,14 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots, 
               disabled={!scoreData[0] || !scoreData[1]}
               className="flex-1 py-3 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white font-bold rounded-lg shadow-md transition-all"
             >
-              🥇 Squadra 1
+              ?? Squadra 1
             </button>
             <button 
               onClick={() => setWinner(campoNum, 1)}
               disabled={!scoreData[0] || !scoreData[1]}
               className="flex-1 py-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white font-bold rounded-lg shadow-md transition-all"
             >
-              🥈 Squadra 2
+              ?? Squadra 2
             </button>
           </div>
         </div>
@@ -210,19 +210,19 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots, 
       
       <div className="text-center mb-12">
         <h1 className="text-4xl font-black mb-6 bg-gradient-to-r from-purple-600 to-emerald-600 bg-clip-text text-transparent">
-          🏓 COPPA PADEL 2vs2
+          ?? COPPA PADEL 2vs2
         </h1>
         <button 
           onClick={saveResults}
           disabled={loading}
           className="px-12 py-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-bold text-xl rounded-2xl shadow-2xl hover:shadow-3xl transition-all disabled:opacity-50"
         >
-          {loading ? '⏳ SALVANDO...' : '💾 SALVA RISULTATI'}
+          {loading ? '? SALVANDO...' : '?? SALVA RISULTATI'}
         </button>
       </div>
 
       <div className="mb-16">
-        <h2 className="text-3xl font-black text-center mb-12 bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">⚔️ OTTAVI</h2>
+        <h2 className="text-3xl font-black text-center mb-12 bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">?? OTTAVI</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {renderMatch(ottaviSlot1, 'CAMPO 1', 1)}
           {renderMatch(ottaviSlot2, 'CAMPO 2', 2)}
@@ -230,7 +230,7 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots, 
       </div>
 
       <div className="mb-16">
-        <h2 className="text-3xl font-black text-center mb-12 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">🥈 QUARTI</h2>
+        <h2 className="text-3xl font-black text-center mb-12 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">?? QUARTI</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {renderMatch(quartiSlot1, 'CAMPO 3', 3)}
           {renderMatch(quartiSlot2, 'CAMPO 4', 4)}
@@ -239,14 +239,14 @@ export default function TournamentBracketEditable({ tournamentId, bracketSlots, 
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-          <h2 className="text-3xl font-black text-center mb-8 bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">🥉 SEMIFINALI</h2>
+          <h2 className="text-3xl font-black text-center mb-8 bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">?? SEMIFINALI</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {renderMatch(semiSlot1, 'CAMPO 5', 5)}
             {renderMatch(semiSlot2, 'CAMPO 6', 6)}
           </div>
         </div>
         <div>
-          <h2 className="text-4xl font-black text-center mb-8 bg-gradient-to-r from-red-600 via-yellow-600 to-emerald-600 bg-clip-text text-transparent drop-shadow-2xl">🏆 FINALE</h2>
+          <h2 className="text-4xl font-black text-center mb-8 bg-gradient-to-r from-red-600 via-yellow-600 to-emerald-600 bg-clip-text text-transparent drop-shadow-2xl">?? FINALE</h2>
           {renderMatch(finaleSlot, 'CAMPO 7', 7)}
         </div>
       </div>

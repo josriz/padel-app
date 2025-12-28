@@ -35,7 +35,7 @@ export default function Marketplace() {
       cognome_venditore: 'Rossi',
       email: 'mario@email.com',
       telefono: '3331234567',
-      immagine_url: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=300&fit=crop',
+      immagine_url: '/images/padel1.jpg',
       venduto: false
     },
     {
@@ -46,7 +46,7 @@ export default function Marketplace() {
       cognome_venditore: 'Bianchi',
       email: 'luca@email.com',
       telefono: '3409876543',
-      immagine_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=300&fit=crop',
+      immagine_url: '/images/claudio1.jpg',
       venduto: true
     }
   ];
@@ -87,14 +87,25 @@ export default function Marketplace() {
       cognome_venditore: newItem.cognome_venditore,
       email: newItem.email,
       telefono: newItem.telefono,
-      immagine_url: newItem.immagine ? URL.createObjectURL(newItem.immagine) : 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=300&fit=crop',
+      immagine_url: newItem.immagine ? URL.createObjectURL(newItem.immagine) : '/images/claudio1.jpg',
       venduto: false
     };
     
     setTimeout(() => {
       setItems([newItemData, ...items]);
       setShowForm(false);
-      setNewItem({ immagine: null, immaginePreview: null, nome: '', prezzo: '', nome_venditore: '', cognome_venditore: '', email: '', telefono: '', descrizione: '', note: '' });
+      setNewItem({ 
+        immagine: null, 
+        immaginePreview: null, 
+        nome: '', 
+        prezzo: '', 
+        nome_venditore: '', 
+        cognome_venditore: '', 
+        email: '', 
+        telefono: '', 
+        descrizione: '', 
+        note: '' 
+      });
       resetFileInput();
       setPublishing(false);
     }, 1200);
@@ -127,11 +138,11 @@ export default function Marketplace() {
     <div className="min-h-screen bg-cover bg-center bg-no-repeat pt-8 pb-20 px-4" 
          style={{backgroundImage: "url('/images/sfondo-marcketplace2.jpg')", backgroundColor: 'rgba(17,24,39,0.9)'}}>
       <div className="max-w-6xl mx-auto">
-        {/* 🛒 HEADER CON FOTO DIRECTOR ACCANTO A MARKETPLACE */}
+        {/* HEADER CON FOTO DIRECTOR */}
         <div className="flex items-center gap-4 mb-8">
           <ShoppingCart className="w-12 h-12 text-emerald-400 drop-shadow-2xl" />
           <div className="flex items-center gap-3">
-            <img src="/images/Raniero.jpeg" alt="Director" className="w-14 h-14 rounded-full object-cover shadow-2xl border-4 border-white/60 ring-4 ring-emerald-400/30" />
+            <img src="/images/Raniero.jpg" alt="Director" className="w-14 h-14 rounded-full object-cover shadow-2xl border-4 border-white/60 ring-4 ring-emerald-400/30" />
             <div>
               <h2 className="text-2xl font-extrabold text-white drop-shadow-2xl">Director Marketplace</h2>
               <h1 className="text-4xl font-black text-white drop-shadow-2xl leading-tight">MARKETPLACE</h1>
@@ -140,7 +151,7 @@ export default function Marketplace() {
           </div>
         </div>
 
-        {/* PULSANTE INDRETRO - SOLO UNO */}
+        {/* PULSANTE INDIETRO */}
         <div className="flex items-center mb-4">
           <button onClick={() => navigate(-1)} 
                   className="px-4 py-2 bg-white/20 backdrop-blur text-white rounded-xl font-bold hover:bg-white/30 transition-all flex items-center gap-2 text-base shadow-xl hover:shadow-2xl">
@@ -148,7 +159,7 @@ export default function Marketplace() {
           </button>
         </div>
 
-        {/* ➕ NUOVO ANNUNCIO - PIÙ GRANDE */}
+        {/* NUOVO ANNUNCIO */}
         {user && (
           <button onClick={() => setShowForm(!showForm)} 
                   className="w-full max-w-2xl mx-auto mb-8 px-8 py-4 bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white font-black rounded-2xl text-xl shadow-2xl hover:shadow-3xl hover:scale-105 transition-all flex items-center justify-center gap-3 backdrop-blur-sm border border-emerald-400/50">
@@ -157,7 +168,7 @@ export default function Marketplace() {
           </button>
         )}
 
-        {/* 📱 DETTAGLI VENDITORE */}
+        {/* DETTAGLI VENDITORE */}
         {selectedItem && (
           <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-6 mb-6 shadow-2xl border border-white/50 max-w-lg mx-auto">
             <div className="flex items-center justify-between mb-4">
@@ -200,13 +211,12 @@ export default function Marketplace() {
           </div>
         )}
 
-        {/* Form */}
+        {/* FORM */}
         {showForm && (
           <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-6 mb-8 shadow-2xl border border-white/50">
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* ...form come nel file originale... */}
               <div className="md:col-span-2">
-                <label className="block font-semibold text-base mb-2 flex items-center gap-2 text-gray-800">🖼️ Foto Prodotto</label>
+                <label className="block font-semibold text-base mb-2 flex items-center gap-2 text-gray-800">📸 Foto Prodotto</label>
                 <input ref={fileInputRef} id="image-upload" type="file" accept="image/*" onChange={handleImageChange} className="hidden"/>
                 <label htmlFor="image-upload" className="w-full h-48 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center cursor-pointer hover:border-emerald-400 hover:bg-emerald-50 transition-all p-8">
                   {newItem.immaginePreview ? (
@@ -227,13 +237,38 @@ export default function Marketplace() {
                 </label>
               </div>
 
-              {/* ...altri campi form come nel file originale... */}
-              <div><label className="block font-semibold text-sm mb-2 text-gray-800">🏷️ Nome Articolo *</label><input value={newItem.nome} onChange={(e) => setNewItem({...newItem, nome: e.target.value})} className="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 transition-all" required /></div>
-              <div><label className="block font-semibold text-sm mb-2 text-gray-800">💰 Prezzo (€) *</label><input type="number" step="0.01" min="0.01" value={newItem.prezzo} onChange={(e) => setNewItem({...newItem, prezzo: e.target.value})} className="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 transition-all" required /></div>
-              <div><label className="block font-semibold text-sm mb-2 flex items-center gap-2 text-gray-800"><User className="w-4 h-4"/> Nome Venditore *</label><input value={newItem.nome_venditore} onChange={(e) => setNewItem({...newItem, nome_venditore: e.target.value})} className="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 transition-all" required /></div>
-              <div><label className="block font-semibold text-sm mb-2 flex items-center gap-2 text-gray-800"><User className="w-4 h-4"/> Cognome Venditore *</label><input value={newItem.cognome_venditore} onChange={(e) => setNewItem({...newItem, cognome_venditore: e.target.value})} className="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 transition-all" required /></div>
-              <div><label className="block font-semibold text-sm mb-2 flex items-center gap-2 text-gray-800"><Mail className="w-4 h-4"/> Email *</label><input type="email" value={newItem.email} onChange={(e) => setNewItem({...newItem, email: e.target.value})} className="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 transition-all" required /></div>
-              <div><label className="block font-semibold text-sm mb-2 flex items-center gap-2 text-gray-800"><Phone className="w-4 h-4"/> Telefono *</label><input type="tel" value={newItem.telefono} onChange={(e) => setNewItem({...newItem, telefono: e.target.value})} className="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 transition-all" required /></div>
+              <div>
+                <label className="block font-semibold text-sm mb-2 text-gray-800">📝 Nome Articolo *</label>
+                <input value={newItem.nome} onChange={(e) => setNewItem({...newItem, nome: e.target.value})} className="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 transition-all" required />
+              </div>
+              <div>
+                <label className="block font-semibold text-sm mb-2 text-gray-800">💰 Prezzo (€) *</label>
+                <input type="number" step="0.01" min="0.01" value={newItem.prezzo} onChange={(e) => setNewItem({...newItem, prezzo: e.target.value})} className="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 transition-all" required />
+              </div>
+              <div>
+                <label className="block font-semibold text-sm mb-2 flex items-center gap-2 text-gray-800">
+                  <User className="w-4 h-4"/> Nome Venditore *
+                </label>
+                <input value={newItem.nome_venditore} onChange={(e) => setNewItem({...newItem, nome_venditore: e.target.value})} className="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 transition-all" required />
+              </div>
+              <div>
+                <label className="block font-semibold text-sm mb-2 flex items-center gap-2 text-gray-800">
+                  <User className="w-4 h-4"/> Cognome Venditore *
+                </label>
+                <input value={newItem.cognome_venditore} onChange={(e) => setNewItem({...newItem, cognome_venditore: e.target.value})} className="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 transition-all" required />
+              </div>
+              <div>
+                <label className="block font-semibold text-sm mb-2 flex items-center gap-2 text-gray-800">
+                  <Mail className="w-4 h-4"/> Email *
+                </label>
+                <input type="email" value={newItem.email} onChange={(e) => setNewItem({...newItem, email: e.target.value})} className="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 transition-all" required />
+              </div>
+              <div>
+                <label className="block font-semibold text-sm mb-2 flex items-center gap-2 text-gray-800">
+                  <Phone className="w-4 h-4"/> Telefono *
+                </label>
+                <input type="tel" value={newItem.telefono} onChange={(e) => setNewItem({...newItem, telefono: e.target.value})} className="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 transition-all" required />
+              </div>
 
               <div className="md:col-span-2">
                 <button type="submit" disabled={publishing} className="w-full py-4 px-8 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 text-white font-black rounded-2xl text-lg shadow-2xl hover:shadow-3xl hover:scale-105 transition-all flex items-center justify-center gap-2">
@@ -244,7 +279,7 @@ export default function Marketplace() {
           </div>
         )}
 
-        {/* Cards */}
+        {/* CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {items.map((item) => (
             <div key={item.id} className="bg-white/95 backdrop-blur-xl rounded-2xl p-6 shadow-2xl hover:shadow-3xl hover:-translate-y-2 transition-all border border-white/50 group h-full flex flex-col">

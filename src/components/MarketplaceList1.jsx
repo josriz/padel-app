@@ -132,7 +132,7 @@ export default function Marketplace() {
           <div className="flex items-center gap-4">
             <ShoppingCart className="w-12 h-12 text-emerald-400 drop-shadow-2xl" />
             <div className="flex items-center gap-3">
-              <img src="/images/Raniero.jpeg" alt="Director" className="w-14 h-14 rounded-full object-cover shadow-2xl border-4 border-white/60 ring-4 ring-emerald-400/30" />
+              <img src="/images/Raniero.jpg" alt="Director" className="w-14 h-14 rounded-full object-cover shadow-2xl border-4 border-white/60 ring-4 ring-emerald-400/30" />
               <div>
                 <h1 className="text-4xl font-black text-white drop-shadow-2xl leading-tight">MARKETPLACE</h1>
                 <p className="text-emerald-300 font-bold text-lg">Raniero Pierno</p>

@@ -1,0 +1,15 @@
+.vb-bracket { display: flex; flex-direction: column; gap: 20px; padding: 30px; max-width: 100%; overflow-x: auto; background: white; }
+.vb-round { display: flex; gap: 20px; justify-content: center; }
+.vb-title { font-size: 28px; font-weight: bold; text-align: center; color: #2c3e50; margin-bottom: 10px; padding: 15px 0; border-bottom: 4px solid #3498db; letter-spacing: 2px; }
+.vb-match { background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px; min-width: 160px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+.vb-campo { font-weight: bold; font-size: 12px; text-align: center; margin-bottom: 6px; color: #333; padding: 4px 8px; border: 2px solid #e0e0e0; border-radius: 6px; background: #f8f9fa; min-height: 22px; cursor: text; display: block; width: 100%; }
+.vb-team-row { display: flex; gap: 8px; margin-bottom: 4px; }
+.vb-team { flex: 2.3; padding: 6px 8px; border: 2px solid #ddd; border-radius: 6px; font-size: 13px; min-height: 24px; background: #f9f9f9; }
+.vb-score { flex: 0.7; padding: 6px 6px; border: 2px solid #ddd; border-radius: 6px; font-size: 12px; min-height: 24px; background: #f9f9f9; text-align: center; }
+.vb-16 .vb-match { min-width: 110px; padding: 8px; }
+.vb-16 .vb-campo { font-size: 10px; min-height: 20px; padding: 3px 6px; }
+.vb-16 .vb-team { flex: 2.3; font-size: 11px; padding: 4px 6px; min-height: 20px; }
+.vb-16 .vb-score { flex: 0.7; font-size: 11px; padding: 4px 5px; min-height: 20px; }
+.vb-8-wide { gap: 12px; }
+.vb-center { justify-content: center; }
+.vb-team:focus, .vb-score:focus, .vb-campo:focus { border-color: #3498db !important; box-shadow: 0 0 15px rgba(52,152,219,0.6) !important; background: white !important; }

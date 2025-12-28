@@ -99,7 +99,7 @@ const LoginPages = () => {
     <div className="min-h-screen bg-white flex items-center justify-center py-8 px-4">
       <div className="bg-white p-6 max-w-md w-full shadow-2xl rounded-3xl">
         <div className="text-center mb-8 pt-8">
-          <img src="/logo.png" alt="CIEFFE Padel" className="mx-auto w-32 h-32 shadow-xl rounded-2xl mb-6 hover:scale-105 transition-all" />
+          <img src="/logo.jpg" alt="CIEFFE Padel" className="mx-auto w-32 h-32 shadow-xl rounded-2xl mb-6 hover:scale-105 transition-all" />
           <p className="text-sm font-bold italic text-gray-900 tracking-wide mb-4">
             <span className="not-italic font-semibold text-gray-800 mr-1">by</span>
             Claudio Falba

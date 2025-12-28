@@ -1,4 +1,4 @@
-﻿// src/components/ProfilePage.jsx - ✅ COLORI DASHBOARD EMERALD/TEAL
+// src/components/ProfilePage.jsx - ? COLORI DASHBOARD EMERALD/TEAL
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthProvider';
@@ -46,7 +46,7 @@ const ProfilePage = ({ logout: propLogout }) => {
           <svg className="w-4 h-4 text-emerald-500 drop-shadow-sm" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
           </svg>
-          {isAdmin ? '👑 Admin' : '🎾 Player'}
+          {isAdmin ? '?? Admin' : '?? Player'}
         </p>
       </div>
 
@@ -123,8 +123,8 @@ const ProfilePage = ({ logout: propLogout }) => {
               </svg>
             </div>
             <div>
-              <p className="text-xs text-slate-500 uppercase tracking-wider font-medium">Località</p>
-              <p className="text-2xl font-black text-cyan-800">Bari 🇮🇹</p>
+              <p className="text-xs text-slate-500 uppercase tracking-wider font-medium">Localit�</p>
+              <p className="text-2xl font-black text-cyan-800">Bari ????</p>
             </div>
           </div>
         </div>
@@ -140,9 +140,9 @@ const ProfilePage = ({ logout: propLogout }) => {
             <h3 className="font-black text-lg">Super Admin</h3>
           </div>
           <div className="grid grid-cols-3 gap-3 text-xs font-semibold">
-            <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm text-center shadow-md">👥 Utenti</div>
-            <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm text-center shadow-md">🏆 Tornei</div>
-            <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm text-center shadow-md">📊 Stats</div>
+            <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm text-center shadow-md">?? Utenti</div>
+            <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm text-center shadow-md">?? Tornei</div>
+            <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm text-center shadow-md">?? Stats</div>
           </div>
         </div>
       )}

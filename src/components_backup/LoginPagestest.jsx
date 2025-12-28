@@ -93,7 +93,7 @@ const LoginPages = () => {
         )}
 
         <div className="flex flex-col items-center mb-8 pt-16">
-          <img src="/logo.png" alt="Logo Padel Club" className="max-w-[120px] mb-4" />
+          <img src="/logo.jpg" alt="Logo Padel Club" className="max-w-[120px] mb-4" />
           <p className="italic text-sm text-gray-500 mb-2">by Claudio Falba</p>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             {isSignUp ? 'Registrati' : 'Accedi a Padel Tracker'}
