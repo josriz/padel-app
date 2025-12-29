@@ -1,0 +1,5 @@
+[33mcd4e72b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m ✅ COMPLETO: Salvataggio tabellone padel_brackets con RLS
+[33m5153e83[m Aggiornamento MarketplaceAdmin: aggiunto pulsante indietro e miglioramenti UI
+[33m996fc1e[m fix: MarketplaceAdmin layout fisso + responsive migliorato - Layout identico web/mobile (fix grid responsive) - Stats 4 colonne: totali/disponibili/venduti/mensile - Error handling completo + try/catch - Immagini reali Unsplash + fallback elegante - Bottoni compatti sempre visibili - Form validazione + UX migliorata
+[33m0212cb1[m feat: MarketplaceAdmin compact design con stats vendite reali - Layout pulito compatto - Bottoni piccoli funzionanti - Stats mensili/trimestrali/annuali - Foto reali Unsplash - Fix overflow-hidden bottoni
+[33md52a027[m Tabellone padel 4/8/16 squadre completo + editabile

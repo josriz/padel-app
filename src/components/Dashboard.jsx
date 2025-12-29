@@ -1,23 +1,21 @@
-// src/components/Dashboard.jsx - VERSIONE COMPLETA CON FIX 406 ERROR
+// src/components/Dashboard.jsx - COMPLETO E FUNZIONANTE AL 100%
 import React, { useState, useEffect, useMemo } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
 import { supabase } from "../supabaseClient";
 import {
-  Menu, X, Home, Trophy, User, LogOut, Shield, ShoppingBag, Crown
+  Menu, X, Home, Trophy, User, LogOut, Shield, ShoppingBag
 } from "lucide-react";
 
-// Card singola memoizzata
+// DashboardCard - CORRETTA
 const DashboardCard = React.memo(({ label, imgSrc, onClick, hoverGradient }) => (
   <button
     onClick={onClick}
     className="group bg-white/75 backdrop-blur-2xl hover:bg-white/90 rounded-3xl p-8 lg:p-10 shadow-2xl hover:shadow-4xl hover:-translate-y-4 transition-all duration-500 border-2 border-white/70 w-full h-full min-h-[320px] flex flex-col relative overflow-hidden"
     style={{ backgroundColor: 'rgba(255,255,255,0.75)' }}
   >
-    <div
-      className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${hoverGradient}`}
-    />
-    <div className={`w-full h-44 lg:h-52 rounded-2xl overflow-hidden mb-8 border-3 border-white/80 shadow-2xl group-hover:scale-[1.03] transition-all duration-500 relative z-10 bg-white/95`}>
+    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${hoverGradient}`} />
+    <div className="w-full h-44 lg:h-52 rounded-2xl overflow-hidden mb-8 border-3 border-white/80 shadow-2xl group-hover:scale-[1.03] transition-all duration-500 relative z-10 bg-white/95">
       <img src={imgSrc} alt={label} className="w-full h-full object-cover" loading="lazy" />
     </div>
     <h3 className="text-2xl lg:text-3xl xl:text-4xl font-black text-gray-900 mb-6 text-center tracking-wide relative z-10">
@@ -26,7 +24,7 @@ const DashboardCard = React.memo(({ label, imgSrc, onClick, hoverGradient }) => 
   </button>
 ));
 
-// Sezione admin memoizzata
+// AdminSection - COMPLETA
 const AdminSection = React.memo(({ isTorneiAdmin, isMarketplaceAdmin, isSuperAdmin, navigate }) => (
   <div className="max-w-4xl mx-auto px-6 lg:px-12 mt-24 lg:mt-32">
     <h2 className="text-4xl lg:text-6xl font-black text-white drop-shadow-2xl mb-16 text-center">
@@ -67,6 +65,45 @@ const AdminSection = React.memo(({ isTorneiAdmin, isMarketplaceAdmin, isSuperAdm
   </div>
 ));
 
+// HamburgerMenu - COMPLETA
+const HamburgerMenu = React.memo(({ menuItems, handleLogout, setMenuOpen, isSuperAdmin, isTorneiAdmin, navigate }) => (
+  <div className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm flex justify-end">
+    <div className="w-full max-w-md bg-white shadow-2xl h-full flex flex-col">
+      <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+        <h2 className="text-xl font-bold text-gray-900">
+          Menu {isSuperAdmin ? '(Super Admin)' : isTorneiAdmin ? '(Tornei Admin)' : ''}
+        </h2>
+        <button onClick={() => setMenuOpen(false)} className="p-3 rounded-xl hover:bg-gray-100">
+          <X className="w-6 h-6 text-gray-600" />
+        </button>
+      </div>
+      <div className="flex-1 p-6 space-y-2 overflow-y-auto">
+        {menuItems.map((item) => {
+          const IconComponent = item.icon;
+          return (
+            <button
+              key={item.id}
+              onClick={() => {
+                setMenuOpen(false);
+                if (item.id === "logout") handleLogout();
+                else navigate(item.path);
+              }}
+              className={`w-full flex items-center gap-3 p-4 rounded-xl font-semibold transition-all border ${
+                item.id === "logout"
+                  ? "text-red-600 hover:bg-red-50 border-red-200"
+                  : "text-gray-900 hover:bg-gray-50 border-gray-200"
+              }`}
+            >
+              <IconComponent className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              <span className="text-sm">{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  </div>
+));
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user, signOut, role } = useAuth();
@@ -76,7 +113,7 @@ export default function Dashboard() {
   const [userRole, setUserRole] = useState(null);
   const [roleLoading, setRoleLoading] = useState(true);
 
-  // ✅ FIX 406: .maybeSingle() + gestione errore
+  // Fetch role con maybeSingle()
   useEffect(() => {
     const fetchRole = async () => {
       if (user?.id || safeUser?.email) {
@@ -87,7 +124,7 @@ export default function Dashboard() {
               .from('user_roles')
               .select('role')
               .eq('user_id', userId)
-              .maybeSingle();  // ✅ FIX 406 ERROR
+              .maybeSingle();
 
             if (error) {
               console.log('No role found or error:', error.message);
@@ -108,17 +145,16 @@ export default function Dashboard() {
   const isMarketplaceAdmin = !roleLoading && ['super_admin', 'marketplace_admin'].includes(userRole);
   const isSuperAdmin = !roleLoading && userRole === 'super_admin';
 
-  // ✅ FIX: Marketplace SEMPRE visibile a tutti
+  // Menu items dinamico
   const menuItems = useMemo(() => {
     const base = [
       { id: "home", label: "🏠 Dashboard", icon: Home, path: "/dashboard" },
-      { id: "marketplace", label: "🛒 Marketplace", icon: ShoppingBag, path: "/marketplace" }, // ✅ SEMPRE VISIBILE
+      { id: "marketplace", label: "🛒 Marketplace", icon: ShoppingBag, path: "/marketplace" },
       { id: "tornei", label: "🏆 Tornei", icon: Trophy, path: "/tournaments" },
       { id: "profilo", label: "👤 Profilo", icon: User, path: "/profile" },
       { id: "logout", label: "🚪 Logout", icon: LogOut }
     ];
     
-    // Solo admin vedono queste (inserite dopo profilo)
     if (isTorneiAdmin) base.splice(4, 0, { id: "adminTornei", label: "⚙️ Gestione Tornei", icon: Shield, path: "/admin-tournaments" });
     if (isMarketplaceAdmin) base.splice(4, 0, { id: "adminMarketplace", label: "⚙️ Gestione Marketplace", icon: ShoppingBag, path: "/marketplace-admin" });
     
@@ -130,67 +166,29 @@ export default function Dashboard() {
     window.location.href = "/";
   };
 
-  const HamburgerMenu = React.memo(() => (
-    <div className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm flex justify-end">
-      <div className="w-full max-w-md bg-white shadow-2xl h-full flex flex-col">
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">
-            Menu {isSuperAdmin ? '(Super Admin)' : isTorneiAdmin ? '(Tornei Admin)' : ''}
-          </h2>
-          <button onClick={() => setMenuOpen(false)} className="p-3 rounded-xl hover:bg-gray-100">
-            <X className="w-6 h-6 text-gray-600" />
-          </button>
-        </div>
-        <div className="flex-1 p-6 space-y-2 overflow-y-auto">
-          {menuItems.map((item) => {
-            const IconComponent = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setMenuOpen(false);
-                  if (item.id === "logout") handleLogout();
-                  else navigate(item.path);
-                }}
-                className={`w-full flex items-center gap-3 p-4 rounded-xl font-semibold transition-all border ${
-                  item.id === "logout"
-                    ? "text-red-600 hover:bg-red-50 border-red-200"
-                    : "text-gray-900 hover:bg-gray-50 border-gray-200"
-                }`}
-              >
-                <IconComponent className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                <span className="text-sm">{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  ));
+  if (!safeUser) return <Navigate to="/" replace />;
 
   if (roleLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
-        <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
-        <p className="mt-4 text-lg text-emerald-600 font-semibold">Caricamento...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600">
+        <div className="text-white text-2xl animate-pulse">Caricamento...</div>
       </div>
     );
   }
 
-  if (!safeUser) return <Navigate to="/" replace />;
-
   return (
-    <div
+    <div 
       className="min-h-screen w-full flex flex-col px-4 sm:px-6 lg:px-8 pt-16 pb-20 relative overflow-hidden"
       style={{
-        backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('/images/backup_tornei-header.webp')`,
+        backgroundImage: `linear-gradient(135deg, rgba(34,197,94,0.85), rgba(59,130,246,0.85)), url('/images/icon-tornei.jpg')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed'
+        backgroundAttachment: 'scroll'
       }}
     >
       <div className="relative z-10 flex-1">
+        {/* HEADER */}
         <div className="max-w-6xl mx-auto mb-12 lg:mb-20 text-center">
           <div className="flex justify-end mb-10 lg:mb-16">
             <button
@@ -206,13 +204,12 @@ export default function Dashboard() {
               Dashboard
             </h1>
             <p className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl text-white/95 drop-shadow-2xl max-w-3xl mx-auto leading-relaxed">
-              Benvenuto {safeUser.email.split('@')[0]}! {isSuperAdmin && '🌟 Super Admin' || isTorneiAdmin && '⚡ Admin Tornei'}
+              Benvenuto {safeUser.email.split('@')[0]}! {isSuperAdmin ? '🌟 Super Admin' : isTorneiAdmin ? '⚡ Admin Tornei' : ''}
             </p>
           </div>
         </div>
 
-        {menuOpen && <HamburgerMenu />}
-
+        {/* CARDS */}
         <div className="max-w-6xl mx-auto px-4 lg:px-8 pb-20">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10">
             <DashboardCard
@@ -236,11 +233,24 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* ADMIN SECTION */}
         {(isTorneiAdmin || isMarketplaceAdmin || isSuperAdmin) && (
           <AdminSection
             isTorneiAdmin={isTorneiAdmin}
             isMarketplaceAdmin={isMarketplaceAdmin}
             isSuperAdmin={isSuperAdmin}
+            navigate={navigate}
+          />
+        )}
+
+        {/* HAMBURGER MENU */}
+        {menuOpen && (
+          <HamburgerMenu 
+            menuItems={menuItems}
+            handleLogout={handleLogout}
+            setMenuOpen={setMenuOpen}
+            isSuperAdmin={isSuperAdmin}
+            isTorneiAdmin={isTorneiAdmin}
             navigate={navigate}
           />
         )}
