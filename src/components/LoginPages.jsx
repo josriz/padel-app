@@ -1,5 +1,5 @@
-// src/components/LoginPage.jsx - CAROUSEL 5 FOTO FUNZIONANTE + LOGO NITIDO
-import React, { useState, useEffect } from "react"; // ✅ useEffect AGGIUNTO
+// src/components/LoginPage.jsx - CAROUSEL 5 FOTO FUNZIONANTE + LOGO NITIDO REINSTERITO
+import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { FcGoogle } from "react-icons/fc";
@@ -58,14 +58,14 @@ export default function LoginPage() {
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/8 to-black/25 z-0"></div>
       
       <div className="w-full max-w-sm sm:max-w-md relative z-10 px-3 sm:px-0">
-        {/* BANNER 1 - LOGO + PALLINE GIALLE */}
+        {/* BANNER 1 - LOGO REINSTERITO + PALLINE GIALLE */}
         <div className="relative w-full h-28 sm:h-32 md:h-36 rounded-2xl overflow-hidden shadow-xl mb-6 sm:mb-8 mx-auto bg-cover bg-center bg-no-repeat" 
              style={{ backgroundImage: "url('/images/sfondo-banner-logo.jpg')" }}>
           <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-black/10 to-black/30 backdrop-blur-sm"></div>
           <div className="relative z-10 flex items-center gap-4 pl-4 sm:pl-6 pr-4 pb-4 pt-2 sm:pt-4 h-full">
-            {/* ✅ LOGO PIU’ NITIDO */}
+            {/* ✅ LOGO NITIDO - PERCORSO CORRETTO: public/logo.png */}
             <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 flex-shrink-0 rounded-xl overflow-hidden shadow-lg border-3 sm:border-2 border-white/80 bg-white/95">
-              <img src="/logo.jpg" alt="Cieffe Padel Club" className="w-full h-full object-contain p-1 sm:p-1"/>
+              <img src="/logo.png" alt="Cieffe Padel Club" className="w-full h-full object-contain p-1 sm:p-1"/>
             </div>
             <div className="text-white drop-shadow-2xl">
               <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight leading-tight">CIEFFE</h1>

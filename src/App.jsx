@@ -1,6 +1,4 @@
-// App.jsx - CORRETTO CON UPDATE-PASSWORD
-import ResetPasswordConfirm from "./components/ResetPasswordConfirm";
-import UpdatePassword from "./components/UpdatePassword";  // ✅ AGGIUNTO
+// App.jsx - CORRETTO
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import AuthProvider, { useAuth } from "./context/AuthProvider";
@@ -9,6 +7,8 @@ import AuthProvider, { useAuth } from "./context/AuthProvider";
 import LoginPages from "./components/LoginPages";
 import RegistrationPage from "./components/RegistrationPage";
 import ResetPasswordFinal from "./components/ResetPasswordFinal";
+import UpdatePassword from "./components/UpdatePassword";
+import ResetPasswordConfirm from "./components/ResetPasswordConfirm";
 
 // DASHBOARD
 import Dashboard from "./components/Dashboard";
@@ -31,6 +31,7 @@ import MarketplaceUser from "./components/MarketplaceUser";
 // TABELLONI PADEL
 import PadelBracket from "./components/PadelBracket";
 import TabelloneRipescaggi from "./components/TabelloneRipescaggi";
+import TabelloneSemplice from './components/TabelloneSemplice';
 
 // 404
 import NotFound from "./components/NotFound";
@@ -44,12 +45,10 @@ function LoadingSpinner() {
 }
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
-  const { user, loading } = useAuth();
-
+  const { user, loading, role } = useAuth();
   if (loading) return <LoadingSpinner />;
   if (!user) return <Navigate to="/" replace />;
-  if (adminOnly && user.user_metadata.role !== "admin") return <Navigate to="/dashboard" replace />;
-
+  if (adminOnly && role !== "admin") return <Navigate to="/dashboard" replace />;
   return children;
 };
 
@@ -58,41 +57,40 @@ export default function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* ✅ PUBLIC ROUTES - RESET PASSWORD */}
           <Route path="/" element={<LoginPages />} />
           <Route path="/register" element={<RegistrationPage />} />
           <Route path="/reset-password" element={<ResetPasswordFinal />} />
-          <Route path="/update-password" element={<UpdatePassword />} />  {/* ✅ FIX 404 */}
+          <Route path="/update-password" element={<UpdatePassword />} />
 
-          {/* DASHBOARD ROUTES */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           
-          {/* ✅ MARKETPLACE ROUTES */}
           <Route path="/marketplace" element={<ProtectedRoute><MarketplaceList /></ProtectedRoute>} />
           <Route path="/marketplace/main" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
           <Route path="/marketplace/user" element={<ProtectedRoute><MarketplaceUser /></ProtectedRoute>} />
           
-          {/* ✅ ADMIN MARKETPLACE */}
           <Route path="/marketplace-admin" element={<ProtectedRoute adminOnly><MarketplaceAdmin /></ProtectedRoute>} />
           <Route path="/admin/marketplace" element={<ProtectedRoute adminOnly><MarketplaceAdmin /></ProtectedRoute>} />
           <Route path="/admin/marketplace-gestion" element={<ProtectedRoute adminOnly><MarketplaceGestion /></ProtectedRoute>} />
 
-          {/* TORNEI ROUTES */}
           <Route path="/tournaments" element={<ProtectedRoute><TournamentList /></ProtectedRoute>} />
           <Route path="/eventi-tornei" element={<ProtectedRoute><EventiTornei /></ProtectedRoute>} />
           <Route path="/tournaments/:tournamentId" element={<ProtectedRoute><SingleTournament /></ProtectedRoute>} />
           <Route path="/eventi-tornei/:torneoId" element={<ProtectedRoute><SingleTournament /></ProtectedRoute>} />
+          
+          {/* SOLO PADELBRACKET ORIGINALE */}
           <Route path="/tabellone/:tournamentId" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
           <Route path="/bracket/:id" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
           <Route path="/tabellone-coppa" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
+          
           <Route path="/ripescaggi/:tournamentId" element={<ProtectedRoute><TabelloneRipescaggi /></ProtectedRoute>} />
 
-          {/* ADMIN TORNEI */}
           <Route path="/admin-tournaments" element={<ProtectedRoute><TournamentAdminPanel /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><TournamentListAndAdmin /></ProtectedRoute>} />
 
-          {/* 404 */}
+          {/* TABELLONE CANVA - NUOVO */}
+          <Route path="/stampa-tabellone" element={<ProtectedRoute><TabelloneSemplice /></ProtectedRoute>} />
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>

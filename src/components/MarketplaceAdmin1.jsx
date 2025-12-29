@@ -1,13 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../context/AuthProvider";
-import { ShoppingBag, Plus, Trash2, Search, Loader2, DollarSign, Package, TrendingUp, ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import {
+  ShoppingBag,
+  Plus,
+  Trash2,
+  Search,
+  Loader2,
+  Download,
+  DollarSign,
+  TrendingUp,
+  Package
+} from "lucide-react";
 
 export default function MarketplaceAdmin() {
   const { user } = useAuth();
-  const navigate = useNavigate();
-
   const isAdmin =
     ["giose.rizzi@gmail.com", "boverob@libero.it", "cfalba@libero.it", "raniero.pierno@gmail.com"]
       .includes(user?.email);
@@ -16,13 +23,7 @@ export default function MarketplaceAdmin() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-
-  const [newItem, setNewItem] = useState({
-    nome: "",
-    prezzo: "",
-    descrizione: "",
-    percentualeGuadagno: ""
-  });
+  const [newItem, setNewItem] = useState({ nome: "", prezzo: "", descrizione: "" });
 
   useEffect(() => {
     if (isAdmin) loadItems();
@@ -38,6 +39,12 @@ export default function MarketplaceAdmin() {
     setLoading(false);
   }
 
+  const stats = {
+    totale: items.reduce((s, i) => s + (i.prezzo || 0), 0).toFixed(2),
+    disponibili: items.filter(i => !i.venduto).length,
+    venduti: items.filter(i => i.venduto).length
+  };
+
   const filtered = items.filter(i =>
     (i.nome + i.descrizione).toLowerCase().includes(search.toLowerCase())
   );
@@ -45,24 +52,20 @@ export default function MarketplaceAdmin() {
   async function addItem(e) {
     e.preventDefault();
     await supabase.from("marketplace_items").insert({
-      nome: newItem.nome,
+      ...newItem,
       prezzo: parseFloat(newItem.prezzo),
-      descrizione: newItem.descrizione,
       user_id: user.id
     });
     setShowForm(false);
-    setNewItem({ nome: "", prezzo: "", descrizione: "", percentualeGuadagno: "" });
+    setNewItem({ nome: "", prezzo: "", descrizione: "" });
     loadItems();
   }
 
-  function calcolaGuadagno(prezzo, percentuale) {
-    if (!prezzo || !percentuale) return 0;
-    return (parseFloat(prezzo) * parseFloat(percentuale)) / 100;
+  async function removeItem(id) {
+    if (!confirm("Eliminare articolo?")) return;
+    await supabase.from("marketplace_items").delete().eq("id", id);
+    loadItems();
   }
-
-  const totaleGuadagni = items.reduce((acc, item) => {
-    return acc + (item.prezzo && item.percentualeGuadagno ? calcolaGuadagno(item.prezzo, item.percentualeGuadagno) : 0);
-  }, 0);
 
   if (!isAdmin) {
     return <div className="min-h-screen flex items-center justify-center text-xl">🚫 Accesso negato</div>;
@@ -82,20 +85,10 @@ export default function MarketplaceAdmin() {
 
         {/* HEADER */}
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate(-1)}
-              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg flex items-center gap-2"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Indietro
-            </button>
-            <div>
-              <h1 className="text-4xl font-bold tracking-tight">Marketplace Admin</h1>
-              <p className="text-gray-500">Dashboard amministrativa</p>
-            </div>
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight">Marketplace</h1>
+            <p className="text-gray-500">Dashboard amministrativa</p>
           </div>
-
           <div className="flex gap-2">
             <button
               onClick={() => setShowForm(true)}
@@ -112,6 +105,13 @@ export default function MarketplaceAdmin() {
           </div>
         </div>
 
+        {/* KPI */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <KPI icon={DollarSign} label="Valore totale" value={`€ ${stats.totale}`} />
+          <KPI icon={Package} label="Disponibili" value={stats.disponibili} />
+          <KPI icon={TrendingUp} label="Venduti" value={stats.venduti} />
+        </div>
+
         {/* SEARCH */}
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -124,27 +124,27 @@ export default function MarketplaceAdmin() {
         </div>
 
         {/* LIST */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid gap-4">
           {filtered.map(item => (
-            <div key={item.id} className="bg-white rounded-2xl p-5 shadow hover:shadow-xl transition flex flex-col justify-between">
+            <div
+              key={item.id}
+              className="bg-white rounded-2xl p-5 shadow hover:shadow-xl transition flex justify-between items-center"
+            >
               <div>
                 <h3 className="text-lg font-semibold">{item.nome}</h3>
                 <p className="text-sm text-gray-500">{item.descrizione}</p>
+              </div>
+              <div className="flex items-center gap-6">
                 <span className="text-xl font-bold text-emerald-600">
                   € {item.prezzo?.toFixed(2)}
                 </span>
-                {item.percentualeGuadagno && (
-                  <p className="text-sm text-gray-700">
-                    Guadagno stimato: € {calcolaGuadagno(item.prezzo, item.percentualeGuadagno).toFixed(2)}
-                  </p>
-                )}
+                <button
+                  onClick={() => removeItem(item.id)}
+                  className="text-red-600 hover:bg-red-50 p-2 rounded-lg"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
               </div>
-              <button
-                onClick={() => supabase.from("marketplace_items").delete().eq("id", item.id).then(loadItems)}
-                className="text-red-600 hover:bg-red-50 p-2 mt-3 rounded-lg"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
             </div>
           ))}
         </div>
@@ -179,7 +179,6 @@ export default function MarketplaceAdmin() {
                 onChange={e => setNewItem({ ...newItem, descrizione: e.target.value })}
                 className="w-full p-3 border rounded-xl"
               />
-
               <div className="flex gap-2">
                 <button className="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-semibold">
                   Salva
@@ -196,6 +195,20 @@ export default function MarketplaceAdmin() {
           </div>
         )}
 
+      </div>
+    </div>
+  );
+}
+
+function KPI({ icon: Icon, label, value }) {
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow flex items-center gap-4">
+      <div className="p-3 bg-emerald-100 rounded-xl">
+        <Icon className="w-6 h-6 text-emerald-600" />
+      </div>
+      <div>
+        <p className="text-sm text-gray-500">{label}</p>
+        <p className="text-2xl font-bold">{value}</p>
       </div>
     </div>
   );

@@ -8,7 +8,7 @@ import { Users, Trophy, Loader2, UserPlus, CheckCircle } from 'lucide-react';
 
 export default function SingleTournament() {
   const { tournamentId } = useParams();
-  const { user, role } = useAuth();
+  const { user } = useAuth();
   const [tournament, setTournament] = useState(null);
   const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -74,7 +74,9 @@ export default function SingleTournament() {
   const max = tournament.max_players || 16;
   const iscritti = participants.length;
   const pieno = iscritti >= max;
-  const isAdmin = role === 'admin';
+  const isAdminOrSuper = user?.email === 'giose.rizzi@gmail.com' || 
+                      user?.email === 'boverob@libero.it' || 
+                      user?.email === 'cfalba@libero.it';
 
   return (
     <TournamentLayout 
@@ -101,7 +103,7 @@ export default function SingleTournament() {
 
         {/* ✅ BUTTONS CON RIPESCAGGI */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {!pieno && !isAdmin && (
+          {!pieno && !isAdminOrSuper && (
             <button
               onClick={handleRegister}
               disabled={registering}

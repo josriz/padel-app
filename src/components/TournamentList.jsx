@@ -1,4 +1,4 @@
-﻿// src/components/TournamentList.jsx - COMPLETO CON BACK SMART + NOMI + ICONE ORGANIZZATORI + NOMI SPOSATE ACCANTO LOGO INGROSSATE
+﻿// src/components/TournamentList.jsx - COMPLETO CON BACK SMART + NOMI + ICONE ORGANIZZATORI + LOGO IN ALTO A SINISTRA
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { Trophy, Users, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
@@ -133,37 +133,34 @@ export default function TournamentList() {
         {/* ✅ BACK BUTTON INTELLIGENTE */}
         <button
           onClick={goBackSmart}
-          className="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-300 text-sm bg-white hover:bg-gray-50"
+          className="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-300 text-sm bg-white hover:bg-gray-50 shadow-sm mb-6"
         >
           ← Indietro
         </button>
 
-        {/* HEADER CON ICONE SPOSATE ACCANTO LOGO + INGROSSATE */}
+        {/* HEADER CON LOGO + ICONE ORGANIZZATORI - ICONA COPPA RIMOSSA */}
         <div className="text-center text-white flex flex-col items-center">
           <div className="flex items-center gap-4 mb-6">
-            {/* LOGO COPPA */}
-            <div className="w-28 h-28 bg-white/10 border border-white/40 rounded-3xl flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.35)] overflow-hidden">
-              <img
-                src="/images/tornei-header.png"
-                alt="Tornei Padel"
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            {/* ✅ ICONE ORGANIZZATORI INGROSSATE ACCANTO LOGO */}
+            {/* ✅ ICONE ORGANIZZATORI CON LOGO - SENZA ICONA COPPA */}
             <div className="flex flex-col items-center gap-2">
               <div className="flex gap-1">
+                {/* ✅ LOGO SOSTITUITO */}
                 <div className="flex flex-col items-center">
-                  <img
-                    src="/images/icon-robertobove.jpg"
-                    alt="Roberto Bove"
-                    className="w-14 h-14 rounded-full object-cover border-3 border-white shadow-lg hover:scale-110 transition-transform"
-                  />
-                  <span className="text-sm font-bold italic text-white drop-shadow-md">Roberto Bove</span>
+                  <div className="w-14 h-14 rounded-full overflow-hidden border-3 border-white shadow-lg hover:scale-110 transition-transform bg-white/95">
+                    <img
+                      src="/logo.png"
+                      alt="Cieffe Padel Club"
+                      className="w-full h-full object-contain p-1"
+                    />
+                  </div>
+                  <span className="text-sm font-bold italic text-white drop-shadow-md">Cieffe Padel</span>
                 </div>
+                
+                {/* CLAUDIO FALBA */}
                 <div className="flex flex-col items-center">
                   <img
                     src="/images/icon-claudiofalba.jpg"
+                    alt="Claudio Falba"
                     className="w-14 h-14 rounded-full object-cover border-3 border-white shadow-lg hover:scale-110 transition-transform"
                   />
                   <span className="text-sm font-bold italic text-white drop-shadow-md">Claudio Falba</span>
@@ -184,6 +181,7 @@ export default function TournamentList() {
           </p>
         </div>
 
+        {/* resto del codice IDENTICO */}
         {tournaments.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-gray-200">
             <Trophy className="w-20 h-20 text-gray-400 mx-auto mb-4" />
@@ -199,38 +197,26 @@ export default function TournamentList() {
               const namesList = playerNames[t.id] || [];
 
               return (
-                <div
-                  key={t.id}
-                  className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all hover:-translate-y-2 border border-gray-200 flex flex-col h-full"
-                >
-                  <Link
-                    to={`/tabellone/${t.id}`}
-                    className="block flex-1 p-6 border-b border-gray-100"
-                  >
+                <div key={t.id} className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all hover:-translate-y-2 border border-gray-200 flex flex-col h-full">
+                  <Link to={`/tabellone/${t.id}`} className="block flex-1 p-6 border-b border-gray-100">
                     <h2 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 leading-tight">
                       {t.name || '—'}
                     </h2>
-
                     <div className="mb-4">
                       <div className="flex items-center justify-between text-sm mb-3">
                         <div className="flex items-center gap-2 text-gray-600">
                           <Users className="w-4 h-4" />
                           <span>{iscritti}/{t.max_players || '—'} iscritti</span>
                         </div>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            t.status === 'completato'
-                              ? 'bg-green-100 text-green-800'
-                              : t.status === 'in_corso'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}
-                        >
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          t.status === 'completato' ? 'bg-green-100 text-green-800' :
+                          t.status === 'in_corso' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-blue-100 text-blue-800'
+                        }`}>
                           {t.status || 'aperto'}
                         </span>
                       </div>
 
-                      {/* ✅ NOMI GIOCATORI AVANZATI */}
                       {namesList.length > 0 && (
                         <div className="mb-3 p-3 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-100">
                           <p className="text-xs font-semibold text-emerald-800 mb-2 flex items-center gap-1">
@@ -238,11 +224,7 @@ export default function TournamentList() {
                           </p>
                           <div className="flex flex-wrap gap-1">
                             {namesList.slice(0, 5).map((name, i) => (
-                              <span
-                                key={i}
-                                className="text-xs bg-white px-2 py-1 rounded-full text-gray-800 border border-gray-200 shadow-sm"
-                                title={name}
-                              >
+                              <span key={i} className="text-xs bg-white px-2 py-1 rounded-full text-gray-800 border border-gray-200 shadow-sm" title={name}>
                                 {name.length > 8 ? name.slice(0, 8) + '...' : name}
                               </span>
                             ))}
@@ -256,26 +238,16 @@ export default function TournamentList() {
                       )}
 
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-gradient-to-r from-emerald-500 to-green-600 h-2 rounded-full transition-all"
-                          style={{
-                            width: `${Math.min(
-                              (iscritti / (t.max_players || 16)) * 100,
-                              100
-                            )}%`,
-                          }}
-                        />
+                        <div className="bg-gradient-to-r from-emerald-500 to-green-600 h-2 rounded-full transition-all" style={{
+                          width: `${Math.min((iscritti / (t.max_players || 16)) * 100, 100)}%`
+                        }} />
                       </div>
                     </div>
-
                     <div className="text-sm text-gray-600">
                       💰 {t.price ? `€${t.price}` : 'Gratis'} • 📅{' '}
-                      {t.data_inizio
-                        ? new Date(t.data_inizio).toLocaleDateString('it-IT')
-                        : '—'}
+                      {t.data_inizio ? new Date(t.data_inizio).toLocaleDateString('it-IT') : '—'}
                     </div>
                   </Link>
-
                   <div className="p-6 pt-3">
                     {isFull ? (
                       <div className="w-full text-center bg-orange-100 text-orange-800 py-3 px-4 rounded-xl font-bold text-sm border-2 border-orange-200 flex items-center justify-center gap-2">
@@ -288,11 +260,7 @@ export default function TournamentList() {
                         ISCRITTO ✅
                       </div>
                     ) : (
-                      <button
-                        onClick={() => handleRegister(t.id)}
-                        disabled={isRegistering}
-                        className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-3 px-4 rounded-xl shadow-sm hover:shadow-md hover:from-emerald-600 hover:to-green-700 transition-all text-sm disabled:opacity-50 flex items-center justify-center gap-2"
-                      >
+                      <button onClick={() => handleRegister(t.id)} disabled={isRegistering} className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-3 px-4 rounded-xl shadow-sm hover:shadow-md hover:from-emerald-600 hover:to-green-700 transition-all text-sm disabled:opacity-50 flex items-center justify-center gap-2">
                         {isRegistering ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin" />

@@ -11,12 +11,18 @@ import { StaticBracketsEditable } from "./StaticBracketsEditable"; // ✅ unico 
 // ================== COMPONENTE PRINCIPALE ==================
 
 export default function PadelBracket() {
-  const { user, role } = useAuth(); // ✅ UNA SOLA DICHIARAZIONE
-  const isAdmin = user?.role === "admin" || role === "admin"; // ✅ UNA SOLA DICHIARAZIONE
+  const { user } = useAuth(); // ❌ RIMUOVI "role" 
+  const isAdminOrSuper = user?.email === 'giose.rizzi@gmail.com' || 
+                        user?.email === 'boverob@libero.it' || 
+                        user?.email === 'cfalba@libero.it';
   const navigate = useNavigate();
   const [currentFase, setCurrentFase] = useState(0);
   const [showIscritti, setShowIscritti] = useState(true);
   const bracketRef = useRef(null);
+
+  // ✅ DEBUG TEMPORANEO - AGGIUNGI QUESTO!
+  console.log("🔍 USER EMAIL:", user?.email);
+  console.log("🔍 isAdminOrSuper:", isAdminOrSuper);
 
   const fasi = ["ottavi", "quarti", "semi", "finale", "ripescaggi"];
   const titoliFasi = ["OTTAVI", "QUARTI", "SEMIFINALI", "FINALE", "🛡️ RIPESCAGGI"];
@@ -270,7 +276,7 @@ export default function PadelBracket() {
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Lista iscritti - SOLO ADMIN E DESKTOP */}
-          {isAdmin && showIscritti && (
+          {isAdminOrSuper && showIscritti && (
             <div
               className="w-64 bg-white/90 rounded-2xl p-4 shadow-xl border border-white/50 hidden lg:block"
               data-print="partecipanti"
@@ -454,7 +460,7 @@ export default function PadelBracket() {
 
               {/* Azioni */}
               <div className="flex flex-col sm:flex-row gap-4 mt-6 print:hidden">
-                {isAdmin && (
+                {isAdminOrSuper && (
                   <button
                     onClick={() => setShowIscritti(!showIscritti)}
                     className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-xl text-lg"

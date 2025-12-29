@@ -1,0 +1,121 @@
+/* MarketplaceAdmin.css */
+
+/* Reset e font base */
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f8fafc; /* slate-50 */
+  margin: 0;
+  padding: 0;
+}
+
+/* Header */
+h1, h2, h3 {
+  margin: 0;
+}
+h1 {
+  font-size: 1.875rem; /* 3xl */
+}
+h2 {
+  font-size: 1.25rem; /* xl */
+}
+h3 {
+  font-size: 1rem;
+}
+
+/* Bottoni */
+button {
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+button:hover {
+  transform: translateY(-2px);
+}
+
+/* Card articoli */
+.grid > div {
+  background: white;
+  border-radius: 0.75rem; /* rounded-xl */
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+}
+.grid > div:hover {
+  box-shadow: 0 10px 15px rgba(0,0,0,0.15);
+  transform: translateY(-3px);
+}
+
+/* Input / textarea */
+input, textarea {
+  border: 1px solid #e5e7eb; /* gray-300 */
+  border-radius: 0.5rem; /* rounded */
+  padding: 0.5rem;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+input:focus, textarea:focus {
+  border-color: #10b981; /* emerald-500 */
+  box-shadow: 0 0 0 2px rgba(16,185,129,0.3);
+  outline: none;
+}
+
+/* Modal form */
+.fixed.inset-0 {
+  background-color: rgba(0,0,0,0.4);
+}
+.fixed.inset-0 form {
+  background-color: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 28rem; /* max-w-md */
+  box-shadow: 0 15px 25px rgba(0,0,0,0.3);
+}
+
+/* KPI boxes */
+.kpi {
+  background-color: white;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.2s ease;
+}
+.kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+}
+.kpi div p:first-child {
+  font-size: 0.75rem;
+  color: #6b7280; /* gray-500 */
+}
+.kpi div p:last-child {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+/* Grafico */
+canvas {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+/* Responsive grid */
+@media (min-width: 768px) {
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
