@@ -61,7 +61,10 @@ export default function App() {
   return (
     <AuthProvider>
       <DndProvider backend={isTouch ? TouchBackend : HTML5Backend}>
-        <Router>
+        <Router future={{ 
+          v7_relativeSplatPath: true,
+          v7_startTransition: true 
+        }}>
           <Routes>
             {/* PUBLIC */}
             <Route path="/" element={<LoginPages />} />

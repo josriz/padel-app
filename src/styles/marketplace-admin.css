@@ -1,63 +1,262 @@
+/* ====== CONTAINER PRINCIPALE ====== */
 .admin-container {
-  padding: 2rem;
-  background: #0f172a;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 20px;
+  background: #f3f4f6;
   min-height: 100vh;
-  color: white;
 }
 
+/* ====== TITOLI ====== */
 .admin-container h1 {
-  font-size: 2.5rem;
-  margin-bottom: 1.5rem;
+  text-align: center;
+  color: #1f2937;
+  margin-bottom: 25px;
 }
 
+/* ====== FILTRI ====== */
+.filters {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.filters input,
+.filters select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+}
+
+/* ====== STATISTICHE ====== */
 .admin-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
-  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 25px;
+  background: #ffffff;
+  padding: 15px 20px;
+  border-radius: 10px;
+  box-shadow: 0px 3px 6px rgba(0,0,0,0.1);
 }
 
 .admin-stats div {
-  background: #1e293b;
-  padding: 1rem;
-  border-radius: 1rem;
-  font-size: 1.2rem;
+  font-weight: 500;
 }
 
+/* ====== TABELLA PRINCIPALE ====== */
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  background: #020617;
+  background: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0px 3px 6px rgba(0,0,0,0.05);
 }
 
 .admin-table th,
 .admin-table td {
-  padding: 1rem;
-  border-bottom: 1px solid #334155;
+  padding: 12px 15px;
   text-align: center;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .admin-table th {
-  background: #1e293b;
+  background: #10b981;
+  color: white;
+  font-weight: 600;
 }
 
-.sold-row {
-  background: #3f1d1d;
-}
-
-button {
-  padding: 0.4rem 0.8rem;
-  border-radius: 0.5rem;
-  border: none;
+.admin-table tr:hover {
+  background: #d1fae5;
   cursor: pointer;
 }
 
+.sold-row {
+  background: #fef3c7 !important;
+}
+
+/* ====== BOTTONI ====== */
+button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s all;
+}
+
+button:hover {
+  opacity: 0.85;
+}
+
 button.delete {
-  background: #dc2626;
+  background: #ef4444;
   color: white;
 }
 
-.admin-loading {
+button.incasso-button {
+  background: #3b82f6;
   color: white;
-  padding: 3rem;
+  font-weight: bold;
+}
+
+button.print-btn,
+button.excel-btn,
+button.print-item-pdf,
+button.print-item-excel {
+  background: #f59e0b;
+  color: white;
+  margin-right: 8px;
+}
+
+/* ====== MODAL ====== */
+.earnings-modal,
+.item-detail-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  z-index: 999;
+  max-width: 90%;
+  max-height: 90%;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.modal-header button {
+  background: transparent;
+  color: #ef4444;
+  font-size: 20px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+}
+
+/* ====== INPUT PERCENTUALE ====== */
+.perc-input {
+  width: 60px;
+  text-align: center;
+  padding: 5px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+}
+
+/* ====== QR CODE ====== */
+.qr-code {
+  display: flex;
+  justify-content: center;
+}
+
+/* ====== STATUS ====== */
+.status-venduto {
+  color: #10b981;
+  font-weight: bold;
+}
+
+.status-attivo {
+  color: #f59e0b;
+  font-weight: bold;
+}
+
+/* ====== CARD ARTICOLO ====== */
+.item-main-info {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.main-card {
+  flex: 1;
+  padding: 15px;
+  background: #f3f4f6;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.main-card h4 {
+  margin-bottom: 8px;
+}
+
+/* ====== SEZIONE VENDITORI ====== */
+.venditori-section {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.venditore-card {
+  flex: 1;
+  background: #e0f2fe;
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+  position: relative;
+}
+
+.venditore-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #3b82f6;
+  color: white;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+}
+
+/* ====== AZIONI ARTICOLO ====== */
+.item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.guadagno-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 500;
+}
+
+/* ====== CARICAMENTO ====== */
+.admin-loading {
+  text-align: center;
+  font-size: 18px;
+  color: #374151;
+  margin-top: 50px;
+}
+
+/* ====== RESPONSIVE ====== */
+@media (max-width: 768px) {
+  .admin-stats,
+  .filters,
+  .item-main-info,
+  .venditori-section {
+    flex-direction: column;
+  }
+  .admin-table th,
+  .admin-table td {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  button {
+    padding: 4px 8px;
+  }
 }
