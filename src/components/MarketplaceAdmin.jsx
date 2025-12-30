@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
-import "./marketplace-admin.css";
++ import "../css/marketplace-admin.css";
 
 export default function MarketplaceAdmin() {
   const [items, setItems] = useState([]);
