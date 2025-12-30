@@ -1,0 +1,63 @@
+.admin-container {
+  padding: 2rem;
+  background: #0f172a;
+  min-height: 100vh;
+  color: white;
+}
+
+.admin-container h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.admin-stats div {
+  background: #1e293b;
+  padding: 1rem;
+  border-radius: 1rem;
+  font-size: 1.2rem;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #020617;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #334155;
+  text-align: center;
+}
+
+.admin-table th {
+  background: #1e293b;
+}
+
+.sold-row {
+  background: #3f1d1d;
+}
+
+button {
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+}
+
+button.delete {
+  background: #dc2626;
+  color: white;
+}
+
+.admin-loading {
+  color: white;
+  padding: 3rem;
+}

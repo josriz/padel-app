@@ -3,6 +3,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import AuthProvider, { useAuth } from "./context/AuthProvider";
 
+
 // PUBLIC
 import LoginPages from "./components/LoginPages";
 import RegistrationPage from "./components/RegistrationPage";
@@ -14,7 +15,9 @@ import ResetPasswordConfirm from "./components/ResetPasswordConfirm";
 import Dashboard from "./components/Dashboard";
 import ProfilePage from "./components/ProfilePage";
 import MarketplaceList from "./components/MarketplaceList";     
-import Marketplace from "./components/Marketplace";            
+import Marketplace from "./components/Marketplace"; 
+
+           
 
 // TORNEI
 import TournamentList from "./components/TournamentList";
@@ -24,9 +27,9 @@ import TournamentAdminPanel from "./components/TournamentAdminPanel";
 import EventiTornei from "./components/EventiTornei";
 
 // ADMIN MARKETPLACE
-import MarketplaceAdmin from "./components/MarketplaceAdmin";
+import MarketplaceUser from "./components/MarketplaceUser"; 
 import MarketplaceGestion from "./components/MarketplaceGestion";
-import MarketplaceUser from "./components/MarketplaceUser";
+import MarketplaceAdmin from "./components/MarketplaceAdmin";
 
 // TABELLONI PADEL
 import PadelBracket from "./components/PadelBracket";
@@ -68,9 +71,12 @@ export default function App() {
           <Route path="/marketplace" element={<ProtectedRoute><MarketplaceList /></ProtectedRoute>} />
           <Route path="/marketplace/main" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
           <Route path="/marketplace/user" element={<ProtectedRoute><MarketplaceUser /></ProtectedRoute>} />
+          <Route path="/marketplace-admin" element={<MarketplaceAdmin />} />
+
           
-          <Route path="/marketplace-admin" element={<ProtectedRoute adminOnly><MarketplaceAdmin /></ProtectedRoute>} />
-          <Route path="/admin/marketplace" element={<ProtectedRoute adminOnly><MarketplaceAdmin /></ProtectedRoute>} />
+          {/* ✅ FIX MarketplaceAdmin mancante */}
+          <Route path="/marketplace-admin" element={<ProtectedRoute adminOnly><Marketplace /></ProtectedRoute>} />
+          <Route path="/admin/marketplace" element={<ProtectedRoute adminOnly><Marketplace /></ProtectedRoute>} />
           <Route path="/admin/marketplace-gestion" element={<ProtectedRoute adminOnly><MarketplaceGestion /></ProtectedRoute>} />
 
           <Route path="/tournaments" element={<ProtectedRoute><TournamentList /></ProtectedRoute>} />
