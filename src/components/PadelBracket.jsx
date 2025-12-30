@@ -8,6 +8,8 @@ import jsPDF from "jspdf";
 import { supabase } from "../supabaseClient";
 import { StaticBracketsEditable } from "./StaticBracketsEditable";
 
+
+
 export default function PadelBracket() {
   const { user } = useAuth();
   const isAdminOrSuper = user?.email === 'giose.rizzi@gmail.com' || 
@@ -18,6 +20,7 @@ export default function PadelBracket() {
   const [showIscritti, setShowIscritti] = useState(true);
   const [loadingSave, setLoadingSave] = useState(false);
   const bracketRef = useRef(null);
+
 
   console.log("🔍 USER EMAIL:", user?.email);
 
