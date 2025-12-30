@@ -8,8 +8,6 @@ import jsPDF from "jspdf";
 import { supabase } from "../supabaseClient";
 import { StaticBracketsEditable } from "./StaticBracketsEditable";
 
-
-
 export default function PadelBracket() {
   const { user } = useAuth();
   const isAdminOrSuper = user?.email === 'giose.rizzi@gmail.com' || 
@@ -20,7 +18,6 @@ export default function PadelBracket() {
   const [showIscritti, setShowIscritti] = useState(true);
   const [loadingSave, setLoadingSave] = useState(false);
   const bracketRef = useRef(null);
-
 
   console.log("🔍 USER EMAIL:", user?.email);
 
@@ -59,10 +56,10 @@ export default function PadelBracket() {
   const salvaTorneo = async () => {
     setLoadingSave(true);
     const tournamentId = getTournamentId();
-    
+
     await supabase.from('padel_brackets')
       .delete().eq('tournament_id', tournamentId).eq('round', fasi[currentFase]);
-    
+
     const { error } = await supabase.from('padel_brackets').insert({
       tournament_id: tournamentId,
       bracket_type: 'diretto',
@@ -72,7 +69,7 @@ export default function PadelBracket() {
     });
 
     setLoadingSave(false);
-    
+
     if (!error) {
       alert(`✅ ${titoliFasi[currentFase]} SALVATO PERMANENTEMENTE!`);
     } else {
@@ -94,7 +91,6 @@ export default function PadelBracket() {
           const nomiReali = regs.flatMap(r => [r.display_name, r.player_name])
             .filter(nome => nome && nome.trim().length > 1).map(nome => nome.trim()).slice(0, 16);
           setIscritti([...new Set(nomiReali)].sort());
-          console.log('📋 ISCRITTI CARICATI:', [...new Set(nomiReali)].sort());
         } catch (error) {
           console.error('❌ Error iscritti:', error);
           setIscritti(["andrea", "antonio", "boverob", "cfalba", "Denny Test", "giose.rizzi"]);
@@ -114,7 +110,6 @@ export default function PadelBracket() {
 
           if (saved?.bracket) {
             setData(saved.bracket);
-            console.log('📂 TABELLONE CARICATO:', saved.bracket);
           }
         } catch (error) {
           console.log('ℹ️ Nessun tabellone salvato per questa fase');
@@ -197,6 +192,7 @@ export default function PadelBracket() {
     }
   };
 
+  // ⚡ IL RESTO DEL FILE (JSX) RESTA IDENTICO, NON TOCCATO
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#001F5B] via-[#003A8F] to-[#001F5B] p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
