@@ -1,10 +1,15 @@
-// src/App.jsx - FILE COMPLETO ✅
+// src/App.jsx - VERSIONE COMPLETA CON DEBUG PROTECTEDROUTE E DASHBOARD FORNITORE
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import AuthProvider, { useAuth } from "./context/AuthProvider";
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { TouchBackend } from 'react-dnd-touch-backend';
+import SetPassword from "./components/SetPassword";
+
+
+// DASHBOARD FORNITORE
+import FornitoreDashboard from "./components/FornitoreDashboard";
 
 // PUBLIC
 import LoginPages from "./components/LoginPages";
@@ -30,6 +35,7 @@ import EventiTornei from "./components/EventiTornei";
 import MarketplaceUser from "./components/MarketplaceUser"; 
 import MarketplaceGestion from "./components/MarketplaceGestion";
 import MarketplaceAdmin from "./components/MarketplaceAdmin";
+import MarketplaceExternalDashboard from "./components/MarketplaceExternalDashboard";
 
 // TABELLONI PADEL
 import PadelBracket from "./components/PadelBracket";
@@ -49,11 +55,19 @@ function LoadingSpinner() {
 
 const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-const ProtectedRoute = ({ children, adminOnly = false }) => {
+// ProtectedRoute aggiornato per admin e fornitore
+const ProtectedRoute = ({ children, adminOnly = false, fornitoreOnly = false }) => {
   const { user, loading, role } = useAuth();
+
   if (loading) return <LoadingSpinner />;
-  if (!user) return <Navigate to="/" replace />;
-  if (adminOnly && role !== "admin") return <Navigate to="/dashboard" replace />;
+
+  console.log("DEBUG ProtectedRoute -> USER:", user);
+  console.log("DEBUG ProtectedRoute -> ROLE:", role);
+
+  if (!user) return <div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Utente non loggato</div>;
+  if (adminOnly && role !== "admin") return <div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Non sei admin! Ruolo attuale: {role}</div>;
+  if (fornitoreOnly && role !== "fornitore") return <div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Non sei fornitore! Ruolo attuale: {role}</div>;
+
   return children;
 };
 
@@ -73,9 +87,17 @@ export default function App() {
             <Route path="/update-password" element={<UpdatePassword />} />
             <Route path="/reset-password-confirm" element={<ResetPasswordConfirm />} />
 
-            {/* DASHBOARD */}
+            {/* DASHBOARD UTENTE STANDARD */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+
+            {/* DASHBOARD FORNITORE */}
+            <Route path="/set-password" element={<SetPassword />} />
+            <Route path="/dashboard-fornitore" element={
+              <ProtectedRoute fornitoreOnly={true}>
+                <FornitoreDashboard />
+              </ProtectedRoute>
+            } />
 
             {/* MARKETPLACE */}
             <Route path="/marketplace" element={<ProtectedRoute><MarketplaceList /></ProtectedRoute>} />
@@ -84,6 +106,13 @@ export default function App() {
             <Route path="/marketplace-admin" element={<ProtectedRoute adminOnly><MarketplaceAdmin /></ProtectedRoute>} />
             <Route path="/admin/marketplace" element={<ProtectedRoute adminOnly><Marketplace /></ProtectedRoute>} />
             <Route path="/admin/marketplace-gestion" element={<ProtectedRoute adminOnly><MarketplaceGestion /></ProtectedRoute>} />
+
+            {/* DASHBOARD SOCIETÀ ESTERNE */}
+            <Route path="/admin/external-dashboard" element={
+              <ProtectedRoute adminOnly>
+                <MarketplaceExternalDashboard />
+              </ProtectedRoute>
+            } />
 
             {/* TORNEI */}
             <Route path="/tournaments" element={<ProtectedRoute><TournamentList /></ProtectedRoute>} />
