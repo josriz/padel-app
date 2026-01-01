@@ -14,9 +14,6 @@ export default function MarketplaceAdmin() {
   const [columnFilters, setColumnFilters] = useState({venduto: 'tutti', attivo: 'tutti', fornitori: 'tutti'});
   const [showCharts, setShowCharts] = useState(false);
   const [showManual, setShowManual] = useState(false);
-  const [showFornitoreForm, setShowFornitoreForm] = useState(false);
-  const [fornitoreEmail, setFornitoreEmail] = useState("");
-  const [fornitoreNome, setFornitoreNome] = useState("");
 
   const calculatePrezzi = (prezzoFornitore) => {
     const pf = Number(prezzoFornitore) || 0;
@@ -72,21 +69,6 @@ export default function MarketplaceAdmin() {
     if (!confirm("ELIMINARE?")) return;
     const {error} = await supabase.from("marketplace_items").delete().eq("id", id);
     if (!error) fetchItems();
-  };
-
-  const sendFornitoreAccess = async () => {
-    if (!fornitoreEmail || !fornitoreNome) return alert("Inserisci nome ed email del fornitore");
-    try {
-      // Logica di invio email tramite Supabase (o altro servizio)
-      // Qui puoi aggiungere la funzione effettiva che crea utente e invia mail
-      alert(`Email inviata a ${fornitoreNome} (${fornitoreEmail})`);
-      setFornitoreEmail("");
-      setFornitoreNome("");
-      setShowFornitoreForm(false);
-    } catch(err) {
-      console.error(err);
-      alert("Errore invio email");
-    }
   };
 
   const exportPDF = () => {
@@ -219,73 +201,57 @@ export default function MarketplaceAdmin() {
 
   return (
     <div style={styles.container}>
-      {/* HEADER PAGINA FISSO */}
-      <div style={styles.headerPage}>
-        <div style={styles.headerCompact}>
-          <h1 style={styles.h1Compact}>📊 Marketplace Admin</h1>
-          <div style={styles.kpiInline}>
-            <div style={styles.guadagnoBox}>
-              <div style={styles.guadagnoLabel}>TUO GUADAGNO</div>
-              <div style={styles.guadagnoInputContainer}>
-                <input 
-                  type="range" 
-                  min="5" 
-                  max="50" 
-                  step="1"
-                  value={commissionePercent}
-                  onChange={(e) => setCommissionePercent(Number(e.target.value))}
-                  style={styles.commissioneSlider}
-                />
-                <span style={styles.commissioneValue}>{commissionePercent}% {commissionePercent > 20 ? '↑' : '↓'}</span>
-              </div>
-              <div style={styles.guadagnoAmount}>€{stats.incasso.toLocaleString()}</div>
+      {/* Header e KPI */}
+      <div style={styles.headerCompact}>
+        <h1 style={styles.h1Compact}>📊 Marketplace Admin</h1>
+        <div style={styles.kpiInline}>
+          <div style={styles.guadagnoBox}>
+            <div style={styles.guadagnoLabel}>TUO GUADAGNO</div>
+            <div style={styles.guadagnoInputContainer}>
+              <input 
+                type="range" 
+                min="5" 
+                max="50" 
+                step="1"
+                value={commissionePercent}
+                onChange={(e) => setCommissionePercent(Number(e.target.value))}
+                style={styles.commissioneSlider}
+              />
+              <span style={styles.commissioneValue}>{commissionePercent}% {commissionePercent > 20 ? '↑' : '↓'}</span>
             </div>
-            <div style={styles.kpiSmall}>
-              <div style={styles.kpiNumber}>{stats.venduti}</div>
-              <div style={styles.kpiLabelSmall}>Venduti</div>
-            </div>
-            <div style={styles.kpiSmall}>
-              <div style={styles.kpiNumber}>{stats.totale}</div>
-              <div style={styles.kpiLabelSmall}>Totali</div>
-            </div>
-            <div style={styles.kpiSmall}>
-              <div style={styles.kpiNumber}>{stats.attivi}</div>
-              <div style={styles.kpiLabelSmall}>Attivi</div>
-            </div>
+            <div style={styles.guadagnoAmount}>€{stats.incasso.toLocaleString()}</div>
           </div>
-          <div style={styles.headerButtonsCompact}>
-            <button onClick={()=>window.history.back()} style={styles.btnBack}>⬅ Indietro</button>
-            <button onClick={exportPDF} style={styles.btnExportPDF}>📄 PDF</button>
-            <button onClick={exportCSV} style={styles.btnExportCSV}>📊 Excel</button>
-            <button onClick={printMarketplace} style={styles.btnExportPrint}>🖨️ Stampa</button>
-            <button onClick={fetchItems} style={styles.btnExportRefresh}>🔄 Refresh</button>
-            <button onClick={() => setShowCharts(!showCharts)} style={styles.btnChart}>
-              📈 {showCharts ? 'Nascondi' : 'Grafici'}
-            </button>
-            <button onClick={() => setShowManual(!showManual)} style={styles.btnManual}>
-              🔔 Manuale
-            </button>
-            <button onClick={() => setShowFornitoreForm(!showFornitoreForm)} style={styles.btnChart}>
-              ✉️ Invia Accesso Fornitore
-            </button>
+          <div style={styles.kpiSmall}>
+            <div style={styles.kpiNumber}>{stats.venduti}</div>
+            <div style={styles.kpiLabelSmall}>Venduti</div>
           </div>
+          <div style={styles.kpiSmall}>
+            <div style={styles.kpiNumber}>{stats.totale}</div>
+            <div style={styles.kpiLabelSmall}>Totali</div>
+          </div>
+          <div style={styles.kpiSmall}>
+            <div style={styles.kpiNumber}>{stats.attivi}</div>
+            <div style={styles.kpiLabelSmall}>Attivi</div>
+          </div>
+        </div>
+
+        {/* Bottoni */}
+        <div style={styles.headerButtonsCompact}>
+          <button onClick={()=>window.history.back()} style={styles.btnBack}>⬅ Indietro</button>
+          <button onClick={exportPDF} style={styles.btnExportPDF}>📄 PDF</button>
+          <button onClick={exportCSV} style={styles.btnExportCSV}>📊 Excel</button>
+          <button onClick={printMarketplace} style={styles.btnExportPrint}>🖨️ Stampa</button>
+          <button onClick={fetchItems} style={styles.btnExportRefresh}>🔄 Refresh</button>
+          <button onClick={() => setShowCharts(!showCharts)} style={styles.btnChart}>
+            📈 {showCharts ? 'Nascondi' : 'Grafici'}
+          </button>
+          <button onClick={() => setShowManual(!showManual)} style={styles.btnManual}>
+            🔔 Manuale
+          </button>
         </div>
       </div>
 
-      {/* FORM INVIO ACCESSO FORNITORE */}
-      {showFornitoreForm && (
-        <div style={styles.manualPopup}>
-          <h3>Invia Accesso Fornitore</h3>
-          <input type="text" placeholder="Nome Fornitore" value={fornitoreNome} 
-            onChange={e => setFornitoreNome(e.target.value)} style={{width:'100%', marginBottom:'10px', padding:'6px', borderRadius:'6px', border:'1px solid #d1d5db'}} />
-          <input type="email" placeholder="Email Fornitore" value={fornitoreEmail} 
-            onChange={e => setFornitoreEmail(e.target.value)} style={{width:'100%', marginBottom:'10px', padding:'6px', borderRadius:'6px', border:'1px solid #d1d5db'}} />
-          <button onClick={sendFornitoreAccess} style={{...styles.btnCloseManual, background:'linear-gradient(135deg, #10b981 0%, #059669 100%)'}}>Invia Email</button>
-          <button onClick={()=>setShowFornitoreForm(false)} style={{...styles.btnCloseManual, marginTop:'5px'}}>Chiudi</button>
-        </div>
-      )}
-
-      {/* MANUALE */}
+      {/* Manuale popup */}
       {showManual && (
         <div style={styles.manualPopup}>
           <h3>Manuale Dashboard Admin</h3>
@@ -297,7 +263,7 @@ export default function MarketplaceAdmin() {
         </div>
       )}
 
-      {/* GRAFICI */}
+      {/* Grafici */}
       {showCharts && (
         <div style={styles.chartsRowCompact}>
           <div style={styles.chartCardCompact}>
@@ -309,7 +275,7 @@ export default function MarketplaceAdmin() {
         </div>
       )}
 
-      {/* FILTRI */}
+      {/* Filtri */}
       <div style={styles.columnFiltersRow}>
         <div style={styles.filterToggle}>
           <span style={styles.filterLabelSmall}>Venduto:</span>
@@ -340,8 +306,8 @@ export default function MarketplaceAdmin() {
         </div>
       </div>
 
-      {/* TABELLA SCROLLABILE */}
-      <div style={styles.tableScrollContainer}>
+      {/* Tabella articoli */}
+      <div style={styles.tableContainer}>
         <div style={styles.tableWrapper}>
           <table style={styles.table}>
             <thead>
@@ -385,39 +351,39 @@ export default function MarketplaceAdmin() {
 const styles = {
   container:{padding:'20px', fontFamily:'Arial, sans-serif'},
   loading:{minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px'},
-  headerPage:{position:'sticky', top:0, zIndex:100, background:'white', paddingBottom:'10px', marginBottom:'10px'},
-  headerCompact:{display:'flex', flexDirection:'column', marginBottom:'10px'},
+  headerCompact:{display:'flex', flexDirection:'column', marginBottom:'20px'},
   h1Compact:{marginBottom:'10px'},
-  kpiInline:{display:'flex', gap:'15px', marginBottom:'10px', flexWrap:'wrap'},
-  guadagnoBox:{padding:'10px', border:'2px solid #2c3e50', borderRadius:'12px', background:'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)', minWidth:'200px', boxShadow:'0 4px 12px rgba(0,0,0,0.1)'},
+  kpiInline:{display:'flex', gap:'15px', marginBottom:'15px', flexWrap:'wrap'},
+  guadagnoBox:{padding:'15px', border:'2px solid #2c3e50', borderRadius:'12px', background:'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)', minWidth:'200px', boxShadow:'0 4px 12px rgba(0,0,0,0.1)'},
   guadagnoLabel:{fontWeight:'bold', marginBottom:'5px', color:'#1e40af'},
   guadagnoInputContainer:{display:'flex', alignItems:'center', gap:'10px'},
   commissioneSlider:{flex:1},
   commissioneValue:{fontWeight:'bold', color:'#1e40af'},
-  guadagnoAmount:{marginTop:'5px', fontSize:'16px', fontWeight:'bold', color:'#059669'},
-  kpiSmall:{padding:'10px', border:'2px solid #2c3e50', borderRadius:'12px', background:'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', minWidth:'100px', textAlign:'center', boxShadow:'0 4px 12px rgba(0,0,0,0.1)'},
-  kpiNumber:{fontSize:'20px', fontWeight:'bold', color:'#1e293b'},
+  guadagnoAmount:{marginTop:'5px', fontSize:'18px', fontWeight:'bold', color:'#059669'},
+  kpiSmall:{padding:'15px', border:'2px solid #2c3e50', borderRadius:'12px', background:'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', minWidth:'100px', textAlign:'center', boxShadow:'0 4px 12px rgba(0,0,0,0.1)'},
+  kpiNumber:{fontSize:'22px', fontWeight:'bold', color:'#1e293b'},
   kpiLabelSmall:{fontSize:'12px', color:'#64748b'},
-  headerButtonsCompact:{display:'flex', flexWrap:'wrap', gap:'5px', marginBottom:'5px'},
-  btnBack:{background:'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', color:'#fff', border:'none', padding:'6px 10px', borderRadius:'6px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 6px rgba(59,130,246,0.3)'},
-  btnExportPDF:{background:'linear-gradient(135deg, #10b981 0%, #059669 100%)', color:'#fff', border:'none', padding:'6px 10px', borderRadius:'6px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 6px rgba(16,185,129,0.3)'},
-  btnExportCSV:{background:'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color:'#fff', border:'none', padding:'6px 10px', borderRadius:'6px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 6px rgba(245,158,11,0.3)'},
-  btnExportPrint:{background:'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)', color:'#fff', border:'none', padding:'6px 10px', borderRadius:'6px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 6px rgba(107,114,128,0.3)'},
-  btnExportRefresh:{background:'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', color:'#fff', border:'none', padding:'6px 10px', borderRadius:'6px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 6px rgba(99,102,241,0.3)'},
-  btnChart:{background:'linear-gradient(135deg, #d946ef 0%, #be185d 100%)', color:'#fff', border:'none', padding:'6px 10px', borderRadius:'6px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 6px rgba(217,70,239,0.3)'},
-  btnManual:{background:'linear-gradient(135deg, #f97316 0%, #ea580c 100%)', color:'#fff', border:'none', padding:'6px 10px', borderRadius:'6px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 6px rgba(249,115,22,0.3)'},
+  headerButtonsCompact:{display:'flex', flexWrap:'wrap', gap:'10px', marginBottom:'15px'},
+  btnBack:{background:'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', color:'#fff', border:'none', padding:'8px 15px', borderRadius:'8px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 8px rgba(59,130,246,0.3)'},
+  btnExportPDF:{background:'linear-gradient(135deg, #10b981 0%, #059669 100%)', color:'#fff', border:'none', padding:'8px 15px', borderRadius:'8px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 8px rgba(16,185,129,0.3)'},
+  btnExportCSV:{background:'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color:'#fff', border:'none', padding:'8px 15px', borderRadius:'8px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 8px rgba(245,158,11,0.3)'},
+  btnExportPrint:{background:'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)', color:'#fff', border:'none', padding:'8px 15px', borderRadius:'8px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 8px rgba(107,114,128,0.3)'},
+  btnExportRefresh:{background:'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', color:'#fff', border:'none', padding:'8px 15px', borderRadius:'8px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 8px rgba(99,102,241,0.3)'},
+  btnChart:{background:'linear-gradient(135deg, #d946ef 0%, #be185d 100%)', color:'#fff', border:'none', padding:'8px 15px', borderRadius:'8px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 8px rgba(217,70,239,0.3)'},
+  btnManual:{background:'linear-gradient(135deg, #f97316 0%, #ea580c 100%)', color:'#fff', border:'none', padding:'8px 15px', borderRadius:'8px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 8px rgba(249,115,22,0.3)'},
   manualPopup:{position:'fixed', top:'50px', right:'50px', background:'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', padding:'25px', border:'2px solid #2c3e50', borderRadius:'16px', zIndex:1000, width:'320px', boxShadow:'0 10px 30px rgba(0,0,0,0.3)'},
   btnCloseManual:{background:'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', color:'#fff', border:'none', padding:'8px 15px', borderRadius:'8px', cursor:'pointer', marginTop:'15px', fontWeight:'500'},
   chartsRowCompact:{display:'flex', gap:'20px', flexWrap:'wrap', marginBottom:'20px'},
   chartCardCompact:{flex:'1', minWidth:'280px', height:'280px', padding:'20px', border:'2px solid #2c3e50', borderRadius:'16px', background:'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', boxShadow:'0 8px 25px rgba(0,0,0,0.15)'},
   columnFiltersRow:{display:'flex', gap:'20px', marginBottom:'20px', flexWrap:'wrap'},
-  filterToggle:{display:'flex', alignItems:'center', gap:'8px', padding:'10px 12px', border:'2px solid #e2e8f0', borderRadius:'12px', background:'white'},
+  filterToggle:{display:'flex', alignItems:'center', gap:'8px', padding:'12px 16px', border:'2px solid #e2e8f0', borderRadius:'12px', background:'white'},
   filterLabelSmall:{fontSize:'13px', fontWeight:'600', color:'#1e293b'},
-  filterBtn:{padding:'4px 8px', border:'2px solid #e2e8f0', borderRadius:'8px', cursor:'pointer', background:'white', fontWeight:'500', transition:'all 0.2s'},
-  filterBtnActive:{padding:'4px 8px', border:'2px solid #6366f1', borderRadius:'8px', cursor:'pointer', background:'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', color:'white', fontWeight:'600', boxShadow:'0 2px 6px rgba(99,102,241,0.3)'},
-  tableScrollContainer:{overflowY:'auto', maxHeight:'500px', borderRadius:'16px', boxShadow:'0 10px 40px rgba(0,0,0,0.1)', background:'white'},
+  filterBtn:{padding:'6px 12px', border:'2px solid #e2e8f0', borderRadius:'8px', cursor:'pointer', background:'white', fontWeight:'500', transition:'all 0.2s'},
+  filterBtnActive:{padding:'6px 12px', border:'2px solid #6366f1', borderRadius:'8px', cursor:'pointer', background:'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', color:'white', fontWeight:'600', boxShadow:'0 2px 8px rgba(99,102,241,0.3)'},
+  tableContainer:{overflowX:'auto', borderRadius:'16px', boxShadow:'0 10px 40px rgba(0,0,0,0.1)', background:'white'},
   tableWrapper:{minWidth:'1000px'},
   table:{width:'100%', borderCollapse:'collapse', border:'1px solid #e5e7eb', fontSize:'14px'},
+  // STILI TABELLA AGGIORNATI - BORDI GRIGIO CHIARO ELEGANTE
   tableTh: {
     border: '1px solid #d1d5db',
     padding: '16px 12px',
