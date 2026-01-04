@@ -1,4 +1,4 @@
-// src/components/LoginPage.jsx - CAROUSEL 5 FOTO FUNZIONANTE + LOGO NITIDO REINSTERITO
+// src/components/LoginPage.jsx - CAROUSEL 5 FOTO FUNZIONANTE + LOGO NITIDO REINSTERITO + ROUTING RUOLI
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
@@ -38,7 +38,18 @@ export default function LoginPage() {
       password,
     });
     if (error) setMessage(error.message);
-    if (data?.user) navigate("/dashboard");
+    if (data?.user) {
+      // ✅ ROUTING PER RUOLO
+      const userRole = data.user.user_metadata?.role;
+      console.log("🔍 Login role:", userRole); // DEBUG
+      if (userRole === 'admin') {
+        navigate("/dashboard-admin");
+      } else if (userRole === 'fornitore') {
+        navigate("/dashboard-fornitore");
+      } else {
+        navigate("/dashboard");
+      }
+    }
     setLoading(false);
   };
 

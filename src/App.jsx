@@ -1,12 +1,11 @@
-// src/App.jsx - VERSIONE COMPLETA CON DEBUG PROTECTEDROUTE E DASHBOARD FORNITORE
+// src/App.jsx - COMPLETO CORRETTO CON /dashboard-admin
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import AuthProvider, { useAuth } from "./context/AuthProvider";
+import { AuthProvider, useAuth } from "./context/AuthProvider";
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { TouchBackend } from 'react-dnd-touch-backend';
 import SetPassword from "./components/SetPassword";
-
 
 // DASHBOARD FORNITORE
 import FornitoreDashboard from "./components/FornitoreDashboard";
@@ -104,6 +103,10 @@ export default function App() {
             <Route path="/marketplace/main" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
             <Route path="/marketplace/user" element={<ProtectedRoute><MarketplaceUser /></ProtectedRoute>} />
             <Route path="/marketplace-admin" element={<ProtectedRoute adminOnly><MarketplaceAdmin /></ProtectedRoute>} />
+            
+            {/* ✅ DASHBOARD ADMIN AGGIUNTO */}
+            <Route path="/dashboard-admin" element={<ProtectedRoute adminOnly><MarketplaceAdmin /></ProtectedRoute>} />
+            
             <Route path="/admin/marketplace" element={<ProtectedRoute adminOnly><Marketplace /></ProtectedRoute>} />
             <Route path="/admin/marketplace-gestion" element={<ProtectedRoute adminOnly><MarketplaceGestion /></ProtectedRoute>} />
 

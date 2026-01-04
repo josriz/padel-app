@@ -54,7 +54,8 @@ export function AuthProvider({ children }) {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // ✅ FIX SOLO QUESTA RIGA 57
+    return () => { if (subscription) subscription.unsubscribe(); };
   }, [updateUser]);
 
   const login = async (email, password) => {

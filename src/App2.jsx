@@ -1,7 +1,14 @@
-// App.jsx - CORRETTO
+// src/App.jsx - VERSIONE COMPLETA CON DEBUG PROTECTEDROUTE E DASHBOARD FORNITORE
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import AuthProvider, { useAuth } from "./context/AuthProvider";
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import { TouchBackend } from 'react-dnd-touch-backend';
+import SetPassword from "./components/SetPassword";
+
+// DASHBOARD FORNITORE
+import FornitoreDashboard from "./components/FornitoreDashboard";
 
 // PUBLIC
 import LoginPages from "./components/LoginPages";
@@ -14,7 +21,7 @@ import ResetPasswordConfirm from "./components/ResetPasswordConfirm";
 import Dashboard from "./components/Dashboard";
 import ProfilePage from "./components/ProfilePage";
 import MarketplaceList from "./components/MarketplaceList";     
-import Marketplace from "./components/Marketplace";            
+import Marketplace from "./components/Marketplace"; 
 
 // TORNEI
 import TournamentList from "./components/TournamentList";
@@ -24,9 +31,10 @@ import TournamentAdminPanel from "./components/TournamentAdminPanel";
 import EventiTornei from "./components/EventiTornei";
 
 // ADMIN MARKETPLACE
-import MarketplaceAdmin from "./components/MarketplaceAdmin";
+import MarketplaceUser from "./components/MarketplaceUser"; 
 import MarketplaceGestion from "./components/MarketplaceGestion";
-import MarketplaceUser from "./components/MarketplaceUser";
+import MarketplaceAdmin from "./components/MarketplaceAdmin";
+import MarketplaceExternalDashboard from "./components/MarketplaceExternalDashboard";
 
 // TABELLONI PADEL
 import PadelBracket from "./components/PadelBracket";
@@ -44,56 +52,91 @@ function LoadingSpinner() {
   );
 }
 
-const ProtectedRoute = ({ children, adminOnly = false }) => {
+const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+// ProtectedRoute aggiornato per admin e fornitore
+const ProtectedRoute = ({ children, adminOnly = false, fornitoreOnly = false }) => {
   const { user, loading, role } = useAuth();
+
   if (loading) return <LoadingSpinner />;
-  if (!user) return <Navigate to="/" replace />;
-  if (adminOnly && role !== "admin") return <Navigate to="/dashboard" replace />;
+
+  console.log("DEBUG ProtectedRoute -> USER:", user);
+  console.log("DEBUG ProtectedRoute -> ROLE:", role);
+
+  if (!user) return <div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Utente non loggato</div>;
+  if (adminOnly && role !== "admin") return <div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Non sei admin! Ruolo attuale: {role}</div>;
+  if (fornitoreOnly && role !== "fornitore") return <div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Non sei fornitore! Ruolo attuale: {role}</div>;
+
   return children;
 };
 
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<LoginPages />} />
-          <Route path="/register" element={<RegistrationPage />} />
-          <Route path="/reset-password" element={<ResetPasswordFinal />} />
-          <Route path="/update-password" element={<UpdatePassword />} />
+      <DndProvider backend={isTouch ? TouchBackend : HTML5Backend}>
+        <Router future={{ 
+          v7_relativeSplatPath: true,
+          v7_startTransition: true 
+        }}>
+          <Routes>
+            {/* PUBLIC */}
+            <Route path="/" element={<LoginPages />} />
+            <Route path="/register" element={<RegistrationPage />} />
+            <Route path="/reset-password" element={<ResetPasswordFinal />} />
+            <Route path="/update-password" element={<UpdatePassword />} />
+            <Route path="/reset-password-confirm" element={<ResetPasswordConfirm />} />
 
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          
-          <Route path="/marketplace" element={<ProtectedRoute><MarketplaceList /></ProtectedRoute>} />
-          <Route path="/marketplace/main" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
-          <Route path="/marketplace/user" element={<ProtectedRoute><MarketplaceUser /></ProtectedRoute>} />
-          
-          <Route path="/marketplace-admin" element={<ProtectedRoute adminOnly><MarketplaceAdmin /></ProtectedRoute>} />
-          <Route path="/admin/marketplace" element={<ProtectedRoute adminOnly><MarketplaceAdmin /></ProtectedRoute>} />
-          <Route path="/admin/marketplace-gestion" element={<ProtectedRoute adminOnly><MarketplaceGestion /></ProtectedRoute>} />
+            {/* DASHBOARD UTENTE STANDARD */}
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
-          <Route path="/tournaments" element={<ProtectedRoute><TournamentList /></ProtectedRoute>} />
-          <Route path="/eventi-tornei" element={<ProtectedRoute><EventiTornei /></ProtectedRoute>} />
-          <Route path="/tournaments/:tournamentId" element={<ProtectedRoute><SingleTournament /></ProtectedRoute>} />
-          <Route path="/eventi-tornei/:torneoId" element={<ProtectedRoute><SingleTournament /></ProtectedRoute>} />
-          
-          {/* SOLO PADELBRACKET ORIGINALE */}
-          <Route path="/tabellone/:tournamentId" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
-          <Route path="/bracket/:id" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
-          <Route path="/tabellone-coppa" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
-          
-          <Route path="/ripescaggi/:tournamentId" element={<ProtectedRoute><TabelloneRipescaggi /></ProtectedRoute>} />
+            {/* DASHBOARD FORNITORE */}
+            <Route path="/set-password" element={<SetPassword />} />
+            <Route path="/dashboard-fornitore" element={
+              <ProtectedRoute fornitoreOnly={true}>
+                <FornitoreDashboard />
+              </ProtectedRoute>
+            } />
 
-          <Route path="/admin-tournaments" element={<ProtectedRoute><TournamentAdminPanel /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute adminOnly><TournamentListAndAdmin /></ProtectedRoute>} />
+            {/* MARKETPLACE */}
+            <Route path="/marketplace" element={<ProtectedRoute><MarketplaceList /></ProtectedRoute>} />
+            <Route path="/marketplace/main" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+            <Route path="/marketplace/user" element={<ProtectedRoute><MarketplaceUser /></ProtectedRoute>} />
+            <Route path="/marketplace-admin" element={<ProtectedRoute adminOnly><MarketplaceAdmin /></ProtectedRoute>} />
+            <Route path="/admin/marketplace" element={<ProtectedRoute adminOnly><Marketplace /></ProtectedRoute>} />
+            <Route path="/admin/marketplace-gestion" element={<ProtectedRoute adminOnly><MarketplaceGestion /></ProtectedRoute>} />
 
-          {/* TABELLONE CANVA - NUOVO */}
-          <Route path="/stampa-tabellone" element={<ProtectedRoute><TabelloneSemplice /></ProtectedRoute>} />
+            {/* DASHBOARD SOCIETÀ ESTERNE */}
+            <Route path="/admin/external-dashboard" element={
+              <ProtectedRoute adminOnly>
+                <MarketplaceExternalDashboard />
+              </ProtectedRoute>
+            } />
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
+            {/* TORNEI */}
+            <Route path="/tournaments" element={<ProtectedRoute><TournamentList /></ProtectedRoute>} />
+            <Route path="/eventi-tornei" element={<ProtectedRoute><EventiTornei /></ProtectedRoute>} />
+            <Route path="/tournaments/:tournamentId" element={<ProtectedRoute><SingleTournament /></ProtectedRoute>} />
+            <Route path="/eventi-tornei/:torneoId" element={<ProtectedRoute><SingleTournament /></ProtectedRoute>} />
+
+            {/* PADEL BRACKET */}
+            <Route path="/tabellone/:tournamentId" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
+            <Route path="/bracket/:id" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
+            <Route path="/tabellone-coppa" element={<ProtectedRoute><PadelBracket /></ProtectedRoute>} />
+            <Route path="/ripescaggi/:tournamentId" element={<ProtectedRoute><TabelloneRipescaggi /></ProtectedRoute>} />
+
+            {/* ADMIN TORNEI */}
+            <Route path="/admin-tournaments" element={<ProtectedRoute><TournamentAdminPanel /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute adminOnly><TournamentListAndAdmin /></ProtectedRoute>} />
+
+            {/* TABELLONE CANVA - NUOVO */}
+            <Route path="/stampa-tabellone" element={<ProtectedRoute><TabelloneSemplice /></ProtectedRoute>} />
+
+            {/* 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Router>
+      </DndProvider>
     </AuthProvider>
   );
 }

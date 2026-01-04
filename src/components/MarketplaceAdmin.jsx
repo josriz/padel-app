@@ -7,7 +7,7 @@ import "./marketplace-admin.css";
 
 ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-export default function MarketplaceAdmin() {
+export default function MarketplaceAdmin() { 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [commissionePercent, setCommissionePercent] = useState(20);
@@ -15,8 +15,12 @@ export default function MarketplaceAdmin() {
   const [showCharts, setShowCharts] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const [showFornitoreForm, setShowFornitoreForm] = useState(false);
-  const [fornitoreEmail, setFornitoreEmail] = useState("");
+
+  // Stato form Fornitore
   const [fornitoreNome, setFornitoreNome] = useState("");
+  const [fornitoreEmail, setFornitoreEmail] = useState("");
+  const [fornitoreMessage, setFornitoreMessage] = useState("");
+  const [loadingFornitore, setLoadingFornitore] = useState(false);
 
   const calculatePrezzi = (prezzoFornitore) => {
     const pf = Number(prezzoFornitore) || 0;
@@ -34,7 +38,7 @@ export default function MarketplaceAdmin() {
     setLoading(false);
   };
 
-  useEffect(() => {fetchItems();}, []);
+  useEffect(() => { fetchItems(); }, []);
 
   const filteredItems = items.filter(item => {
     if (columnFilters.venduto !== 'tutti') {
@@ -74,18 +78,31 @@ export default function MarketplaceAdmin() {
     if (!error) fetchItems();
   };
 
-  const sendFornitoreAccess = async () => {
-    if (!fornitoreEmail || !fornitoreNome) return alert("Inserisci nome ed email del fornitore");
+  // Funzione invio accesso fornitore
+  const handleCreateFornitore = async () => {
+    if (!fornitoreEmail || !fornitoreNome) {
+      return alert("Inserisci nome ed email del fornitore");
+    }
+    setLoadingFornitore(true);
     try {
-      // Logica di invio email tramite Supabase (o altro servizio)
-      // Qui puoi aggiungere la funzione effettiva che crea utente e invia mail
-      alert(`Email inviata a ${fornitoreNome} (${fornitoreEmail})`);
+      const response = await fetch("http://127.0.0.1:54321/create-fornitore", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: fornitoreEmail, nome: fornitoreNome, cognome: "" })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Errore server");
+
+      setFornitoreMessage(`Accesso fornitore creato: ${fornitoreEmail}`);
       setFornitoreEmail("");
       setFornitoreNome("");
       setShowFornitoreForm(false);
     } catch(err) {
       console.error(err);
-      alert("Errore invio email");
+      setFornitoreMessage(`Errore invio accesso: ${err.message}`);
+    } finally {
+      setLoadingFornitore(false);
     }
   };
 
@@ -127,7 +144,7 @@ export default function MarketplaceAdmin() {
                 item.venduto ? 'SÌ' : 'NO', item.fornitore ? 'SÌ' : 'NO', item.is_active ? 'SÌ' : 'NO'];
       })
     ].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
-    
+
     const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -219,7 +236,7 @@ export default function MarketplaceAdmin() {
 
   return (
     <div style={styles.container}>
-      {/* HEADER PAGINA FISSO */}
+      {/* HEADER PAGINA */}
       <div style={styles.headerPage}>
         <div style={styles.headerCompact}>
           <h1 style={styles.h1Compact}>📊 Marketplace Admin</h1>
@@ -253,6 +270,7 @@ export default function MarketplaceAdmin() {
               <div style={styles.kpiLabelSmall}>Attivi</div>
             </div>
           </div>
+
           <div style={styles.headerButtonsCompact}>
             <button onClick={()=>window.history.back()} style={styles.btnBack}>⬅ Indietro</button>
             <button onClick={exportPDF} style={styles.btnExportPDF}>📄 PDF</button>
@@ -276,12 +294,39 @@ export default function MarketplaceAdmin() {
       {showFornitoreForm && (
         <div style={styles.manualPopup}>
           <h3>Invia Accesso Fornitore</h3>
-          <input type="text" placeholder="Nome Fornitore" value={fornitoreNome} 
-            onChange={e => setFornitoreNome(e.target.value)} style={{width:'100%', marginBottom:'10px', padding:'6px', borderRadius:'6px', border:'1px solid #d1d5db'}} />
-          <input type="email" placeholder="Email Fornitore" value={fornitoreEmail} 
-            onChange={e => setFornitoreEmail(e.target.value)} style={{width:'100%', marginBottom:'10px', padding:'6px', borderRadius:'6px', border:'1px solid #d1d5db'}} />
-          <button onClick={sendFornitoreAccess} style={{...styles.btnCloseManual, background:'linear-gradient(135deg, #10b981 0%, #059669 100%)'}}>Invia Email</button>
+          <input 
+            type="text" 
+            placeholder="Nome Fornitore" 
+            value={fornitoreNome} 
+            onChange={e => setFornitoreNome(e.target.value)} 
+            style={{width:'100%', marginBottom:'10px', padding:'6px', borderRadius:'6px', border:'1px solid #d1d5db'}} 
+          />
+          <input 
+            type="email" 
+            placeholder="Email Fornitore" 
+            value={fornitoreEmail} 
+            onChange={e => setFornitoreEmail(e.target.value)} 
+            style={{width:'100%', marginBottom:'10px', padding:'6px', borderRadius:'6px', border:'1px solid #d1d5db'}} 
+          />
+          <button 
+            onClick={handleCreateFornitore} 
+            disabled={loadingFornitore}
+            style={{
+              ...styles.btnCloseManual, 
+              background: loadingFornitore 
+                ? 'linear-gradient(135deg, #a5f3fc 0%, #22d3ee 100%)' 
+                : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              cursor: loadingFornitore ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {loadingFornitore ? "Creazione..." : "Invia Email"}
+          </button>
           <button onClick={()=>setShowFornitoreForm(false)} style={{...styles.btnCloseManual, marginTop:'5px'}}>Chiudi</button>
+          {fornitoreMessage && (
+            <div style={{marginTop:'10px', color: fornitoreMessage.startsWith("Errore") ? '#dc2626' : '#16a34a'}}>
+              {fornitoreMessage}
+            </div>
+          )}
         </div>
       )}
 
@@ -313,130 +358,109 @@ export default function MarketplaceAdmin() {
       <div style={styles.columnFiltersRow}>
         <div style={styles.filterToggle}>
           <span style={styles.filterLabelSmall}>Venduto:</span>
-          <button onClick={() => setColumnFilters({...columnFilters, venduto: 'tutti'})} 
-            style={columnFilters.venduto === 'tutti' ? styles.filterBtnActive : styles.filterBtn}>Tutti</button>
-          <button onClick={() => setColumnFilters({...columnFilters, venduto: 'si'})} 
-            style={columnFilters.venduto === 'si' ? styles.filterBtnActive : styles.filterBtn}>SÌ</button>
-          <button onClick={() => setColumnFilters({...columnFilters, venduto: 'no'})} 
-            style={columnFilters.venduto === 'no' ? styles.filterBtnActive : styles.filterBtn}>NO</button>
+          <button onClick={() => setColumnFilters({...columnFilters, venduto: 'tutti'})} style={columnFilters.venduto === 'tutti' ? styles.filterBtnActive : styles.filterBtn}>Tutti</button>
+          <button onClick={() => setColumnFilters({...columnFilters, venduto: 'si'})} style={columnFilters.venduto === 'si' ? styles.filterBtnActive : styles.filterBtn}>Sì</button>
+          <button onClick={() => setColumnFilters({...columnFilters, venduto: 'no'})} style={columnFilters.venduto === 'no' ? styles.filterBtnActive : styles.filterBtn}>No</button>
         </div>
         <div style={styles.filterToggle}>
           <span style={styles.filterLabelSmall}>Attivo:</span>
-          <button onClick={() => setColumnFilters({...columnFilters, attivo: 'tutti'})} 
-            style={columnFilters.attivo === 'tutti' ? styles.filterBtnActive : styles.filterBtn}>Tutti</button>
-          <button onClick={() => setColumnFilters({...columnFilters, attivo: 'si'})} 
-            style={columnFilters.attivo === 'si' ? styles.filterBtnActive : styles.filterBtn}>SÌ</button>
-          <button onClick={() => setColumnFilters({...columnFilters, attivo: 'no'})} 
-            style={columnFilters.attivo === 'no' ? styles.filterBtnActive : styles.filterBtn}>NO</button>
+          <button onClick={() => setColumnFilters({...columnFilters, attivo: 'tutti'})} style={columnFilters.attivo === 'tutti' ? styles.filterBtnActive : styles.filterBtn}>Tutti</button>
+          <button onClick={() => setColumnFilters({...columnFilters, attivo: 'si'})} style={columnFilters.attivo === 'si' ? styles.filterBtnActive : styles.filterBtn}>Sì</button>
+          <button onClick={() => setColumnFilters({...columnFilters, attivo: 'no'})} style={columnFilters.attivo === 'no' ? styles.filterBtnActive : styles.filterBtn}>No</button>
         </div>
         <div style={styles.filterToggle}>
-          <span style={styles.filterLabelSmall}>Tipo:</span>
-          <button onClick={() => setColumnFilters({...columnFilters, fornitori: 'tutti'})} 
-            style={columnFilters.fornitori === 'tutti' ? styles.filterBtnActive : styles.filterBtn}>Tutti</button>
-          <button onClick={() => setColumnFilters({...columnFilters, fornitori: 'si'})} 
-            style={columnFilters.fornitori === 'si' ? styles.filterBtnActive : styles.filterBtn}>Fornitori</button>
-          <button onClick={() => setColumnFilters({...columnFilters, fornitori: 'no'})} 
-            style={columnFilters.fornitori === 'no' ? styles.filterBtnActive : styles.filterBtn}>Utenti</button>
+          <span style={styles.filterLabelSmall}>Fornitore:</span>
+          <button onClick={() => setColumnFilters({...columnFilters, fornitori: 'tutti'})} style={columnFilters.fornitori === 'tutti' ? styles.filterBtnActive : styles.filterBtn}>Tutti</button>
+          <button onClick={() => setColumnFilters({...columnFilters, fornitori: 'si'})} style={columnFilters.fornitori === 'si' ? styles.filterBtnActive : styles.filterBtn}>Sì</button>
+          <button onClick={() => setColumnFilters({...columnFilters, fornitori: 'no'})} style={columnFilters.fornitori === 'no' ? styles.filterBtnActive : styles.filterBtn}>No</button>
         </div>
       </div>
 
-      {/* TABELLA SCROLLABILE */}
-      <div style={styles.tableScrollContainer}>
-        <div style={styles.tableWrapper}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.tableTh}>Articolo</th>
-                <th style={styles.tableTh}>Prezzo Fornitore</th>
-                <th style={styles.tableTh}>Finale</th>
-                <th style={styles.tableTh}>Guadagno</th>
-                <th style={styles.tableTh}>Venduto</th>
-                <th style={styles.tableTh}>Attivo</th>
-                <th style={styles.tableTh}>Tipo</th>
-                <th style={styles.tableTh}>Azioni</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredItems.map((item, index) => {
-                const prezzi = calculatePrezzi(item.prezzo_fornitore || item.prezzo);
-                const isEvenRow = index % 2 === 0;
-                return (
-                  <tr key={item.id} style={isEvenRow ? styles.tableTrEven : {}}>
-                    <td style={styles.tableTd}>{item.nome}</td>
-                    <td style={styles.tableTd}><input type="number" value={prezzi.prezzoFornitore} 
-                      onChange={e => updatePrezzoFornitore(item.id, Number(e.target.value) || 0)} /></td>
-                    <td style={styles.tableTd}>€{prezzi.prezzoFinale}</td>
-                    <td style={styles.tableTd}>€{prezzi.guadagnoAdmin}</td>
-                    <td style={styles.tableTd}><button onClick={()=>toggleVenduto(item)}>{item.venduto ? 'SÌ' : 'NO'}</button></td>
-                    <td style={styles.tableTd}><button onClick={()=>toggleAttivo(item)}>{item.is_active ? 'SÌ' : 'NO'}</button></td>
-                    <td style={styles.tableTd}>{item.fornitore ? 'Fornitore' : 'Utente'}</td>
-                    <td style={styles.tableTd}><button onClick={()=>deleteItem(item.id)}>🗑</button></td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+      {/* TABELLONE ARTICOLI */}
+      <div style={styles.tableContainerCompact}>
+        <table style={styles.tableCompact}>
+          <thead>
+            <tr>
+              <th>Articolo</th>
+              <th>Prezzo Fornitore</th>
+              <th>Finale (+{commissionePercent}%)</th>
+              <th>Guadagno Admin</th>
+              <th>Venduto</th>
+              <th>Attivo</th>
+              <th>Tipo</th>
+              <th>Azioni</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredItems.map((item) => {
+              const prezzi = calculatePrezzi(item.prezzo_fornitore || item.prezzo);
+              return (
+                <tr key={item.id}>
+                  <td>{item.nome}</td>
+                  <td>
+                    <input 
+                      type="number" 
+                      value={item.prezzo_fornitore || item.prezzo || 0} 
+                      onChange={e => updatePrezzoFornitore(item.id, e.target.value)}
+                      style={{width:'70px'}}
+                    />
+                  </td>
+                  <td>€{prezzi.prezzoFinale}</td>
+                  <td>€{prezzi.guadagnoAdmin}</td>
+                  <td>
+                    <input type="checkbox" checked={item.venduto} onChange={() => toggleVenduto(item)} />
+                  </td>
+                  <td>
+                    <input type="checkbox" checked={item.is_active} onChange={() => toggleAttivo(item)} />
+                  </td>
+                  <td>{item.fornitore ? 'Fornitore' : 'Utente'}</td>
+                  <td>
+                    <button onClick={()=>deleteItem(item.id)} style={{color:'#dc2626'}}>🗑️</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
 
+// STILI INLINE
 const styles = {
   container:{padding:'20px', fontFamily:'Arial, sans-serif'},
-  loading:{minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px'},
-  headerPage:{position:'sticky', top:0, zIndex:100, background:'white', paddingBottom:'10px', marginBottom:'10px'},
-  headerCompact:{display:'flex', flexDirection:'column', marginBottom:'10px'},
-  h1Compact:{marginBottom:'10px'},
-  kpiInline:{display:'flex', gap:'15px', marginBottom:'10px', flexWrap:'wrap'},
-  guadagnoBox:{padding:'10px', border:'2px solid #2c3e50', borderRadius:'12px', background:'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)', minWidth:'200px', boxShadow:'0 4px 12px rgba(0,0,0,0.1)'},
-  guadagnoLabel:{fontWeight:'bold', marginBottom:'5px', color:'#1e40af'},
+  loading:{padding:'20px', fontSize:'18px'},
+  headerPage:{marginBottom:'20px'},
+  headerCompact:{display:'flex', flexDirection:'column', gap:'10px'},
+  h1Compact:{margin:0, fontSize:'24px'},
+  kpiInline:{display:'flex', gap:'20px', alignItems:'center', flexWrap:'wrap'},
+  guadagnoBox:{display:'flex', flexDirection:'column', padding:'10px', background:'#f3f4f6', borderRadius:'8px'},
+  guadagnoLabel:{fontSize:'12px', fontWeight:'600', marginBottom:'5px'},
   guadagnoInputContainer:{display:'flex', alignItems:'center', gap:'10px'},
   commissioneSlider:{flex:1},
-  commissioneValue:{fontWeight:'bold', color:'#1e40af'},
-  guadagnoAmount:{marginTop:'5px', fontSize:'16px', fontWeight:'bold', color:'#059669'},
-  kpiSmall:{padding:'10px', border:'2px solid #2c3e50', borderRadius:'12px', background:'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', minWidth:'100px', textAlign:'center', boxShadow:'0 4px 12px rgba(0,0,0,0.1)'},
-  kpiNumber:{fontSize:'20px', fontWeight:'bold', color:'#1e293b'},
-  kpiLabelSmall:{fontSize:'12px', color:'#64748b'},
-  headerButtonsCompact:{display:'flex', flexWrap:'wrap', gap:'5px', marginBottom:'5px'},
-  btnBack:{background:'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', color:'#fff', border:'none', padding:'6px 10px', borderRadius:'6px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 6px rgba(59,130,246,0.3)'},
-  btnExportPDF:{background:'linear-gradient(135deg, #10b981 0%, #059669 100%)', color:'#fff', border:'none', padding:'6px 10px', borderRadius:'6px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 6px rgba(16,185,129,0.3)'},
-  btnExportCSV:{background:'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color:'#fff', border:'none', padding:'6px 10px', borderRadius:'6px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 6px rgba(245,158,11,0.3)'},
-  btnExportPrint:{background:'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)', color:'#fff', border:'none', padding:'6px 10px', borderRadius:'6px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 6px rgba(107,114,128,0.3)'},
-  btnExportRefresh:{background:'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', color:'#fff', border:'none', padding:'6px 10px', borderRadius:'6px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 6px rgba(99,102,241,0.3)'},
-  btnChart:{background:'linear-gradient(135deg, #d946ef 0%, #be185d 100%)', color:'#fff', border:'none', padding:'6px 10px', borderRadius:'6px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 6px rgba(217,70,239,0.3)'},
-  btnManual:{background:'linear-gradient(135deg, #f97316 0%, #ea580c 100%)', color:'#fff', border:'none', padding:'6px 10px', borderRadius:'6px', cursor:'pointer', fontWeight:'500', boxShadow:'0 2px 6px rgba(249,115,22,0.3)'},
-  manualPopup:{position:'fixed', top:'50px', right:'50px', background:'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', padding:'25px', border:'2px solid #2c3e50', borderRadius:'16px', zIndex:1000, width:'320px', boxShadow:'0 10px 30px rgba(0,0,0,0.3)'},
-  btnCloseManual:{background:'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', color:'#fff', border:'none', padding:'8px 15px', borderRadius:'8px', cursor:'pointer', marginTop:'15px', fontWeight:'500'},
-  chartsRowCompact:{display:'flex', gap:'20px', flexWrap:'wrap', marginBottom:'20px'},
-  chartCardCompact:{flex:'1', minWidth:'280px', height:'280px', padding:'20px', border:'2px solid #2c3e50', borderRadius:'16px', background:'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', boxShadow:'0 8px 25px rgba(0,0,0,0.15)'},
-  columnFiltersRow:{display:'flex', gap:'20px', marginBottom:'20px', flexWrap:'wrap'},
-  filterToggle:{display:'flex', alignItems:'center', gap:'8px', padding:'10px 12px', border:'2px solid #e2e8f0', borderRadius:'12px', background:'white'},
-  filterLabelSmall:{fontSize:'13px', fontWeight:'600', color:'#1e293b'},
-  filterBtn:{padding:'4px 8px', border:'2px solid #e2e8f0', borderRadius:'8px', cursor:'pointer', background:'white', fontWeight:'500', transition:'all 0.2s'},
-  filterBtnActive:{padding:'4px 8px', border:'2px solid #6366f1', borderRadius:'8px', cursor:'pointer', background:'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', color:'white', fontWeight:'600', boxShadow:'0 2px 6px rgba(99,102,241,0.3)'},
-  tableScrollContainer:{overflowY:'auto', maxHeight:'500px', borderRadius:'16px', boxShadow:'0 10px 40px rgba(0,0,0,0.1)', background:'white'},
-  tableWrapper:{minWidth:'1000px'},
-  table:{width:'100%', borderCollapse:'collapse', border:'1px solid #e5e7eb', fontSize:'14px'},
-  tableTh: {
-    border: '1px solid #d1d5db',
-    padding: '16px 12px',
-    textAlign: 'left',
-    fontWeight: '700',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    color: 'white',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    position: 'sticky',
-    top: 0,
-    zIndex: 10
-  },
-  tableTd: {
-    border: '1px solid #f3f4f6',
-    padding: '14px 12px',
-    verticalAlign: 'middle'
-  },
-  tableTrEven: {
-    background: 'linear-gradient(90deg, #fafbfc 0%, #f8fafc 100%)'
-  }
+  commissioneValue:{fontWeight:'600'},
+  guadagnoAmount:{fontSize:'16px', fontWeight:'700', marginTop:'5px'},
+  kpiSmall:{display:'flex', flexDirection:'column', alignItems:'center', padding:'5px 10px', background:'#f3f4f6', borderRadius:'6px'},
+  kpiNumber:{fontWeight:'700', fontSize:'14px'},
+  kpiLabelSmall:{fontSize:'12px', fontWeight:'500'},
+  headerButtonsCompact:{display:'flex', gap:'10px', flexWrap:'wrap'},
+  btnBack:{background:'#e5e7eb', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer'},
+  btnExportPDF:{background:'#3b82f6', color:'white', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer'},
+  btnExportCSV:{background:'#10b981', color:'white', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer'},
+  btnExportPrint:{background:'#f59e0b', color:'white', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer'},
+  btnExportRefresh:{background:'#6b7280', color:'white', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer'},
+  btnChart:{background:'#6366f1', color:'white', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer'},
+  btnManual:{background:'#14b8a6', color:'white', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer'},
+  manualPopup:{position:'fixed', top:'20%', left:'50%', transform:'translateX(-50%)', background:'white', padding:'20px', boxShadow:'0 0 15px rgba(0,0,0,0.2)', zIndex:1000, borderRadius:'8px', maxWidth:'400px', width:'100%'},
+  btnCloseManual:{width:'100%', padding:'8px 12px', border:'none', borderRadius:'6px', background:'linear-gradient(135deg, #10b981 0%, #059669 100%)', color:'white', cursor:'pointer', fontWeight:'600'},
+  chartsRowCompact:{display:'flex', gap:'20px', marginTop:'20px'},
+  chartCardCompact:{flex:1, height:'250px', background:'#f3f4f6', padding:'10px', borderRadius:'8px'},
+  columnFiltersRow:{display:'flex', gap:'20px', margin:'20px 0', flexWrap:'wrap'},
+  filterToggle:{display:'flex', gap:'6px', alignItems:'center'},
+  filterLabelSmall:{fontWeight:'600'},
+  filterBtn:{background:'#e5e7eb', border:'none', padding:'4px 8px', borderRadius:'6px', cursor:'pointer'},
+  filterBtnActive:{background:'#3b82f6', color:'white', border:'none', padding:'4px 8px', borderRadius:'6px', cursor:'pointer'},
+  tableContainerCompact:{overflowX:'auto'},
+  tableCompact:{width:'100%', borderCollapse:'collapse'},
 };

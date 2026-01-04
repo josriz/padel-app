@@ -7,8 +7,7 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-// ✅ CAMBIO 1: named export
-export function AuthProvider({ children }) {  // ← default → named export
+export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,6 +15,7 @@ export function AuthProvider({ children }) {  // ← default → named export
   useEffect(() => {
     const checkSession = async () => {
       try {
+        // Se l'URL contiene PKCE OAuth code
         if (window.location.search.includes("code=")) {
           const { data, error } = await supabase.auth.exchangeCodeForSession();
           if (error && error.message !== "No code in URL") {
@@ -26,8 +26,9 @@ export function AuthProvider({ children }) {  // ← default → named export
             setRole(data.session.user.user_metadata?.role || null);
           }
         } else {
+          // Carica sessione corrente
           const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
+          if (session?.user) {
             setUser(session.user);
             setRole(session.user.user_metadata?.role || null);
           }
@@ -41,6 +42,7 @@ export function AuthProvider({ children }) {  // ← default → named export
 
     checkSession();
 
+    // Listener per cambiamenti di sessione
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser(session.user);
@@ -51,7 +53,7 @@ export function AuthProvider({ children }) {  // ← default → named export
       }
     });
 
-    // ✅ RIGA 57 GIÀ CORRETTA
+    // Cleanup sicuro
     return () => {
       if (subscription?.unsubscribe) subscription.unsubscribe();
     };
