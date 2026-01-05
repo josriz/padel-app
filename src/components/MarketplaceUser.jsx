@@ -31,22 +31,22 @@ export default function MarketplaceUser() {
   }, [user]);
 
   const fetchProducts = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('marketplace_items')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      
-      console.log('🔥 TUOI Products:', data?.length || 0);
-      if (!error && data) setProducts(data);
-    } catch (error) {
-      console.error('❌ Errore fetch:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+  try {
+    const { data, error } = await supabase
+      .from('marketplace_items')
+      .select('*')
+      .eq('is_active', true)  // ✅ TUTTI articoli attivi
+      .order('created_at', { ascending: false });
+    
+    console.log('🔥 Marketplace TUTTI:', data?.length || 0);
+    if (!error && data) setProducts(data);
+  } catch (error) {
+    console.error('❌ Errore fetch:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
