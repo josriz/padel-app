@@ -1,0 +1,6 @@
+{
+  "env": {
+    "SUPABASE_URL": "https://hfegsribygmumfdvujhh.supabase.co",
+    "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9eyJpc3Mi..."
+  }
+}

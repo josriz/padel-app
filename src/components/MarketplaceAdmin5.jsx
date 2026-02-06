@@ -381,6 +381,8 @@ export default function MarketplaceAdmin() {
         <table style={styles.tableCompact}>
           <thead>
             <tr>
+              <th>Data</th>
+              <th>Fornitore</th>
               <th>Articolo</th>
               <th>Prezzo Fornitore</th>
               <th>Finale (+{commissionePercent}%)</th>

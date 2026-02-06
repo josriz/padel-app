@@ -32,7 +32,10 @@ export default function MarketplaceAdmin() {
 
   const fetchItems = async () => {
     setLoading(true);
-    const {data, error} = await supabase.from("marketplace_items").select("*").order("created_at", {ascending: false});
+    const {data, error} = await supabase
+      .from("marketplace_items")
+      .select("*")
+      .order("created_at", {ascending: false});
     if (error) console.error("Errore:", error);
     else setItems(data || []);
     setLoading(false);
@@ -57,32 +60,41 @@ export default function MarketplaceAdmin() {
   });
 
   const toggleVenduto = async (item) => {
-    await supabase.from("marketplace_items").update({venduto: !item.venduto}).eq("id", item.id);
+    await supabase
+      .from("marketplace_items")
+      .update({venduto: !item.venduto})
+      .eq("id", item.id);
     fetchItems();
   };
 
   const toggleAttivo = async (item) => {
-    await supabase.from("marketplace_items").update({is_active: !item.is_active}).eq("id", item.id);
+    await supabase
+      .from("marketplace_items")
+      .update({is_active: !item.is_active})
+      .eq("id", item.id);
     fetchItems();
   };
 
   const updatePrezzoFornitore = async (itemId, prezzo) => {
     if (prezzo < 0) return;
-    const {error} = await supabase.from("marketplace_items").update({prezzo_fornitore: Number(prezzo)}).eq("id", itemId);
+    const {error} = await supabase
+      .from("marketplace_items")
+      .update({prezzo_fornitore: Number(prezzo)})
+      .eq("id", itemId);
     if (!error) fetchItems();
   };
 
   const deleteItem = async (id) => {
     if (!confirm("ELIMINARE?")) return;
-    const {error} = await supabase.from("marketplace_items").delete().eq("id", id);
+    const {error} = await supabase
+      .from("marketplace_items")
+      .delete()
+      .eq("id", id);
     if (!error) fetchItems();
   };
 
-  // Funzione invio accesso fornitore
   const handleCreateFornitore = async () => {
-    if (!fornitoreEmail || !fornitoreNome) {
-      return alert("Inserisci nome ed email del fornitore");
-    }
+    if (!fornitoreEmail || !fornitoreNome) return alert("Inserisci nome ed email del fornitore");
     setLoadingFornitore(true);
     try {
       const response = await fetch("http://127.0.0.1:54321/create-fornitore", {
@@ -90,10 +102,8 @@ export default function MarketplaceAdmin() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: fornitoreEmail, nome: fornitoreNome, cognome: "" })
       });
-
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Errore server");
-
       setFornitoreMessage(`Accesso fornitore creato: ${fornitoreEmail}`);
       setFornitoreEmail("");
       setFornitoreNome("");
@@ -101,8 +111,8 @@ export default function MarketplaceAdmin() {
     } catch(err) {
       console.error(err);
       setFornitoreMessage(`Errore invio accesso: ${err.message}`);
-    } finally {
-      setLoadingFornitore(false);
+    } finally { 
+      setLoadingFornitore(false); 
     }
   };
 
@@ -119,31 +129,54 @@ export default function MarketplaceAdmin() {
     doc.text('Articolo', 10, y); 
     doc.text('Prezzo Fornitore', 70, y); 
     doc.text(`Finale (+${commissionePercent}%)`, 110, y); 
-    doc.text('Guadagno', 150, y); 
-    doc.text('Venduto', 180, y);
+    doc.text('%', 150, y); 
+    doc.text('Guadagno', 170, y); 
+    doc.text('Venduto', 200, y);
     y += 10;
     filteredItems.forEach((item) => {
       const prezzi = calculatePrezzi(item.prezzo_fornitore || item.prezzo);
+      const percentuale =
+        prezzi.prezzoFinale > 0
+          ? Math.round((prezzi.guadagnoAdmin / prezzi.prezzoFinale) * 100)
+          : 0;
       doc.text((item.nome || '').slice(0, 25), 10, y);
       doc.text(`€${prezzi.prezzoFornitore}`, 70, y);
       doc.text(`€${prezzi.prezzoFinale}`, 110, y);
-      doc.text(`€${prezzi.guadagnoAdmin}`, 150, y);
-      doc.text(item.venduto ? 'SÌ' : 'NO', 180, y);
+      doc.text(`${percentuale}%`, 150, y);
+      doc.text(`€${prezzi.guadagnoAdmin}`, 170, y);
+      doc.text(item.venduto ? 'SÌ' : 'NO', 200, y);
       y += 8;
-      if (y > 280) { doc.addPage(); y = 20; }
+      if (y > 280) { 
+        doc.addPage(); 
+        y = 20; 
+      }
     });
     doc.save(`marketplace-report-${new Date().toISOString().slice(0,10)}.pdf`);
   };
 
   const exportCSV = () => {
     const csv = [
-      ['Articolo', 'Prezzo Fornitore', `Finale (+${commissionePercent}%)`, 'Guadagno Admin', 'Venduto', 'Fornitore', 'Attivo'],
+      ['Articolo', 'Prezzo Fornitore', `Finale (+${commissionePercent}%)`, '%', 'Guadagno Admin', 'Venduto', 'Fornitore', 'Attivo'],
       ...filteredItems.map(item => {
         const prezzi = calculatePrezzi(item.prezzo_fornitore || item.prezzo);
-        return [item.nome || '', prezzi.prezzoFornitore, prezzi.prezzoFinale, prezzi.guadagnoAdmin, 
-                item.venduto ? 'SÌ' : 'NO', item.fornitore ? 'SÌ' : 'NO', item.is_active ? 'SÌ' : 'NO'];
+        const percentuale =
+          prezzi.prezzoFinale > 0
+            ? Math.round((prezzi.guadagnoAdmin / prezzi.prezzoFinale) * 100)
+            : 0;
+        return [
+          item.nome || '',
+          prezzi.prezzoFornitore,
+          prezzi.prezzoFinale,
+          `${percentuale}%`,
+          prezzi.guadagnoAdmin,
+          item.venduto ? 'SÌ' : 'NO',
+          item.fornitore ? 'SÌ' : 'NO',
+          item.is_active ? 'SÌ' : 'NO'
+        ];
       })
-    ].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+    ]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
 
     const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -176,9 +209,12 @@ export default function MarketplaceAdmin() {
           <table>
             <thead>
               <tr>
+                <th>Data</th>
+                <th>Fornitore</th>
                 <th>Articolo</th>
                 <th>Prezzo Fornitore</th>
                 <th>Finale (+${commissionePercent}%)</th>
+                <th>%</th>
                 <th>Guadagno Admin</th>
                 <th>Venduto</th>
                 <th>Attivo</th>
@@ -188,10 +224,18 @@ export default function MarketplaceAdmin() {
             <tbody>
               ${filteredItems.map(item => {
                 const prezzi = calculatePrezzi(item.prezzo_fornitore || item.prezzo);
+                const percentuale =
+                  prezzi.prezzoFinale > 0
+                    ? Math.round((prezzi.guadagnoAdmin / prezzi.prezzoFinale) * 100)
+                    : 0;
+
                 return `<tr>
+                          <td>${item.created_at ? new Date(item.created_at).toLocaleDateString('it-IT') : ''}</td>
+                          <td>${item.fornitore ? 'Sì' : 'No'}</td>
                           <td>${item.nome || ''}</td>
                           <td>€${prezzi.prezzoFornitore}</td>
                           <td>€${prezzi.prezzoFinale}</td>
+                          <td>${percentuale}%</td>
                           <td>€${prezzi.guadagnoAdmin}</td>
                           <td>${item.venduto ? 'SÌ' : 'NO'}</td>
                           <td>${item.is_active ? 'SÌ' : 'NO'}</td>
@@ -219,16 +263,20 @@ export default function MarketplaceAdmin() {
     }, 0)
   };
 
-  const pieData = {
-    labels: ["Venduti", "Disponibili"],
-    datasets: [{ data: [stats.venduti, stats.totale - stats.venduti], backgroundColor: ["#10b981", "#e5e7eb"] }]
+  const pieData = { 
+    labels: ["Venduti", "Disponibili"], 
+    datasets: [{ 
+      data: [stats.venduti, stats.totale - stats.venduti], 
+      backgroundColor: ["#10b981", "#e5e7eb"] 
+    }] 
   };
-
-  const barData = {
-    labels: ["Venduti", "Attivi", "Totali"],
-    datasets: [{ data: [stats.venduti, stats.attivi, stats.totale], backgroundColor: ["#10b981", "#f59e0b", "#3b82f6"] }]
+  const barData = { 
+    labels: ["Venduti", "Attivi", "Totali"], 
+    datasets: [{ 
+      data: [stats.venduti, stats.attivi, stats.totale], 
+      backgroundColor: ["#10b981", "#f59e0b", "#3b82f6"] 
+    }] 
   };
-
   const pieOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
   const barOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
 
@@ -236,7 +284,7 @@ export default function MarketplaceAdmin() {
 
   return (
     <div style={styles.container}>
-      {/* HEADER PAGINA */}
+      {/* HEADER E KPI */}
       <div style={styles.headerPage}>
         <div style={styles.headerCompact}>
           <h1 style={styles.h1Compact}>📊 Marketplace Admin</h1>
@@ -244,16 +292,18 @@ export default function MarketplaceAdmin() {
             <div style={styles.guadagnoBox}>
               <div style={styles.guadagnoLabel}>TUO GUADAGNO</div>
               <div style={styles.guadagnoInputContainer}>
-                <input 
-                  type="range" 
-                  min="5" 
-                  max="50" 
+                <input
+                  type="range"
+                  min="5"
+                  max="50"
                   step="1"
                   value={commissionePercent}
-                  onChange={(e) => setCommissionePercent(Number(e.target.value))}
+                  onChange={e => setCommissionePercent(Number(e.target.value))}
                   style={styles.commissioneSlider}
                 />
-                <span style={styles.commissioneValue}>{commissionePercent}% {commissionePercent > 20 ? '↑' : '↓'}</span>
+                <span style={styles.commissioneValue}>
+                  {commissionePercent}% {commissionePercent > 20 ? '↑' : '↓'}
+                </span>
               </div>
               <div style={styles.guadagnoAmount}>€{stats.incasso.toLocaleString()}</div>
             </div>
@@ -270,7 +320,7 @@ export default function MarketplaceAdmin() {
               <div style={styles.kpiLabelSmall}>Attivi</div>
             </div>
           </div>
-
+          {/* BOTTONI HEADER */}
           <div style={styles.headerButtonsCompact}>
             <button onClick={()=>window.history.back()} style={styles.btnBack}>⬅ Indietro</button>
             <button onClick={exportPDF} style={styles.btnExportPDF}>📄 PDF</button>
@@ -280,9 +330,7 @@ export default function MarketplaceAdmin() {
             <button onClick={() => setShowCharts(!showCharts)} style={styles.btnChart}>
               📈 {showCharts ? 'Nascondi' : 'Grafici'}
             </button>
-            <button onClick={() => setShowManual(!showManual)} style={styles.btnManual}>
-              🔔 Manuale
-            </button>
+            <button onClick={() => setShowManual(!showManual)} style={styles.btnManual}>🔔 Manuale</button>
             <button onClick={() => setShowFornitoreForm(!showFornitoreForm)} style={styles.btnChart}>
               ✉️ Invia Accesso Fornitore
             </button>
@@ -294,36 +342,46 @@ export default function MarketplaceAdmin() {
       {showFornitoreForm && (
         <div style={styles.manualPopup}>
           <h3>Invia Accesso Fornitore</h3>
-          <input 
-            type="text" 
-            placeholder="Nome Fornitore" 
-            value={fornitoreNome} 
-            onChange={e => setFornitoreNome(e.target.value)} 
-            style={{width:'100%', marginBottom:'10px', padding:'6px', borderRadius:'6px', border:'1px solid #d1d5db'}} 
+          <input
+            type="text"
+            placeholder="Nome Fornitore"
+            value={fornitoreNome}
+            onChange={e => setFornitoreNome(e.target.value)}
+            style={{width:'100%', marginBottom:'10px', padding:'6px', borderRadius:'6px', border:'1px solid #d1d5db'}}
           />
-          <input 
-            type="email" 
-            placeholder="Email Fornitore" 
-            value={fornitoreEmail} 
-            onChange={e => setFornitoreEmail(e.target.value)} 
-            style={{width:'100%', marginBottom:'10px', padding:'6px', borderRadius:'6px', border:'1px solid #d1d5db'}} 
+          <input
+            type="email"
+            placeholder="Email Fornitore"
+            value={fornitoreEmail}
+            onChange={e => setFornitoreEmail(e.target.value)}
+            style={{width:'100%', marginBottom:'10px', padding:'6px', borderRadius:'6px', border:'1px solid #d1d5db'}}
           />
-          <button 
-            onClick={handleCreateFornitore} 
+          <button
+            onClick={handleCreateFornitore}
             disabled={loadingFornitore}
             style={{
-              ...styles.btnCloseManual, 
-              background: loadingFornitore 
-                ? 'linear-gradient(135deg, #a5f3fc 0%, #22d3ee 100%)' 
+              ...styles.btnCloseManual,
+              background: loadingFornitore
+                ? 'linear-gradient(135deg, #a5f3fc 0%, #22d3ee 100%)'
                 : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
               cursor: loadingFornitore ? 'not-allowed' : 'pointer'
             }}
           >
             {loadingFornitore ? "Creazione..." : "Invia Email"}
           </button>
-          <button onClick={()=>setShowFornitoreForm(false)} style={{...styles.btnCloseManual, marginTop:'5px'}}>Chiudi</button>
+          <button
+            onClick={()=>setShowFornitoreForm(false)}
+            style={{...styles.btnCloseManual, marginTop:'5px'}}
+          >
+            Chiudi
+          </button>
           {fornitoreMessage && (
-            <div style={{marginTop:'10px', color: fornitoreMessage.startsWith("Errore") ? '#dc2626' : '#16a34a'}}>
+            <div
+              style={{
+                marginTop:'10px',
+                color: fornitoreMessage.startsWith("Errore") ? '#dc2626' : '#16a34a'
+              }}
+            >
               {fornitoreMessage}
             </div>
           )}
@@ -354,36 +412,84 @@ export default function MarketplaceAdmin() {
         </div>
       )}
 
-      {/* FILTRI */}
+      {/* FILTRI (quelli originali, lasciati invariati) */}
       <div style={styles.columnFiltersRow}>
         <div style={styles.filterToggle}>
           <span style={styles.filterLabelSmall}>Venduto:</span>
-          <button onClick={() => setColumnFilters({...columnFilters, venduto: 'tutti'})} style={columnFilters.venduto === 'tutti' ? styles.filterBtnActive : styles.filterBtn}>Tutti</button>
-          <button onClick={() => setColumnFilters({...columnFilters, venduto: 'si'})} style={columnFilters.venduto === 'si' ? styles.filterBtnActive : styles.filterBtn}>Sì</button>
-          <button onClick={() => setColumnFilters({...columnFilters, venduto: 'no'})} style={columnFilters.venduto === 'no' ? styles.filterBtnActive : styles.filterBtn}>No</button>
+          <button
+            onClick={() => setColumnFilters({...columnFilters, venduto: 'tutti'})}
+            style={columnFilters.venduto === 'tutti' ? styles.filterBtnActive : styles.filterBtn}
+          >
+            Tutti
+          </button>
+          <button
+            onClick={() => setColumnFilters({...columnFilters, venduto: 'si'})}
+            style={columnFilters.venduto === 'si' ? styles.filterBtnActive : styles.filterBtn}
+          >
+            Sì
+          </button>
+          <button
+            onClick={() => setColumnFilters({...columnFilters, venduto: 'no'})}
+            style={columnFilters.venduto === 'no' ? styles.filterBtnActive : styles.filterBtn}
+          >
+            No
+          </button>
         </div>
         <div style={styles.filterToggle}>
           <span style={styles.filterLabelSmall}>Attivo:</span>
-          <button onClick={() => setColumnFilters({...columnFilters, attivo: 'tutti'})} style={columnFilters.attivo === 'tutti' ? styles.filterBtnActive : styles.filterBtn}>Tutti</button>
-          <button onClick={() => setColumnFilters({...columnFilters, attivo: 'si'})} style={columnFilters.attivo === 'si' ? styles.filterBtnActive : styles.filterBtn}>Sì</button>
-          <button onClick={() => setColumnFilters({...columnFilters, attivo: 'no'})} style={columnFilters.attivo === 'no' ? styles.filterBtnActive : styles.filterBtn}>No</button>
+          <button
+            onClick={() => setColumnFilters({...columnFilters, attivo: 'tutti'})}
+            style={columnFilters.attivo === 'tutti' ? styles.filterBtnActive : styles.filterBtn}
+          >
+            Tutti
+          </button>
+          <button
+            onClick={() => setColumnFilters({...columnFilters, attivo: 'si'})}
+            style={columnFilters.attivo === 'si' ? styles.filterBtnActive : styles.filterBtn}
+          >
+            Sì
+          </button>
+          <button
+            onClick={() => setColumnFilters({...columnFilters, attivo: 'no'})}
+            style={columnFilters.attivo === 'no' ? styles.filterBtnActive : styles.filterBtn}
+          >
+            No
+          </button>
         </div>
         <div style={styles.filterToggle}>
           <span style={styles.filterLabelSmall}>Fornitore:</span>
-          <button onClick={() => setColumnFilters({...columnFilters, fornitori: 'tutti'})} style={columnFilters.fornitori === 'tutti' ? styles.filterBtnActive : styles.filterBtn}>Tutti</button>
-          <button onClick={() => setColumnFilters({...columnFilters, fornitori: 'si'})} style={columnFilters.fornitori === 'si' ? styles.filterBtnActive : styles.filterBtn}>Sì</button>
-          <button onClick={() => setColumnFilters({...columnFilters, fornitori: 'no'})} style={columnFilters.fornitori === 'no' ? styles.filterBtnActive : styles.filterBtn}>No</button>
+          <button
+            onClick={() => setColumnFilters({...columnFilters, fornitori: 'tutti'})}
+            style={columnFilters.fornitori === 'tutti' ? styles.filterBtnActive : styles.filterBtn}
+          >
+            Tutti
+          </button>
+          <button
+            onClick={() => setColumnFilters({...columnFilters, fornitori: 'si'})}
+            style={columnFilters.fornitori === 'si' ? styles.filterBtnActive : styles.filterBtn}
+          >
+            Sì
+          </button>
+          <button
+            onClick={() => setColumnFilters({...columnFilters, fornitori: 'no'})}
+            style={columnFilters.fornitori === 'no' ? styles.filterBtnActive : styles.filterBtn}
+          >
+            No
+          </button>
         </div>
       </div>
 
-      {/* TABELLONE ARTICOLI */}
+      {/* TABELLA */}
       <div style={styles.tableContainerCompact}>
         <table style={styles.tableCompact}>
           <thead>
             <tr>
+              <th>Data</th>
+              <th>Fornitore</th>
               <th>Articolo</th>
               <th>Prezzo Fornitore</th>
               <th>Finale (+{commissionePercent}%)</th>
+              <th>%</th>
               <th>Guadagno Admin</th>
               <th>Venduto</th>
               <th>Attivo</th>
@@ -392,33 +498,54 @@ export default function MarketplaceAdmin() {
             </tr>
           </thead>
           <tbody>
-            {filteredItems.map((item) => {
+            {filteredItems.map(item => {
               const prezzi = calculatePrezzi(item.prezzo_fornitore || item.prezzo);
+              const percentuale =
+                prezzi.prezzoFinale > 0
+                  ? Math.round((prezzi.guadagnoAdmin / prezzi.prezzoFinale) * 100)
+                  : 0;
+
               return (
                 <tr key={item.id}>
+                  <td>{item.created_at ? new Date(item.created_at).toLocaleDateString('it-IT') : ''}</td>
+                  <td>{item.fornitore ? 'Sì' : 'No'}</td>
                   <td>{item.nome}</td>
                   <td>
-                    <input 
-                      type="number" 
-                      value={item.prezzo_fornitore || item.prezzo || 0} 
+                    <input
+                      type="number"
+                      value={prezzi.prezzoFornitore}
                       onChange={e => updatePrezzoFornitore(item.id, e.target.value)}
                       style={{width:'70px'}}
                     />
                   </td>
                   <td>€{prezzi.prezzoFinale}</td>
+                  <td>{percentuale}%</td>
                   <td>€{prezzi.guadagnoAdmin}</td>
                   <td>
-                    <input type="checkbox" checked={item.venduto} onChange={() => toggleVenduto(item)} />
+                    <input
+                      type="checkbox"
+                      checked={item.venduto}
+                      onChange={()=>toggleVenduto(item)}
+                    />
                   </td>
                   <td>
-                    <input type="checkbox" checked={item.is_active} onChange={() => toggleAttivo(item)} />
+                    <input
+                      type="checkbox"
+                      checked={item.is_active}
+                      onChange={()=>toggleAttivo(item)}
+                    />
                   </td>
                   <td>{item.fornitore ? 'Fornitore' : 'Utente'}</td>
                   <td>
-                    <button onClick={()=>deleteItem(item.id)} style={{color:'#dc2626'}}>🗑️</button>
+                    <button
+                      onClick={()=>deleteItem(item.id)}
+                      style={{color:'#dc2626'}}
+                    >
+                      🗑️
+                    </button>
                   </td>
                 </tr>
-              );
+              )
             })}
           </tbody>
         </table>
@@ -429,38 +556,38 @@ export default function MarketplaceAdmin() {
 
 // STILI INLINE
 const styles = {
-  container:{padding:'20px', fontFamily:'Arial, sans-serif'},
-  loading:{padding:'20px', fontSize:'18px'},
-  headerPage:{marginBottom:'20px'},
-  headerCompact:{display:'flex', flexDirection:'column', gap:'10px'},
-  h1Compact:{margin:0, fontSize:'24px'},
-  kpiInline:{display:'flex', gap:'20px', alignItems:'center', flexWrap:'wrap'},
-  guadagnoBox:{display:'flex', flexDirection:'column', padding:'10px', background:'#f3f4f6', borderRadius:'8px'},
-  guadagnoLabel:{fontSize:'12px', fontWeight:'600', marginBottom:'5px'},
-  guadagnoInputContainer:{display:'flex', alignItems:'center', gap:'10px'},
-  commissioneSlider:{flex:1},
-  commissioneValue:{fontWeight:'600'},
-  guadagnoAmount:{fontSize:'16px', fontWeight:'700', marginTop:'5px'},
-  kpiSmall:{display:'flex', flexDirection:'column', alignItems:'center', padding:'5px 10px', background:'#f3f4f6', borderRadius:'6px'},
-  kpiNumber:{fontWeight:'700', fontSize:'14px'},
-  kpiLabelSmall:{fontSize:'12px', fontWeight:'500'},
-  headerButtonsCompact:{display:'flex', gap:'10px', flexWrap:'wrap'},
-  btnBack:{background:'#e5e7eb', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer'},
-  btnExportPDF:{background:'#3b82f6', color:'white', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer'},
-  btnExportCSV:{background:'#10b981', color:'white', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer'},
-  btnExportPrint:{background:'#f59e0b', color:'white', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer'},
-  btnExportRefresh:{background:'#6b7280', color:'white', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer'},
-  btnChart:{background:'#6366f1', color:'white', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer'},
-  btnManual:{background:'#14b8a6', color:'white', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer'},
-  manualPopup:{position:'fixed', top:'20%', left:'50%', transform:'translateX(-50%)', background:'white', padding:'20px', boxShadow:'0 0 15px rgba(0,0,0,0.2)', zIndex:1000, borderRadius:'8px', maxWidth:'400px', width:'100%'},
-  btnCloseManual:{width:'100%', padding:'8px 12px', border:'none', borderRadius:'6px', background:'linear-gradient(135deg, #10b981 0%, #059669 100%)', color:'white', cursor:'pointer', fontWeight:'600'},
-  chartsRowCompact:{display:'flex', gap:'20px', marginTop:'20px'},
-  chartCardCompact:{flex:1, height:'250px', background:'#f3f4f6', padding:'10px', borderRadius:'8px'},
-  columnFiltersRow:{display:'flex', gap:'20px', margin:'20px 0', flexWrap:'wrap'},
-  filterToggle:{display:'flex', gap:'6px', alignItems:'center'},
-  filterLabelSmall:{fontWeight:'600'},
-  filterBtn:{background:'#e5e7eb', border:'none', padding:'4px 8px', borderRadius:'6px', cursor:'pointer'},
-  filterBtnActive:{background:'#3b82f6', color:'white', border:'none', padding:'4px 8px', borderRadius:'6px', cursor:'pointer'},
-  tableContainerCompact:{overflowX:'auto'},
-  tableCompact:{width:'100%', borderCollapse:'collapse'},
+  container: { padding: '20px', fontFamily: 'Arial, sans-serif' },
+  loading: { padding: '20px', fontSize: '18px' },
+  headerPage: { marginBottom: '20px' },
+  headerCompact: { display: 'flex', flexDirection: 'column', gap: '10px' },
+  h1Compact: { margin: 0, fontSize: '24px' },
+  kpiInline: { display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' },
+  guadagnoBox: { display: 'flex', flexDirection: 'column', padding: '10px', background: '#f3f4f6', borderRadius: '8px' },
+  guadagnoLabel: { fontSize: '12px', fontWeight: '600', marginBottom: '5px' },
+  guadagnoInputContainer: { display: 'flex', alignItems: 'center', gap: '10px' },
+  commissioneSlider: { flex: 1 },
+  commissioneValue: { fontWeight: '600' },
+  guadagnoAmount: { fontSize: '16px', fontWeight: '700', marginTop: '5px' },
+  kpiSmall: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '5px 10px', background: '#f3f4f6', borderRadius: '6px' },
+  kpiNumber: { fontWeight: '700', fontSize: '14px' },
+  kpiLabelSmall: { fontSize: '12px', fontWeight: '500' },
+  headerButtonsCompact: { display: 'flex', gap: '10px', flexWrap: 'wrap' },
+  btnBack: { background: '#e5e7eb', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' },
+  btnExportPDF: { background: '#3b82f6', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' },
+  btnExportCSV: { background: '#10b981', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' },
+  btnExportPrint: { background: '#f59e0b', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' },
+  btnExportRefresh: { background: '#6b7280', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' },
+  btnChart: { background: '#6366f1', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' },
+  btnManual: { background: '#14b8a6', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' },
+  manualPopup: { position: 'fixed', top: '20%', left: '50%', transform: 'translateX(-50%)', background: 'white', padding: '20px', boxShadow: '0 0 15px rgba(0,0,0,0.2)', zIndex: 1000, borderRadius: '8px', maxWidth: '400px', width: '100%' },
+  btnCloseManual: { width: '100%', padding: '8px 12px', border: 'none', borderRadius: '6px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', cursor: 'pointer', fontWeight: '600' },
+  chartsRowCompact: { display: 'flex', gap: '20px', marginTop: '20px' },
+  chartCardCompact: { flex: 1, height: '250px', background: '#f3f4f6', padding: '10px', borderRadius: '8px' },
+  columnFiltersRow: { display: 'flex', gap: '20px', margin: '20px 0', flexWrap: 'wrap' },
+  filterToggle: { display: 'flex', gap: '6px', alignItems: 'center' },
+  filterLabelSmall: { fontWeight: '600' },
+  filterBtn: { background: '#e5e7eb', border: 'none', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer' },
+  filterBtnActive: { background: '#3b82f6', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer' },
+  tableContainerCompact: { overflowX: 'auto' },
+  tableCompact: { width: '100%', borderCollapse: 'collapse' },
 };
