@@ -1,4 +1,4 @@
-﻿// src/components/Dashboard.jsx - ✅ COMPLETO FIXATO "Eventi" PROBLEMATICO!
+﻿// src/components/Dashboard.jsx - ✅ FIXATO per superadmin e stringhe chiuse
 import { Navigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthProvider';
@@ -12,7 +12,8 @@ import MarketplaceList from './MarketplaceList';
 import MarketplaceGestion from './MarketplaceGestion';
 
 export default function Dashboard() {
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut, role } = useAuth();
+  const isAdmin = role === 'admin' || role === 'superadmin'; // ✅ FIX superadmin
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
@@ -51,13 +52,9 @@ export default function Dashboard() {
         if (error) throw error;
 
         const images = data?.filter(item => item.immagine_url && item.immagine_url.trim() !== '').map(item => item.immagine_url) || [];
-        if (images.length === 0) {
-          setBannerImages([
-            'https://images.unsplash.com/photo-1620102408085-8c9dfd5a2b6f?w=1200&h=400&fit=crop'
-          ]);
-        } else {
-          setBannerImages(images);
-        }
+        setBannerImages(images.length > 0 ? images : [
+          'https://images.unsplash.com/photo-1620102408085-8c9dfd5a2b6f?w=1200&h=400&fit=crop'
+        ]);
       } catch (err) {
         console.error('Banner fetch error:', err);
         setBannerImages([
@@ -95,10 +92,10 @@ export default function Dashboard() {
   const handleLogout = async () => {
     try {
       await signOut();
-      window.location.href = '/'; // ✅ FORZA reload completo
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
-      window.location.href = '/'; // ✅ FORZA reload completo
+      window.location.href = '/';
     }
   };
 
@@ -149,7 +146,7 @@ export default function Dashboard() {
 
   const HomeOverview = () => (
     <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
-      {/* ✅ Banner dinamico */}
+      {/* Banner dinamico */}
       <div className="relative h-64 md:h-80 rounded-3xl overflow-hidden shadow-2xl">
         {bannerImages.length > 0 && (
           <img
@@ -238,25 +235,25 @@ export default function Dashboard() {
   );
 
   const renderSection = () => {
-  switch(activeSection) {
-    case 'home': return <HomeOverview />;
-    case 'tornei': return <TournamentViewOnly />;  // ✅ FIX #2: VIEW GENERICA (NO 106 iscritti)
-    case 'admin-tornei': return isAdmin ? <Navigate to="/admin" replace /> : <AccessDenied />;
-    case 'marketplace': return (
-      <div className="p-8 text-center text-gray-600 bg-white/80 rounded-2xl shadow-md max-w-2xl mx-auto">
-        <ShoppingBag className="w-20 h-20 text-gray-400 mx-auto mb-6" />
-        <h2 className="text-2xl font-bold mb-4">Marketplace in Sviluppo</h2>
-        <p>La sezione marketplace sarà disponibile presto!</p>
-      </div>
-    );
-    case 'marketplace-gestione': return isAdmin ? <MarketplaceGestion /> : <AccessDenied />;
-    case 'profilo': return <ProfilePage logout={handleLogout} />;
-    case 'logout': handleLogout(); return <div className="p-12 text-center text-green-700 bg-white/80 rounded-2xl shadow-md border border-green-200">Logout in corso...</div>;
-    default: return <div className="p-12 text-center text-green-700 bg-white/80 rounded-2xl shadow-md border border-green-200">Sezione non trovata</div>;
-  }
-};
+    switch(activeSection) {
+      case 'home': return <HomeOverview />;
+      case 'tornei': return <TournamentViewOnly />;
+      case 'admin-tornei': return isAdmin ? <MarketplaceGestion /> : <AccessDenied />; // mantiene il redirect per admin normale
+      case 'marketplace': return (
+        <div className="p-8 text-center text-gray-600 bg-white/80 rounded-2xl shadow-md max-w-2xl mx-auto">
+          <ShoppingBag className="w-20 h-20 text-gray-400 mx-auto mb-6" />
+          <h2 className="text-2xl font-bold mb-4">Marketplace in Sviluppo</h2>
+          <p>La sezione marketplace sarà disponibile presto!</p>
+        </div>
+      );
+      case 'marketplace-gestione': return isAdmin ? <MarketplaceGestion /> : <AccessDenied />;
+      case 'profilo': return <ProfilePage logout={handleLogout} />;
+      case 'logout': handleLogout(); return <div className="p-12 text-center text-green-700 bg-white/80 rounded-2xl shadow-md border border-green-200">Logout in corso...</div>;
+      default: return <div className="p-12 text-center text-green-700 bg-white/80 rounded-2xl shadow-md border border-green-200">Sezione non trovata</div>;
+    }
+  };
 
-return (
+  return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
       <header className="bg-white/90 backdrop-blur-sm border-b border-green-200/50 shadow-sm sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-3 md:py-4">
