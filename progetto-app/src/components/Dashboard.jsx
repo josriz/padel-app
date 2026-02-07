@@ -1,4 +1,4 @@
-﻿// src/components/Dashboard.jsx - ✅ FIXATO per superadmin e stringhe chiuse
+﻿// src/components/Dashboard.jsx
 import { Navigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthProvider';
@@ -7,13 +7,12 @@ import { Menu, X, Home, Calendar, User, LogOut, Shield, ShoppingBag, Trophy, Zap
 import { supabase } from '../supabaseClient';
 
 import ProfilePage from './ProfilePage';
-import TournamentViewOnly from './TournamentViewOnly';  // ✅ FIX #1: VIEW GENERICA
-import MarketplaceList from './MarketplaceList';
+import TournamentViewOnly from './TournamentViewOnly';
 import MarketplaceGestion from './MarketplaceGestion';
 
 export default function Dashboard() {
   const { user, signOut, role } = useAuth();
-  const isAdmin = role === 'admin' || role === 'superadmin'; // ✅ FIX superadmin
+  const isAdmin = role === 'superadmin' || role === 'admin'; // ✅ superadmin incluso
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
@@ -38,7 +37,6 @@ export default function Dashboard() {
     }
   }, [user]);
 
-  // ✅ Fetch banner dinamico dal marketplace
   useEffect(() => {
     const fetchBanner = async () => {
       try {
@@ -144,80 +142,6 @@ export default function Dashboard() {
     </div>
   );
 
-  const HomeOverview = () => (
-    <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
-      {/* Banner dinamico */}
-      <div className="relative h-64 md:h-80 rounded-3xl overflow-hidden shadow-2xl">
-        {bannerImages.length > 0 && (
-          <img
-            src={bannerImages[currentBanner]}
-            alt="Banner marketplace"
-            className="w-full h-full object-cover brightness-75 hover:brightness-90 transition-all duration-500"
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white text-center px-6">
-          <div className="w-20 h-20 md:w-24 md:h-24 bg-white/20 rounded-2xl flex items-center justify-center mb-6 mx-auto backdrop-blur-sm shadow-2xl">
-            <ShoppingCart className="w-10 h-10 md:w-12 md:h-12 text-emerald-300 drop-shadow-lg" />
-          </div>
-          <h2 className="text-2xl md:text-4xl font-black mb-4 drop-shadow-2xl">Marketplace Padel Bari</h2>
-          <p className="text-lg md:text-xl mb-8 max-w-lg mx-auto opacity-95 drop-shadow-lg">Attrezzature usate e nuove</p>
-          <button
-            onClick={() => setActiveSection('marketplace')}
-            className="px-8 py-3 md:px-10 md:py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg md:text-xl rounded-2xl shadow-2xl hover:shadow-3xl hover:-translate-y-1 transition-all"
-          >
-            🛒 Scopri Offerte
-          </button>
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-            {bannerImages.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentBanner(i)}
-                className={`w-3 h-3 md:w-4 md:h-4 rounded-full transition-all ${i === currentBanner ? 'w-10 md:w-12 bg-white shadow-lg' : 'bg-white/50 hover:bg-white'}`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* SALUTO E STATS */}
-      <div className="text-center space-y-3">
-        <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl mx-auto flex items-center justify-center shadow-xl border-2 border-white relative">
-          <Trophy className="w-10 h-10 text-white" />
-          {isAdmin && <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">ADMIN</div>}
-        </div>
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-          Ciao <span className="text-emerald-600">{user?.email?.split('@')[0]?.replace(/\./g, ' ') || 'Giocatore'}</span>
-        </h1>
-        <p className="text-sm md:text-base text-gray-600 max-w-md mx-auto">Le tue statistiche padel</p>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4 md:gap-6">
-        <div className="bg-white/90 p-5 rounded-2xl shadow-md border border-emerald-100 hover:shadow-lg hover:-translate-y-1 transition-all group backdrop-blur-sm">
-          <div className="w-12 h-12 bg-emerald-500 rounded-xl mx-auto mb-3 flex items-center justify-center shadow-lg group-hover:scale-105">
-            <Trophy className="w-6 h-6 text-white" />
-          </div>
-          <p className="text-2xl font-bold text-emerald-700 text-center">{userStats.tournaments}</p>
-          <p className="text-xs font-semibold text-gray-700 text-center uppercase tracking-wide">Tornei</p>
-        </div>
-        <div className="bg-white/90 p-5 rounded-2xl shadow-md border border-blue-100 hover:shadow-lg hover:-translate-y-1 transition-all group backdrop-blur-sm">
-          <div className="w-12 h-12 bg-blue-500 rounded-xl mx-auto mb-3 flex items-center justify-center shadow-lg group-hover:scale-105">
-            <Zap className="w-6 h-6 text-white" />
-          </div>
-          <p className="text-2xl font-bold text-blue-700 text-center">{userStats.points.toLocaleString()}</p>
-          <p className="text-xs font-semibold text-gray-700 text-center uppercase tracking-wide">Punti</p>
-        </div>
-        <div className="bg-white/90 p-5 rounded-2xl shadow-md border border-purple-100 hover:shadow-lg hover:-translate-y-1 transition-all group backdrop-blur-sm">
-          <div className="w-12 h-12 bg-purple-500 rounded-xl mx-auto mb-3 flex items-center justify-center shadow-lg group-hover:scale-105">
-            <Star className="w-6 h-6 text-white" />
-          </div>
-          <p className="text-2xl font-bold text-purple-700 text-center">#{userStats.rank}</p>
-          <p className="text-xs font-semibold text-gray-700 text-center uppercase tracking-wide">Rank Puglia</p>
-        </div>
-      </div>
-    </div>
-  );
-
   const AccessDenied = () => (
     <div className="p-12 max-w-6xl mx-auto text-center">
       <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl p-8 md:p-12 shadow-md mx-auto max-w-sm border border-red-200">
@@ -236,16 +160,9 @@ export default function Dashboard() {
 
   const renderSection = () => {
     switch(activeSection) {
-      case 'home': return <HomeOverview />;
+      case 'home': return <div>Benvenuto nella Dashboard</div>;
       case 'tornei': return <TournamentViewOnly />;
-      case 'admin-tornei': return isAdmin ? <MarketplaceGestion /> : <AccessDenied />; // mantiene il redirect per admin normale
-      case 'marketplace': return (
-        <div className="p-8 text-center text-gray-600 bg-white/80 rounded-2xl shadow-md max-w-2xl mx-auto">
-          <ShoppingBag className="w-20 h-20 text-gray-400 mx-auto mb-6" />
-          <h2 className="text-2xl font-bold mb-4">Marketplace in Sviluppo</h2>
-          <p>La sezione marketplace sarà disponibile presto!</p>
-        </div>
-      );
+      case 'admin-tornei': return isAdmin ? <MarketplaceGestion /> : <AccessDenied />;
       case 'marketplace-gestione': return isAdmin ? <MarketplaceGestion /> : <AccessDenied />;
       case 'profilo': return <ProfilePage logout={handleLogout} />;
       case 'logout': handleLogout(); return <div className="p-12 text-center text-green-700 bg-white/80 rounded-2xl shadow-md border border-green-200">Logout in corso...</div>;
@@ -256,29 +173,23 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
       <header className="bg-white/90 backdrop-blur-sm border-b border-green-200/50 shadow-sm sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 py-3 md:py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 flex justify-end">
-              <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="p-2 rounded-lg md:rounded-xl hover:bg-green-50 transition-all group"
-                aria-label="Menu"
-              >
-                <Menu className="w-6 h-6 text-green-700" />
-              </button>
-            </div>
-
-            <h1 className="text-xl md:text-2xl font-bold text-green-700 absolute left-1/2 -translate-x-1/2 flex items-center">
-              CieffePadel
-              {isAdmin && (
-                <span className="ml-2 px-2 py-1 bg-gradient-to-r from-green-400 to-green-500 text-white text-xs md:text-sm font-bold rounded-full shadow">
-                  ADMIN
-                </span>
-              )}
-            </h1>
-
-            <div className="w-12 md:w-0"></div>
-          </div>
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="p-2 rounded-lg md:rounded-xl hover:bg-green-50 transition-all group"
+            aria-label="Menu"
+          >
+            <Menu className="w-6 h-6 text-green-700" />
+          </button>
+          <h1 className="text-xl md:text-2xl font-bold text-green-700 flex-1 text-center">
+            CieffePadel
+            {isAdmin && (
+              <span className="ml-2 px-2 py-1 bg-gradient-to-r from-green-400 to-green-500 text-white text-xs md:text-sm font-bold rounded-full shadow">
+                ADMIN
+              </span>
+            )}
+          </h1>
+          <div className="w-12 md:w-0"></div>
         </div>
       </header>
 
